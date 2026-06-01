@@ -1,0 +1,31 @@
+# Environments
+.env
+.env.local
+.venv
+env/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+.swc/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Docker / DB Data
+infra/data/
+pgdata/
+redisdata/

@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 230 55% 5%;
+    --foreground: 0 0% 100%;
+    --card: 225 48% 9%;
+    --border: 225 40% 15%;
+    --muted: 225 30% 12%;
+    --primary: 171 77% 64%;
+    --accent: 187 92% 54%;
+    --success: 160 84% 39%;
+    --warning: 38 92% 50%;
+    --danger: 0 84% 60%;
+  }
+}
+
+body {
+  background-color: #050816;
+  color: #ffffff;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Glassmorphism Theme Utilities */
+.glass-panel {
+  background: rgba(11, 16, 32, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.75rem;
+}
+
+.metric-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #9ca3af;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+}
