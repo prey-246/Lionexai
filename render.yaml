@@ -1,5 +1,5 @@
 databases:
-  # 1. PostgreSQL Database (defined as a top-level database service)
+  # 1. PostgreSQL Database
   - name: nexa-db
     databaseName: nexa_mvp
     user: nexa_admin
@@ -10,26 +10,22 @@ services:
   - type: redis
     name: nexa-redis
     plan: free
+    ipAllowList: [] # Allow all internal Render services
 
-  # 3. FastAPI Backend Service
+  # 3. FastAPI Backend Service (Internal)
   - type: web
     name: nexa-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     plan: free
     healthCheckPath: /api/health
-    # Command to run migrations before starting the server
-    startCommand: "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     envVars:
-      # --- Secrets (Create these in Render's "Environment" tab) ---
       - key: SECRET_KEY
-        generateValue: true # Let Render generate a secure secret key
+        generateValue: true
       - key: POSTGRES_PASSWORD
         fromDatabase:
           name: nexa-db
           property: password
-
-      # --- Linked Environment Variables ---
       - key: POSTGRES_USER
         fromDatabase:
           name: nexa-db
@@ -48,22 +44,18 @@ services:
           name: nexa-redis
           property: connectionString
 
-  # 4. Next.js Frontend Service (Public Facing)
+  # 4. Next.js Frontend Service (Public Facing with Reverse Proxy)
   - type: web
     name: nexa-frontend
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
     plan: free
     envVars:
-      # Tell the frontend the public URL of the backend for client-side requests
-      - key: NEXT_PUBLIC_API_URL
-        fromService:
-          type: web
-          name: nexa-backend
-          property: url
-      # For Server-Side Rendering, we can also use the public URL.
+      # For Server-Side Rendering, the frontend container talks to the backend container directly.
       - key: INTERNAL_API_URL
-        fromService:
-          type: web
-          name: nexa-backend
-          property: url
+        value: http://nexa-backend:8000
+    # --- Reverse Proxy Rules ---
+    rewrites:
+      # Route all API and WebSocket traffic to the internal backend service
+      - source: /api/:path*
+        destination: http://nexa-backend:8000/api/:path*
