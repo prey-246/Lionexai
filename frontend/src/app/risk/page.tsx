@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { auditAPI, portfolioAPI } from "@/lib/api";
-import { AlertTriangle, ShieldAlert, CheckCircle } from "lucide-react";
+import { auditAPI, portfolioAPI, systemAPI, tradeAPI } from "@/lib/api";
+import { AlertTriangle, ShieldAlert, CheckCircle, Unlock } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 
 export default function RiskMonitoring() {
   const [riskEvents, setRiskEvents] = useState<any[]>([]);
   const [rejections, setRejections] = useState<any[]>([]);
   const [killSwitchEvents, setKillSwitchEvents] = useState<any[]>([]);
+  const [lockedMandates, setLockedMandates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +27,9 @@ export default function RiskMonitoring() {
 
         const killSwitchData = await auditAPI.getKillSwitchEvents();
         setKillSwitchEvents(killSwitchData);
+
+        const mandatesData = await systemAPI.getMandates();
+        setLockedMandates(mandatesData.filter(m => m.kill_switch_active));
       } catch (err) {
         console.error("Failed to load risk data", err);
       } finally {
@@ -34,9 +38,50 @@ export default function RiskMonitoring() {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+    
+    const wsUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/^http/, 'ws');
+    const ws = new WebSocket(`${wsUrl}/api/ws/alerts`);
+    
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'RISK_ALERT') {
+        const data = message.data;
+        if (data.event_type === 'KILL_SWITCH_TRIGGERED' || data.event_type === 'KILL_SWITCH_RESET') {
+          // Fetch full data sync to instantly update the red lock-box states
+          fetchData(); 
+        } else if (data.event_type === 'RISK_REJECTION') {
+          setRejections(prev => [{
+            id: `ws-${Date.now()}`,
+            timestamp: data.triggered_at,
+            action_type: 'RISK_REJECTION',
+            description: data.description,
+            metadata_json: {}
+          }, ...prev].slice(0, 10));
+        } else {
+          setRiskEvents(prev => [{
+            id: `ws-${Date.now()}`,
+            event_type: data.event_type,
+            severity: data.severity,
+            description: data.description,
+            triggered_at: data.triggered_at,
+            resolved: false
+          }, ...prev].slice(0, 10));
+        }
+      }
+    };
+    
+    return () => ws.close();
   }, []);
+
+  const handleUnlock = async (mandateId: string) => {
+    try {
+      await tradeAPI.resetKillSwitch(mandateId);
+      setLockedMandates(lockedMandates.filter(m => m.id !== mandateId));
+      alert(`Mandate ${mandateId} has been successfully unlocked.`);
+    } catch (err: any) {
+      alert(`Failed to unlock mandate: ${err.message}`);
+    }
+  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -60,6 +105,37 @@ export default function RiskMonitoring() {
         </h1>
         <p className="text-gray-400 text-sm mt-1">Real-time risk events & audit trail</p>
       </header>
+
+      {/* LOCKED MANDATES / ADMIN OVERRIDE */}
+      {lockedMandates.length > 0 && (
+        <section className="space-y-4 mb-8">
+          <div className="border-b border-red-900/50 pb-2 flex justify-between items-center">
+            <h2 className="text-lg font-medium tracking-tight text-red-400">System Halts (Action Required)</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {lockedMandates.map((mandate) => (
+              <GlassCard key={mandate.id} className="p-5 border border-red-900/50 bg-red-900/10">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-red-400 flex items-center gap-2">
+                      <ShieldAlert className="w-5 h-5" /> 
+                      {mandate.name} ({mandate.id})
+                    </h3>
+                    <p className="text-sm text-red-300 mt-2">This mandate's kill switch has been engaged due to a severe risk breach. All trading is halted.</p>
+                  </div>
+                  <button 
+                    onClick={() => handleUnlock(mandate.id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-900/40 hover:bg-red-900/60 text-red-200 border border-red-800 rounded-md transition-colors text-sm font-semibold"
+                  >
+                    <Unlock className="w-4 h-4" />
+                    Reset & Unlock
+                  </button>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* CRITICAL ALERTS */}
       <section className="space-y-4">

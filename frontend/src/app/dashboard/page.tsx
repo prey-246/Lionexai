@@ -10,21 +10,32 @@ export default function ClientDashboard() {
   const [portfolio, setPortfolio] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [trades, setTrades] = useState<any[]>([]);
+  const [livePrices, setLivePrices] = useState<{[key: string]: number}>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [portfoliosList, setPortfoliosList] = useState<any[]>([]);
+  const [activePortfolioId, setActivePortfolioId] = useState<string | null>(null);
 
   useEffect(() => {
+    let currentId = activePortfolioId;
+
     const fetchData = async () => {
       try {
-        setLoading(true);
         setError(null);
 
-        // This dashboard assumes a single primary portfolio. We'll fetch the list and use the first one.
         const portfolios = await portfolioAPI.listPortfolios();
+        setPortfoliosList(portfolios);
         if (portfolios.length === 0) {
           throw new Error("No portfolios found. Please create one in the 'Portfolios' section.");
         }
-        const mainPortfolio = portfolios[0];
+
+        const targetId = currentId || portfolios[0].id;
+        if (!currentId) {
+          currentId = targetId;
+          setActivePortfolioId(targetId);
+        }
+
+        const mainPortfolio = portfolios.find(p => p.id === targetId) || portfolios[0];
         setPortfolio(mainPortfolio);
 
         const statsData = await portfolioAPI.getStats(mainPortfolio.id);
@@ -41,8 +52,36 @@ export default function ClientDashboard() {
 
     fetchData();
     const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    // --- WebSocket: Live Market Data ---
+    const wsUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/^http/, 'ws');
+    const marketWs = new WebSocket(`${wsUrl}/api/ws/market`);
+    
+    marketWs.onopen = () => {
+      marketWs.send(JSON.stringify({ type: 'SUBSCRIBE', symbols: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'] }));
+    };
+
+    marketWs.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'MARKET_TICK') {
+        setLivePrices(message.data);
+      }
+    };
+
+    // --- WebSocket: Live Portfolio Updates ---
+    const portfolioWs = new WebSocket(`${wsUrl}/api/ws/portfolio`);
+    
+    portfolioWs.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === 'PORTFOLIO_UPDATE') {
+        // Re-fetch all data to ensure equity, margins, and the recent trades list are perfectly synced
+        fetchData();
+      }
+    };
+
+    // Cleanup on unmount
+    return () => { clearInterval(interval); marketWs.close(); portfolioWs.close(); };
+  }, [activePortfolioId]);
 
   if (loading) {
     return (
@@ -69,10 +108,43 @@ export default function ClientDashboard() {
   return (
     <main className="min-h-screen p-6 md:p-8 max-w-7xl mx-auto space-y-8">
       {/* HEADER */}
-      <header className="border-b border-gray-800 pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-white">Portfolio Dashboard</h1>
-        <p className="text-gray-400 text-sm mt-1">Real-time performance & position monitoring</p>
+      <header className="border-b border-gray-800 pb-6 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-white">Portfolio Dashboard</h1>
+          <p className="text-gray-400 text-sm mt-1">Real-time performance & position monitoring</p>
+        </div>
+        {portfoliosList.length > 0 && (
+          <div className="w-full md:w-64">
+            <label className="block text-xs font-medium text-gray-400 mb-1">Select Portfolio</label>
+            <select
+              value={activePortfolioId || ''}
+              onChange={(e) => { setLoading(true); setActivePortfolioId(e.target.value); }}
+              className="w-full bg-[#0B1020] border border-gray-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-[#22D3EE] transition-colors"
+            >
+              {portfoliosList.map(p => (
+                <option key={p.id} value={p.id}>{p.id} ({p.mandate_id})</option>
+              ))}
+            </select>
+          </div>
+        )}
       </header>
+
+      {/* LIVE MARKET TICKER */}
+      <div className="flex gap-4 overflow-hidden py-1">
+        {Object.entries(livePrices).length > 0 ? (
+          Object.entries(livePrices).map(([symbol, price]) => (
+            <div key={symbol} className="flex items-center gap-2 text-sm font-mono bg-black/20 px-3 py-1.5 rounded-md border border-gray-800/50 shadow-sm">
+              <span className="text-gray-400">{symbol}</span>
+              <span className="text-[#22D3EE] font-bold">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          ))
+        ) : (
+          <div className="text-sm text-gray-500 font-mono animate-pulse flex items-center gap-2">
+             <div className="w-2 h-2 bg-gray-500 rounded-full animate-ping"></div>
+             Connecting to live market feed...
+          </div>
+        )}
+      </div>
 
       {/* KEY METRICS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

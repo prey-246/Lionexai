@@ -6,30 +6,27 @@ router = APIRouter()
 
 @router.websocket("/ws/market")
 async def websocket_market_feed(websocket: WebSocket):
-    await manager.connect(websocket)
+    await manager.connect(websocket, "market")
     try:
         while True:
             data = await websocket.receive_text()
-            await manager.broadcast({"type": "MARKET_SUBSCRIBE", "data": data})
     except Exception as e:
-        manager.disconnect(websocket)
+        manager.disconnect(websocket, "market")
 
 @router.websocket("/ws/portfolio")
 async def websocket_portfolio_updates(websocket: WebSocket):
-    await manager.connect(websocket)
+    await manager.connect(websocket, "portfolio")
     try:
         while True:
             data = await websocket.receive_text()
-            await manager.broadcast({"type": "PORTFOLIO_UPDATE", "data": data})
     except Exception:
-        manager.disconnect(websocket)
+        manager.disconnect(websocket, "portfolio")
 
 @router.websocket("/ws/alerts")
 async def websocket_risk_alerts(websocket: WebSocket):
-    await manager.connect(websocket)
+    await manager.connect(websocket, "alerts")
     try:
         while True:
             data = await websocket.receive_text()
-            await manager.broadcast({"type": "RISK_ALERT", "data": data})
     except Exception:
-        manager.disconnect(websocket)
+        manager.disconnect(websocket, "alerts")

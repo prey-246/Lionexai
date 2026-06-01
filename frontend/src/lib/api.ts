@@ -1,5 +1,5 @@
 // We will import js-cookie dynamically for client-side execution
-import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioStats, Trade, RiskEvent, PaginatedAuditLogs, BacktestRequest, BacktestResponse, AuthResponse, TradeResponse, EquityDataPoint } from './types';
+import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioStats, Trade, RiskEvent, AuditLog, PaginatedAuditLogs, BacktestRequest, BacktestResponse, AuthResponse, TradeResponse, EquityDataPoint } from './types';
 
 /**
  * Differentiates between server-side and client-side API calls.
@@ -130,6 +130,12 @@ export const tradeAPI = {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+  
+  resetKillSwitch: (mandateId: string) => {
+    return apiFetch(`${API_BASE_URL}/api/trading/mandates/${mandateId}/reset`, {
+      method: "POST",
+    });
   }
 };
 
@@ -143,12 +149,14 @@ export const auditAPI = {
     return apiFetch(`${API_BASE_URL}/api/audit/?${params}`, { cache: 'no-store' });
   },
 
-  getRiskRejections: (limit: number = 50) => {
-    return apiFetch(`${API_BASE_URL}/api/audit/events/risk-rejections?limit=${limit}`, { cache: 'no-store' });
+  getRiskRejections: async (limit: number = 50): Promise<AuditLog[]> => {
+    const res = await auditAPI.getLogs('RISK_REJECTION', limit);
+    return res.logs;
   },
 
-  getKillSwitchEvents: (limit: number = 50) => {
-    return apiFetch(`${API_BASE_URL}/api/audit/events/kill-switch?limit=${limit}`, { cache: 'no-store' });
+  getKillSwitchEvents: async (limit: number = 50): Promise<AuditLog[]> => {
+    const res = await auditAPI.getLogs('KILL_SWITCH_TRIGGERED', limit);
+    return res.logs;
   }
 };
 

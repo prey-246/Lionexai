@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 import random
 import uuid
@@ -9,6 +10,7 @@ from app.models import schemas, domain
 from app.api.deps import get_current_user
 from app.engines.risk_engine import RiskEngine, RiskRejectionError
 from app.services import audit_service
+from app.core.sockets import manager
 
 router = APIRouter()
 
@@ -16,6 +18,7 @@ router = APIRouter()
 def execute_trade(
     portfolio_id: str,
     trade_in: schemas.TradeExecute,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: domain.User = Depends(get_current_user)
 ):
@@ -32,7 +35,7 @@ def execute_trade(
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
     # --- Use the dedicated Risk Engine ---
-    risk_engine = RiskEngine(db)
+    risk_engine = RiskEngine(db, background_tasks)
     mandate = db.query(domain.Mandate).filter(domain.Mandate.id == portfolio.mandate_id).first()
     mock_price = 65000.0 if trade_in.symbol == "BTC/USDT" else 3500.0
 
@@ -52,7 +55,19 @@ def execute_trade(
             description=str(e),
             metadata={"portfolio_id": portfolio_id, "user_id": current_user.id, "user_email": current_user.email, "order": order_details}
         )
-        raise HTTPException(status_code=403, detail=str(e))
+        background_tasks.add_task(
+            manager.broadcast,
+            {
+                "type": "RISK_ALERT",
+                "data": {"severity": "CRITICAL", "event_type": "RISK_REJECTION", "description": str(e), "triggered_at": datetime.utcnow().isoformat()}
+            },
+            "alerts"
+        )
+        return JSONResponse(
+            status_code=403,
+            content={"detail": str(e)},
+            background=background_tasks
+        )
 
     # --- Trade Execution Simulation ---
     # Create a new trade record
@@ -73,7 +88,11 @@ def execute_trade(
     db.commit()
 
     # For the MVP, immediately close the trade with a random outcome
-    exit_price_delta = (random.random() - 0.45) * 100
+    if trade_in.symbol == "ETH/USDT":
+        # Force a guaranteed massive loss to test the Kill Switch
+        exit_price_delta = -5000.0 if trade_in.side == "BUY" else 5000.0
+    else:
+        exit_price_delta = (random.random() - 0.45) * 100
     exit_price = mock_price + exit_price_delta
     pnl = (exit_price - mock_price) * trade_in.size if trade_in.side == "BUY" else (mock_price - exit_price) * trade_in.size
 
@@ -98,9 +117,56 @@ def execute_trade(
             "pnl": pnl
         }
     )
+    
+    # Broadcast portfolio updates
+    background_tasks.add_task(
+        manager.broadcast,
+        {
+            "type": "PORTFOLIO_UPDATE",
+            "data": {
+                "portfolio_id": portfolio.id,
+                "total_equity": portfolio.total_equity,
+                "available_margin": portfolio.available_margin,
+            }
+        },
+        "portfolio"
+    )
 
     return schemas.TradeResponse(
         status="FILLED",
         trade_id=new_trade.id,
         fill_price=mock_price
     )
+
+@router.post("/mandates/{mandate_id}/reset")
+def reset_kill_switch(
+    mandate_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: domain.User = Depends(get_current_user)
+):
+    """Admin endpoint to reset a triggered kill switch."""
+    mandate = db.query(domain.Mandate).filter(domain.Mandate.id == mandate_id).first()
+    if not mandate:
+        raise HTTPException(status_code=404, detail="Mandate not found")
+    
+    mandate.kill_switch_active = False
+    
+    audit_service.create_audit_log(
+        db,
+        action_type="KILL_SWITCH_RESET",
+        description=f"Kill switch manually reset for mandate {mandate_id} by {current_user.email}",
+        metadata={"mandate_id": mandate_id, "user_id": current_user.id}
+    )
+    db.commit()
+
+    background_tasks.add_task(
+        manager.broadcast,
+        {
+            "type": "RISK_ALERT",
+            "data": {"severity": "INFO", "event_type": "KILL_SWITCH_RESET", "description": f"Mandate {mandate_id} unlocked.", "triggered_at": datetime.utcnow().isoformat()}
+        },
+        "alerts"
+    )
+    
+    return {"status": "success", "message": f"Kill switch reset for {mandate_id}"}

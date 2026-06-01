@@ -201,12 +201,37 @@ def get_equity_curve(
     ))
 
     current_equity = initial_equity
+    last_time = start_time
+    
     for trade in trades:
         if trade.pnl is not None and trade.closed_at is not None:
             current_equity += trade.pnl
+            trade_time = int(trade.closed_at.timestamp())
+            
+            # Lightweight Charts requires strictly ascending timestamps (no duplicates).
+            # If multiple trades close in the exact same second, we increment the time by 1s.
+            if trade_time <= last_time:
+                trade_time = last_time + 1
+                
             equity_curve.append(schemas.EquityDataPoint(
-                time=int(trade.closed_at.timestamp()),
+                time=trade_time,
                 value=round(current_equity, 2)
             ))
+            last_time = trade_time
 
     return equity_curve
+
+@router.get("/{portfolio_id}/risk-events", response_model=List[schemas.RiskEvent])
+def get_risk_events(
+    portfolio_id: str,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: domain.User = Depends(get_current_user)
+):
+    """Get risk events for a specific portfolio."""
+    portfolio = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id, domain.Portfolio.user_id == current_user.id).first()
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+
+    events = db.query(domain.RiskEvent).filter(domain.RiskEvent.portfolio_id == portfolio_id).order_by(domain.RiskEvent.triggered_at.desc()).limit(limit).all()
+    return events

@@ -4,6 +4,9 @@ from app.models.domain import Mandate, Portfolio, RiskEvent, Trade
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from app.services import audit_service
+from fastapi import BackgroundTasks
+from app.core.sockets import manager
 
 logger = logging.getLogger("nexa.risk_engine")
 
@@ -11,8 +14,9 @@ class RiskRejectionError(Exception):
     pass
 
 class RiskEngine:
-    def __init__(self, db_session: Session):
+    def __init__(self, db_session: Session, background_tasks: BackgroundTasks = None):
         self.db = db_session
+        self.background_tasks = background_tasks
 
     def evaluate_pre_trade(self, portfolio: Portfolio, mandate: Mandate, order: Dict[str, Any]) -> bool:
         checks = [
@@ -44,6 +48,7 @@ class RiskEngine:
     def _check_drawdown_limit(self, portfolio: Portfolio, mandate: Mandate, order: Dict[str, Any]) -> bool:
         # This is a simplified check. A real system would calculate this based on high-water mark.
         if portfolio.current_drawdown_pct and portfolio.current_drawdown_pct >= mandate.max_drawdown_pct:
+            self._trigger_kill_switch(mandate, f"Max drawdown {portfolio.current_drawdown_pct:.2f}% >= limit {mandate.max_drawdown_pct:.2f}%")
             raise RiskRejectionError(f"Drawdown limit breached: {portfolio.current_drawdown_pct:.2f}% >= {mandate.max_drawdown_pct:.2f}%")
         return True
 
@@ -59,6 +64,7 @@ class RiskEngine:
 
         daily_loss_limit_amount = portfolio.total_equity * (mandate.daily_loss_limit_pct / 100)
         if today_pnl < -daily_loss_limit_amount:
+            self._trigger_kill_switch(mandate, f"Daily loss limit breached: PNL of ${today_pnl:,.2f} exceeds limit of ${-daily_loss_limit_amount:,.2f}")
             raise RiskRejectionError(f"Daily loss limit breached: PNL of ${today_pnl:,.2f} exceeds limit of ${-daily_loss_limit_amount:,.2f}")
         return True
 
@@ -79,6 +85,21 @@ class RiskEngine:
         mandate.kill_switch_active = True
         self.db.commit()
         logger.critical(f"KILL SWITCH ENGAGED: {reason}")
+        
+        audit_service.create_audit_log(
+            self.db,
+            action_type="KILL_SWITCH_TRIGGERED",
+            description=f"System halted for mandate {mandate.id}: {reason}",
+            metadata={"mandate_id": mandate.id, "reason": reason}
+        )
+        self.db.commit() # Force commit before the exception rolls back the session
+        
+        if self.background_tasks:
+            self.background_tasks.add_task(
+                manager.broadcast,
+                {"type": "RISK_ALERT", "data": {"severity": "CRITICAL", "event_type": "KILL_SWITCH_TRIGGERED", "description": reason, "triggered_at": datetime.utcnow().isoformat()}},
+                "alerts"
+            )
 
     def _log_risk_event(self, portfolio: Portfolio, event_type: str, description: str, severity: str = "WARNING"):
         event = RiskEvent(
@@ -89,3 +110,10 @@ class RiskEngine:
         )
         self.db.add(event)
         self.db.commit()
+
+        if self.background_tasks:
+            self.background_tasks.add_task(
+                manager.broadcast,
+                {"type": "RISK_ALERT", "data": {"severity": severity, "event_type": event_type, "description": description, "triggered_at": datetime.utcnow().isoformat()}},
+                "alerts"
+            )

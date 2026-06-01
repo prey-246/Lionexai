@@ -1,16 +1,18 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart, Terminal, Shield, FileText, History, LogOut, Wallet, FlaskConical } from 'lucide-react';
+import { BarChart, Terminal, Shield, FileText, History, LogOut, Wallet, FlaskConical, ShieldAlert, Home } from 'lucide-react';
 import clsx from 'clsx';
 import Cookies from 'js-cookie';
 
 export function TerminalSidebar() {
   const navItems = [
-    { href: '/', label: 'Dashboard', icon: BarChart },
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/dashboard', label: 'Dashboard', icon: BarChart },
     { href: '/portfolios', label: 'Portfolios', icon: Wallet },
     { href: '/trade', label: 'Terminal', icon: Terminal },
     { href: '/backtest', label: 'Strategy Engine', icon: FlaskConical },
+    { href: '/risk', label: 'Risk Monitoring', icon: ShieldAlert },
     { href: '/mandates', label: 'Mandates', icon: Shield },
     { href: '/reports', label: 'Reports', icon: FileText },
     { href: '/audit', label: 'Audit Trail', icon: History },

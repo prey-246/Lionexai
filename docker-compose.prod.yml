@@ -1,0 +1,65 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg15
+    container_name: nexa_db_prod
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-nexa_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-nexa_secure_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-nexa_mvp}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexa_admin} -d ${POSTGRES_DB:-nexa_mvp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexa_redis_prod
+    restart: always
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: nexa_backend_prod
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=db
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: nexa_frontend_prod
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - INTERNAL_API_URL=http://backend:8000
+      - NODE_ENV=production
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data_prod:
+  redis_data_prod:
