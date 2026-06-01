@@ -54,8 +54,3 @@ services:
       # For Server-Side Rendering, the frontend container talks to the backend container directly.
       - key: INTERNAL_API_URL
         value: http://nexa-backend:8000
-    # --- Reverse Proxy Rules ---
-    rewrites:
-      # Route all API and WebSocket traffic to the internal backend service
-      - source: /api/:path*
-        destination: http://nexa-backend:8000/api/:path*
