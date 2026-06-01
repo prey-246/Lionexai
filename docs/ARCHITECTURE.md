@@ -225,8 +225,6 @@
 - performance_metrics (JSON)
 - risk_metrics (JSON)
 - trades_summary (JSON)
-- html_content (string, nullable)
-- pdf_content (string, nullable)
 - created_at (timestamp)
 
 ## Risk Engine Flow
@@ -363,41 +361,19 @@ Client                Backend              Database
 
 ## WebSocket Channels
 
-### Market Data Stream (`/ws/market`)
-```json
-{
-  "type": "MARKET_TICK",
-  "data": {
-    "BTC/USDT": 65123.45,
-    "ETH/USDT": 3512.30,
-    "timestamp": "2024-06-01T10:30:00Z"
-  }
-}
-```
+### Portfolio & Market Data Stream (`/api/ws/portfolio` and `/api/ws/market`)
+The backend provides WebSocket endpoints for clients to connect to.
+- The `/api/ws/market` endpoint streams simulated market ticks.
+- The `/api/ws/portfolio` endpoint streams real-time updates for a user's portfolios, including trade executions, P&L changes, and risk events.
 
-### Portfolio Updates (`/ws/portfolio`)
+Example `PORTFOLIO_UPDATE` message:
 ```json
 {
   "type": "PORTFOLIO_UPDATE",
   "data": {
     "portfolio_id": "port_123",
-    "total_equity": 102500,
-    "available_margin": 51250,
-    "unrealized_pnl": 2500,
-    "timestamp": "2024-06-01T10:30:00Z"
-  }
-}
-```
-
-### Risk Alerts (`/ws/alerts`)
-```json
-{
-  "type": "RISK_ALERT",
-  "data": {
-    "severity": "CRITICAL",
-    "event_type": "DRAWDOWN_LIMIT_BREACHED",
-    "description": "Max drawdown 10.5% >= limit 10.0%",
-    "triggered_at": "2024-06-01T10:30:00Z"
+    "stats": { ... },
+    "new_trade": { ... }
   }
 }
 ```

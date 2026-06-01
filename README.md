@@ -1,33 +1,37 @@
 # UnifyX / NEXA MVP
 
-A quantitative trading intelligence and portfolio orchestration platform supporting backtesting, paper trading, risk management, portfolio simulation, dashboard monitoring, audit logging, and reporting.
+A production-grade quantitative trading intelligence and portfolio orchestration platform. It provides a full suite of tools for backtesting strategies, managing paper-trading portfolios with institutional-grade risk controls, and analyzing performance through comprehensive dashboards and exportable reports.
 
-**Status**: MVP in development  
-**Demo**: See [Setup Guide](#setup--quick-start) below
+**Status**: MVP Complete
 
 ## Features
 
-### Core Capabilities
-- **Backtesting Engine**: Historical replay with multiple strategies (MA Crossover, RSI Mean Reversion, ATR)
-- **Paper Trading**: Simulated execution with full risk validation
-- **Risk Management**: Institutional-grade risk gatekeeper with kill switches
-- **Portfolio Orchestration**: Real-time margin tracking and position management
-- **Dashboards**: Client portfolio dashboard + Operations monitoring console
-- **Reporting**: Weekly/monthly performance analysis with PDF export
-- **Audit Trail**: Immutable logging of all critical system events
-- **WebSocket Streaming**: Real-time market data and portfolio updates
+### Core Platform
+- **Secure Authentication**: User registration and login system using JWT tokens stored in secure cookies.
+- **Multi-Container Architecture**: Fully containerized using Docker for consistent development and production environments.
+- **Production-Grade Local Setup**: Utilizes `gunicorn` and a dedicated production Docker Compose file for a stable and performant local environment.
+- **CI/CD Pipeline**: Automated testing, linting, security scanning, and build pipeline using GitHub Actions.
 
-### Risk Engine Validations
-- Kill switch (system halt on critical breaches)
-- Daily loss limits
-- Weekly loss limits
-- Max drawdown enforcement
-- Leverage limits
-- Position sizing constraints
-- Asset whitelisting
-- Stale data detection
-- Trade frequency limits
-- Stop loss validation
+### Portfolio & Paper Trading
+- **Portfolio Management**: Create, view, and delete trading portfolios with customizable IDs and initial capital.
+- **Paper Trading**: Simulated trade execution (`BUY`/`SELL`) against a portfolio.
+- **Real-time Updates**: Portfolio statistics, equity, and trade lists update in real-time across all connected clients using WebSockets.
+
+### Risk Management
+- **Risk Mandates**: Pre-defined risk profiles (e.g., max drawdown, daily loss limits) that can be assigned to portfolios.
+- **Pre-Trade Risk Validation**: The risk engine validates every trade against the portfolio's mandate before execution.
+- **Kill Switch**: A mechanism to halt trading on a mandate if critical risk thresholds are breached.
+- **Audit Trail**: Immutable logging of all critical system events, including trade executions and risk rejections.
+
+### Analytics & Reporting
+- **Portfolio Dashboards**: Detailed views of individual portfolio performance, including equity curves, P&L, and trade history.
+- **System-Wide Summary**: A main dashboard summarizing the performance of all portfolios.
+- **On-Demand Reporting**: Generate historical performance reports for any portfolio on a weekly or monthly basis.
+- **PDF Export**: Download beautifully formatted PDF versions of generated performance reports for offline analysis and sharing.
+
+### Strategy & Backtesting
+- **Backtesting Engine**: A foundational engine to simulate strategy performance against historical market data.
+- **Strategy Management**: API endpoints to create, list, and update trading strategies.
 
 ## Tech Stack
 
@@ -39,6 +43,7 @@ A quantitative trading intelligence and portfolio orchestration platform support
 - **ORM**: SQLAlchemy 2.0
 - **Migrations**: Alembic
 - **Market Data**: CCXT
+- **PDF Generation**: WeasyPrint & Jinja2
 - **WebSockets**: python-websockets
 
 ### Frontend
@@ -46,10 +51,8 @@ A quantitative trading intelligence and portfolio orchestration platform support
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4
 - **Charts**: TradingView Lightweight Charts
-- **State**: Zustand
-- **Data Fetching**: React Query
-- **Animations**: Framer Motion
-- **Component Library**: shadcn/ui + custom
+- **State Management**: React Hooks (`useState`, `useEffect`)
+- **Component Library**: Custom components with `lucide-react` for icons.
 
 ### DevOps
 - **Containerization**: Docker & Docker Compose
@@ -57,62 +60,151 @@ A quantitative trading intelligence and portfolio orchestration platform support
 - **Database**: TimescaleDB for time-series
 - **Deployment**: VPS-ready configuration
 
-## Setup & Quick Start
+## Setup & Production-Grade Local Start
 
 ### Prerequisites
 - Docker & Docker Compose
-- Node.js 20+ (for local frontend development)
-- Python 3.12+ (for local backend development)
-- PostgreSQL 15+ (if running without Docker)
 
-### Option 1: Docker Compose (Recommended)
-
+### Running the Application
 ```bash
 # Clone the repository
 git clone <your-repo-url>
 cd Lionexai
 
-# Setup environment
-cp .env.example .env  # If provided, or use existing .env
+# Ensure you have a .env file configured (you can copy .env.example)
 
-# Start all services
-docker-compose up -d
-
-# Services will be available at:
-# - Frontend: http://localhost:3000
-# - Backend API: http://localhost:8000
-# - Database: localhost:5432
-# - Redis: localhost:6379
-# - API Docs: http://localhost:8000/docs
+# Build and start all services in production mode
+docker-compose -f docker-compose.prod.yml up --build -d
 ```
 
-### Option 2: Local Development
+Your application is now running and accessible:
+- **Frontend**: `http://localhost:3000`
+- **Backend API Docs**: `http://localhost:8000/docs`
 
-**Backend:**
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+## Feature Deep Dive & How to Test
+
+### 1. User Authentication
+- **To Test**: Navigate to `http://localhost:3000`. You will be redirected to the `/login` page. Use the link to `/register`, create a new account, and then log in. Upon successful login, you will be directed to the main dashboard.
+
+### 2. Portfolio Creation with Custom Capital
+- **To Test**: Go to the "Portfolios" page from the sidebar. Use the "Create New Portfolio" form. Enter a unique ID, select a risk mandate, and specify the "Initial Capital". Click "Create Portfolio" and it will appear in the list below.
+
+### 3. Real-Time Updates with WebSockets
+- **To Test**: Open two browser windows and navigate to the same portfolio detail page in both. In one window, execute a trade. Observe the "Recent Trades" list and portfolio stats update in the second window instantly, without needing a page refresh.
+
+### 4. On-Demand PDF Reporting
+- **To Test**: Navigate to the "Reports" page. Select a portfolio that has some closed trades. Click "Generate Weekly" or "Generate Monthly". A new report item will appear in the list. Hover over this item to reveal a download icon. Click it to download a professional PDF summary of the portfolio's performance.
+
+### 5. Pre-Trade Risk Validation
+- **To Test**: On a portfolio dashboard, attempt to execute a trade with a size that would violate the assigned risk mandate (e.g., a size far greater than the portfolio's equity). The API will reject the trade with an error message, and a "RISK_REJECTION" event will be logged in the audit trail.
+
+## Development Journey & Key Learnings
+
+This project involved overcoming several common but challenging real-world development hurdles.
+
+1.  **Challenge**: A persistent redirect loop after user login.
+    -   **Analysis**: We discovered a race condition between Next.js's fast client-side navigation (`router.push('/')`) and the browser setting the authentication cookie. The server-side middleware would check for the cookie before it was sent, see no user, and redirect back to login, creating a loop.
+    -   **Solution**: We replaced the "soft" navigation with a "hard" page reload (`window.location.href = '/'`) after login. This forces the browser to perform a full refresh, guaranteeing that the newly set `auth_token` cookie is included in the request to the new page, which the middleware can then correctly validate.
+
+2.  **Challenge**: The "Reports" page would crash with a `TypeError: Cannot read properties of undefined (reading 'toLocaleString')`.
+    -   **Analysis**: The component was attempting to render data (e.g., `report.performance_metrics.total_pnl`) before the API call had finished or if a report had no trades and thus no performance metrics.
+    -   **Solution**: We fortified the JSX by implementing **optional chaining (`?.`)** and **nullish coalescing (`??`)**. For example, `report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'`. This makes the UI resilient by safely accessing nested properties and providing a default value if any part of the chain is `null` or `undefined`, preventing crashes.
+
+3.  **Challenge**: Multiple errors during attempts to deploy to a PaaS (Render).
+    -   **Analysis**: We encountered a series of platform-specific configuration errors in our `render.yaml` file, including `unknown type "psql"`, `field healthCheck not found`, and `field rewrites not found`. These were caused by subtle differences between the platform's Blueprint specification and our initial configuration.
+    -   **Solution**: We reverted the cloud-specific changes to focus on a robust local production environment. We upgraded our `docker-compose.prod.yml` to use `gunicorn` for the backend, providing a more stable and performant setup. The key takeaway was the importance of meticulously following a specific cloud provider's Infrastructure as Code (IaC) schema and the value of a solid, production-like local environment for debugging.
+
+## API Documentation
+
+An interactive Swagger/OpenAPI documentation is available when the application is running.
+
+**Interactive API Docs**: `http://localhost:8000/docs`
+
+### Key Endpoints
+
+... (existing endpoints) ...
+
+**Reporting**
+- `POST /api/reports/generate` - Generate performance report
+- `GET /api/reports/{portfolio_id}` - Get reports for a portfolio
+- `GET /api/reports/{report_id}/download` - Download a generated report as a PDF
+
+... (existing endpoints) ...
+
+## Project Structure
+
+```
+Lionexai/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── routes/
+│   │   │       ├── auth.py
+│   │   │       ├── audit.py
+│   │   │       ├── backtest.py
+│   │   │       ├── mandates.py
+│   │   │       ├── portfolios.py
+│   │   │       ├── reports.py
+│   │   │       ├── strategies.py
+│   │   │       └── trading.py
+│   │   ├── core/
+│   │   ├── engines/
+│   │   ├── models/
+│   │   ├── services/
+│   │   ├── templates/
+│   │   │   └── report.html  # PDF template
+│   │   └── main.py
+│   ├── alembic/
+│   ├── requirements.txt
+│   └── Dockerfile
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── (pages)/
+│   │   ├── components/
+│   │   └── lib/
+│   │       ├── api.ts
+│   │       └── types.ts
+│   ├── package.json
+│   └── Dockerfile
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml
+├── docs/
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── .env
+└── README.md
 ```
 
-**Frontend:**
+## Troubleshooting
+
+### Backend won't start
 ```bash
-cd frontend
-pnpm install
-pnpm dev  # Starts on http://localhost:3000
+# Check logs for errors
+docker-compose -f docker-compose.prod.yml logs nexa_backend_prod
+
+# Rebuild the container if code has changed significantly
+docker-compose -f docker-compose.prod.yml build --no-cache backend
 ```
 
-**Database (Optional - use Docker for local PostgreSQL):**
+### Frontend shows API errors
 ```bash
-docker run -d \
-  --name nexa_db \
-  -e POSTGRES_USER=nexa_admin \
-  -e POSTGRES_PASSWORD=nexa_secure_pass \
-  -e POSTGRES_DB=nexa_mvp \
-  -p 5432:5432 \
-  timescale/timescaledb:latest-pg15
+# Ensure the backend is healthy
+curl http://localhost:8000/api/health
+
+# Check frontend logs
+docker-compose -f docker-compose.prod.yml logs nexa_frontend_prod
+```
+
+### Database connection issues
+```bash
+# Reset the entire stack (WARNING: deletes all data)
+docker-compose -f docker-compose.prod.yml down -v
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+... (rest of the file) ...
 ```
 
 ## API Documentation

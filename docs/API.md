@@ -10,10 +10,12 @@ http://localhost:8000
 
 ## Authentication
 
-Currently unauthenticated for MVP. Production deployment requires:
-- Bearer token in `Authorization` header
-- JWT token generation via login endpoint
-- Session management with Redis
+Authentication is handled via JWT Bearer tokens.
+
+- `POST /api/auth/register` - Create a new user account.
+- `POST /api/auth/token` - Log in to receive an `access_token`.
+
+The frontend stores this token in a secure cookie, which is automatically sent with subsequent API requests.
 
 ## Core Endpoints
 
@@ -32,7 +34,13 @@ GET /health
 }
 ```
 
----
+#### Download Report as PDF
+```
+GET /api/reports/{report_id}/download
+```
+**Response 200:** A PDF file (`application/pdf`).
+
+
 
 ### Risk Mandates
 
@@ -139,11 +147,12 @@ GET /api/portfolios/{portfolio_id}/stats
 {
   "total_trades": 42,
   "winning_trades": 25,
-  "win_rate": 59.5,
+  "losing_trades": 17,
+  "win_rate_pct": 59.5,
   "total_pnl": 2500.50,
-  "current_equity": 102500.50,
-  "available_margin": 71250.25,
-  "current_drawdown_pct": 2.5
+  "avg_pnl_per_trade": 59.54,
+  "best_trade_pnl": 850.0,
+  "worst_trade_pnl": -400.0
 }
 ```
 
@@ -257,7 +266,8 @@ POST /api/trading/execute
 {
   "symbol": "BTC/USDT",
   "side": "BUY",
-  "size": 1.5
+  "size": 1.5,
+  "stop_loss": 64000.0
 }
 ```
 
@@ -332,9 +342,7 @@ POST /api/reports/generate
 ```json
 {
   "portfolio_id": "port_123abc",
-  "report_type": "WEEKLY",
-  "start_date": "2024-05-25T00:00:00Z",
-  "end_date": "2024-06-01T23:59:59Z"
+  "report_type": "WEEKLY"
 }
 ```
 
@@ -610,41 +618,11 @@ ws://localhost:8000/ws/market
 
 ### Portfolio Updates Stream
 ```
-ws://localhost:8000/ws/portfolio
+ws://localhost:8000/api/ws/portfolio
 ```
+The client connects to this endpoint to receive real-time updates for all their portfolios, including trade executions and P&L changes.
 
-**Update Message:**
-```json
-{
-  "type": "PORTFOLIO_UPDATE",
-  "data": {
-    "portfolio_id": "port_123",
-    "total_equity": 102500.0,
-    "available_margin": 51250.0,
-    "unrealized_pnl": 2500.0
-  }
-}
-```
 
-### Risk Alerts Stream
-```
-ws://localhost:8000/ws/alerts
-```
-
-**Alert Message:**
-```json
-{
-  "type": "RISK_ALERT",
-  "data": {
-    "severity": "CRITICAL",
-    "event_type": "KILL_SWITCH_TRIGGERED",
-    "description": "Max drawdown exceeded",
-    "triggered_at": "2024-06-01T11:00:00Z"
-  }
-}
-```
-
----
 
 ## Error Responses
 
@@ -706,16 +684,16 @@ List endpoints support pagination:
 }
 ```
 
----
 
 ## Testing Endpoints
+*Note: For endpoints requiring authentication, you must first log in via the UI to get a valid cookie, or script the login process to get a token.*
 
-### Quick Health Check
+### Health Check
 ```bash
-curl -H "Authorization: Bearer <YOUR_TOKEN>" http://localhost:8000/api/health
+curl http://localhost:8000/api/health
 ```
 
-### Get Mandates
+### Get All Mandates
 ```bash
 curl http://localhost:8000/api/mandates
 ```

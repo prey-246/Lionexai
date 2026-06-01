@@ -123,8 +123,8 @@ REDIS_PORT=6379
 SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
-# Frontend
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+# Frontend (API calls are relative, so this can be the main domain or empty)
+NEXT_PUBLIC_API_URL=https://yourdomain.com
 EOF
 
 # Secure .env file
@@ -186,18 +186,19 @@ server {
     }
 
     # WebSocket support
-    location /ws/ {
-        proxy_pass http://backend;
+    location /api/ws/ {
+        proxy_pass http://backend/api/ws/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 86400; # Keep connection open
     }
 
     # Health check
-    location /health {
+    location /api/health {
         proxy_pass http://backend;
         access_log off;
     }
@@ -260,7 +261,7 @@ curl -I https://yourdomain.com
 # Should return 200 OK
 
 # Test API
-curl -I https://yourdomain.com/health
+curl -I https://yourdomain.com/api/health
 # Should return 200 OK
 
 # Check database
