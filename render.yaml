@@ -17,6 +17,7 @@ services:
   - type: redis
     name: nexa-redis
     plan: free # Or a paid plan for production
+    ipAllowList: [] # Required by Render for security (allows internal access only)
     # The REDIS_URL will be available to other services.
 
   # 3. Backend API (FastAPI)
@@ -45,7 +46,7 @@ services:
     # Production start command using Gunicorn for performance and stability.
     # Ensure gunicorn and uvicorn are in your backend's requirements.txt.
     # This command first applies database migrations and then starts the production server.
-    startCommand: alembic upgrade head && gunicorn -k uvicorn.workers.UvicornWorker -w $WEB_CONCURRENCY -b 0.0.0.0:8000 app.main:app
+    dockerCommand: alembic upgrade head && gunicorn -k uvicorn.workers.UvicornWorker -w $WEB_CONCURRENCY -b 0.0.0.0:8000 app.main:app
 
   # 4. Frontend Web App (Next.js)
   - type: web
@@ -59,7 +60,7 @@ services:
         fromService:
           type: web
           name: nexa-backend
-          property: url
+          property: host
       # URL for server-side API calls (points to the backend's internal service address)
       - key: INTERNAL_API_URL
         fromService:

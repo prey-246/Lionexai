@@ -6,9 +6,16 @@ import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioS
  * In server components, `window` is undefined, so we use the internal Docker network URL.
  * In client components, we use the publicly exposed URL.
  */
+const formatUrl = (url: string | undefined, defaultUrl: string, isInternal: boolean) => {
+  if (!url) return defaultUrl;
+  if (url.startsWith('http')) return url;
+  // Render provides just the host string (e.g. nexa-backend.onrender.com). Add appropriate protocol.
+  return isInternal ? `http://${url}` : `https://${url}`;
+};
+
 const API_BASE_URL = typeof window === 'undefined'
-  ? process.env.INTERNAL_API_URL || "http://localhost:8000"
-  : process.env.NEXT_PUBLIC_API_URL || ""; // Use relative paths for client-side calls
+  ? formatUrl(process.env.INTERNAL_API_URL, "http://localhost:8000", true)
+  : formatUrl(process.env.NEXT_PUBLIC_API_URL, "", false);
 
 // A wrapper for fetch that includes the auth token and handles errors
 const apiFetch = async (url: string, options: RequestInit = {}) => {
