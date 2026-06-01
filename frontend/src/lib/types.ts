@@ -56,6 +56,31 @@ export interface Trade {
   closed_at?: string;
 }
 
+export interface TradeResponse {
+  status: string;
+  trade_id: string;
+  fill_price: number;
+}
+
+export interface ReportGenerate {
+  portfolio_id: string;
+  report_type: 'WEEKLY' | 'MONTHLY' | 'CUSTOM';
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface Report {
+  id: string;
+  portfolio_id: string;
+  report_type: string;
+  period_start: string;
+  period_end: string;
+  performance_metrics: any;
+  risk_metrics: any;
+  trades_summary: any;
+  created_at: string;
+}
+
 export interface RiskEvent {
   id: string;
   portfolio_id: string;

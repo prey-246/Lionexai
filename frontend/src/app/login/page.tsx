@@ -1,24 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authAPI } from '@/lib/api';
 import { PageHeader } from '@/components/ui/PageHeader';
 import Cookies from 'js-cookie';
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+// This new component isolates the use of `useSearchParams`
+function RegistrationSuccessMessage() {
   const searchParams = useSearchParams();
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get('registered') === 'true') {
       setSuccess('Registration successful! Please sign in.');
     }
   }, [searchParams]);
+
+  if (!success) {
+    return null;
+  }
+
+  return (
+    <div className="p-3 bg-status-success/20 border border-status-success text-status-success rounded-md text-sm">
+      {success}
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,7 +45,8 @@ export default function LoginPage() {
       const data = await authAPI.login(formData);
       // Save the token in a cookie that expires in 1 day
       Cookies.set('auth_token', data.access_token, { expires: 1 });
-      router.push('/'); // Redirect to dashboard on success
+      // Use window.location to force a full page reload, ensuring the middleware sees the new cookie.
+      window.location.href = '/';
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -44,7 +59,9 @@ export default function LoginPage() {
       <PageHeader title="Sign In" subtitle="Access your NEXA risk control panel" />
       <div className="max-w-md mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6 bg-background-panel-1 p-8 rounded-lg border border-border-secondary">
-          {success && <div className="p-3 bg-status-success/20 border border-status-success text-status-success rounded-md text-sm">{success}</div>}
+          <Suspense fallback={null}>
+            <RegistrationSuccessMessage />
+          </Suspense>
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-text-muted">
               Email address

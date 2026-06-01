@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/ui/PageHeader";
-import { systemAPI, RiskMandate } from "@/lib/api";
+import { systemAPI } from "@/lib/api";
+import type { RiskMandate } from "@/lib/types";
 import { ShieldCheck, ShieldAlert } from "lucide-react";
 
 function MandateTable({ mandates }: { mandates: RiskMandate[] }) {

@@ -1,126 +1,133 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { reportsAPI, portfolioAPI } from "@/lib/api";
-import { FileText, Download } from "lucide-react";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { useState, useEffect } from 'react';
+import { portfolioAPI, reportsAPI } from '@/lib/api';
+import type { Portfolio, Report, ReportGenerate } from '@/lib/types';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Loader2, FileText, Calendar, BarChart2 } from 'lucide-react';
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState<any[]>([]);
-  const [portfolioId, setPortfolioId] = useState<string>("");
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [selectedPortfolio, setSelectedPortfolio] = useState<string>('');
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generatingReport, setGeneratingReport] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
-    const loadPortfolio = async () => {
+    const fetchPortfolios = async () => {
       try {
-        const portfolios = await portfolioAPI.listPortfolios();
-        if (portfolios.length > 0) {
-          setPortfolioId(portfolios[0].id);
-          const reportsData = await reportsAPI.getReports(portfolios[0].id);
-          setReports(reportsData);
+        const portfolioData = await portfolioAPI.listPortfolios();
+        setPortfolios(portfolioData);
+        if (portfolioData.length > 0) {
+          setSelectedPortfolio(portfolioData[0].id);
         }
-      } catch (err) {
-        console.error("Failed to load reports", err);
+      } catch (error) {
+        console.error("Failed to fetch portfolios", error);
       } finally {
         setLoading(false);
       }
     };
-
-    loadPortfolio();
+    fetchPortfolios();
   }, []);
 
-  const handleGenerateReport = async (type: string) => {
-    setGeneratingReport(true);
+  useEffect(() => {
+    if (!selectedPortfolio) return;
+
+    const fetchReports = async () => {
+      setLoading(true);
+      try {
+        const reportData = await reportsAPI.getReports(selectedPortfolio);
+        setReports(reportData);
+      } catch (error) {
+        console.error("Failed to fetch reports", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, [selectedPortfolio]);
+
+  const handleGenerateReport = async (reportType: 'WEEKLY' | 'MONTHLY') => {
+    if (!selectedPortfolio) return;
+    setGenerating(true);
     try {
-      await reportsAPI.generateReport({
-        portfolio_id: portfolioId,
-        report_type: type
-      });
-      const updated = await reportsAPI.getReports(portfolioId, type);
-      setReports(updated);
-    } catch (err) {
-      console.error("Failed to generate report", err);
+      const payload: ReportGenerate = {
+        portfolio_id: selectedPortfolio,
+        report_type: reportType,
+      };
+      const newReport = await reportsAPI.generateReport(payload);
+      setReports([newReport, ...reports]);
+    } catch (error) {
+      alert(`Failed to generate report: ${error}`);
     } finally {
-      setGeneratingReport(false);
+      setGenerating(false);
     }
   };
 
-  if (loading) return <div className="p-6 text-center text-gray-400">Loading reports...</div>;
-
   return (
-    <main className="min-h-screen p-6 md:p-8 max-w-7xl mx-auto space-y-8">
-      <header className="border-b border-gray-800 pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
-          <FileText className="w-8 h-8 text-[#5EEAD4]" />
-          Performance Reports
-        </h1>
-        <p className="text-gray-400 text-sm mt-1">Weekly & Monthly performance analysis</p>
-      </header>
+    <div className="space-y-8">
+      <PageHeader title="Performance Reports" subtitle="Generate and review historical performance reports" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <GlassCard className="p-6">
-          <button
-            onClick={() => handleGenerateReport("WEEKLY")}
-            disabled={generatingReport}
-            className="w-full bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/30 text-blue-300 py-4 rounded-lg font-medium transition-all disabled:opacity-50"
+      {/* Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+        <div className="md:col-span-1">
+          <label className="block text-xs font-medium text-text-muted mb-1">Select Portfolio</label>
+          <select
+            value={selectedPortfolio}
+            onChange={(e) => setSelectedPortfolio(e.target.value)}
+            className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+            disabled={loading}
           >
-            Generate Weekly Report
+            {portfolios.map(p => <option key={p.id} value={p.id}>{p.id}</option>)}
+          </select>
+        </div>
+        <div className="md:col-span-2 flex gap-4">
+          <button onClick={() => handleGenerateReport('WEEKLY')} disabled={generating || !selectedPortfolio} className="w-full flex items-center justify-center gap-2 bg-primary-blue/10 hover:bg-primary-blue/20 text-primary-blue border border-primary-blue/20 font-semibold py-2 px-4 rounded-md transition-colors disabled:opacity-50">
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
+            Generate Weekly
           </button>
-        </GlassCard>
-        <GlassCard className="p-6">
-          <button
-            onClick={() => handleGenerateReport("MONTHLY")}
-            disabled={generatingReport}
-            className="w-full bg-purple-600/20 hover:bg-purple-600/30 border border-purple-600/30 text-purple-300 py-4 rounded-lg font-medium transition-all disabled:opacity-50"
-          >
-            Generate Monthly Report
+          <button onClick={() => handleGenerateReport('MONTHLY')} disabled={generating || !selectedPortfolio} className="w-full flex items-center justify-center gap-2 bg-primary-teal/10 hover:bg-primary-teal/20 text-primary-teal border border-primary-teal/20 font-semibold py-2 px-4 rounded-md transition-colors disabled:opacity-50">
+            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart2 className="w-4 h-4" />}
+            Generate Monthly
           </button>
-        </GlassCard>
+        </div>
       </div>
 
-      <section className="space-y-4">
-        <div className="border-b border-gray-800 pb-2">
-          <h2 className="text-lg font-medium tracking-tight text-white">Generated Reports</h2>
+      {/* Report List */}
+      <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
+        <div className="p-4 border-b border-border-secondary">
+          <h3 className="text-lg font-semibold text-text-primary">Generated Reports</h3>
         </div>
-        <div className="grid gap-4">
-          {reports.length === 0 ? (
-            <GlassCard className="p-8 text-center text-gray-500">No reports generated yet</GlassCard>
-          ) : (
-            reports.map((report) => (
-              <GlassCard key={report.id} className="p-6 flex justify-between items-start border border-gray-800">
-                <div>
-                  <div className="font-semibold text-white">{report.report_type} Report</div>
-                  <div className="text-sm text-gray-400 mt-1">
-                    {new Date(report.period_start).toLocaleDateString()} - {new Date(report.period_end).toLocaleDateString()}
+        {loading && <div className="p-8 text-center text-text-muted">Loading reports...</div>}
+        {!loading && reports.length === 0 && (
+          <div className="p-8 text-center text-text-muted">
+            <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
+            No reports found for this portfolio.
+          </div>
+        )}
+        {!loading && reports.length > 0 && (
+          <ul className="divide-y divide-border-secondary">
+            {reports.map(report => (
+              <li key={report.id} className="p-4 hover:bg-white/5 transition-colors">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-semibold text-text-primary">{report.report_type} Report</p>
+                    <p className="text-xs text-text-muted font-mono">
+                      {new Date(report.period_start).toLocaleDateString()} - {new Date(report.period_end).toLocaleDateString()}
+                    </p>
                   </div>
-                  {report.performance_metrics && (
-                    <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
-                      <div>
-                        <div className="text-gray-400">Return</div>
-                        <div className={`font-semibold ${report.performance_metrics.total_return_pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {report.performance_metrics.total_return_pct}%
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Win Rate</div>
-                        <div className="font-semibold text-white">{report.performance_metrics.win_rate}%</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Trades</div>
-                        <div className="font-semibold text-white">{report.performance_metrics.winning_trades}/{report.performance_metrics.total_trades}</div>
-                      </div>
-                    </div>
-                  )}
+                  <div className="text-right">
+                    <p className={`font-mono font-semibold text-lg ${report.performance_metrics?.total_pnl >= 0 ? 'text-status-success' : 'text-status-danger'}`}>
+                      {report.performance_metrics?.total_pnl >= 0 ? '+' : ''}${report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'}
+                    </p>
+                    <p className="text-xs text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
+                  </div>
                 </div>
-                <button className="p-2 hover:bg-white/10 rounded transition-all">
-                  <Download className="w-5 h-5 text-gray-400" />
-                </button>
-              </GlassCard>
-            ))
-          )}
-        </div>
-      </section>
-    </main>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }

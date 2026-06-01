@@ -5,6 +5,9 @@ WORKDIR /code
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libpango-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
     libpq-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*

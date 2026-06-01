@@ -13,6 +13,7 @@ export default function PortfoliosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newPortfolioId, setNewPortfolioId] = useState('');
+  const [initialEquity, setInitialEquity] = useState(100000);
   const [selectedMandate, setSelectedMandate] = useState('');
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function PortfoliosPage() {
   const handleCreate = async () => {
     if (!newPortfolioId || !selectedMandate) return;
     try {
-      const newPortfolio = await portfolioAPI.createPortfolio({ id: newPortfolioId, mandate_id: selectedMandate, total_equity: 100000 });
+      const newPortfolio = await portfolioAPI.createPortfolio({ id: newPortfolioId, mandate_id: selectedMandate, total_equity: initialEquity });
       setPortfolios([...portfolios, newPortfolio]);
       setNewPortfolioId('');
     } catch (err: any) {
@@ -69,7 +70,7 @@ export default function PortfoliosPage() {
           <PlusCircle className="w-5 h-5 text-primary-blue" />
           Create New Portfolio
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
             <label className="block text-xs font-medium text-text-muted mb-1">Portfolio ID</label>
             <input 
@@ -89,6 +90,17 @@ export default function PortfoliosPage() {
             >
               {mandates.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">Initial Capital</label>
+            <input 
+              type="number" 
+              value={initialEquity}
+              onChange={(e) => setInitialEquity(Number(e.target.value))}
+              className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+              step={10000}
+              min={1000}
+            />
           </div>
           <button onClick={handleCreate} className="w-full flex items-center justify-center gap-2 bg-primary-blue hover:bg-primary-blue/80 text-white font-semibold py-2 px-4 rounded-md transition-colors">
             Create Portfolio

@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { auditAPI, portfolioAPI, systemAPI, tradeAPI } from "@/lib/api";
+import type { RiskEvent, AuditLog, RiskMandate } from "@/lib/types";
 import { AlertTriangle, ShieldAlert, CheckCircle, Unlock } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 
 export default function RiskMonitoring() {
-  const [riskEvents, setRiskEvents] = useState<any[]>([]);
-  const [rejections, setRejections] = useState<any[]>([]);
-  const [killSwitchEvents, setKillSwitchEvents] = useState<any[]>([]);
-  const [lockedMandates, setLockedMandates] = useState<any[]>([]);
+  const [riskEvents, setRiskEvents] = useState<RiskEvent[]>([]);
+  const [rejections, setRejections] = useState<AuditLog[]>([]);
+  const [killSwitchEvents, setKillSwitchEvents] = useState<AuditLog[]>([]);
+  const [lockedMandates, setLockedMandates] = useState<RiskMandate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function RiskMonitoring() {
         } else {
           setRiskEvents(prev => [{
             id: `ws-${Date.now()}`,
+            portfolio_id: '', // Add missing required property
             event_type: data.event_type,
             severity: data.severity,
             description: data.description,

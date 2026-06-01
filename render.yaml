@@ -1,0 +1,71 @@
+services:
+  # 1. PostgreSQL Database
+  - type: psql
+    name: nexa-db
+    databaseName: nexa_mvp
+    user: nexa_admin
+    plan: free
+
+  # 2. Redis Instance
+  - type: redis
+    name: nexa-redis
+    plan: free
+
+  # 3. FastAPI Backend Service
+  - type: web
+    name: nexa-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    plan: free
+    healthCheck:
+      path: /api/health
+    # Command to run migrations before starting the server
+    startCommand: "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    envVars:
+      # --- Secrets (Create these in Render's "Environment" tab) ---
+      - key: SECRET_KEY
+        generateValue: true # Let Render generate a secure secret key
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: nexa-db
+          property: password
+
+      # --- Linked Environment Variables ---
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: nexa-db
+          property: user
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: nexa-db
+          property: database
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: nexa-db
+          property: host
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: nexa-redis
+          property: connectionString
+
+  # 4. Next.js Frontend Service (Public Facing)
+  - type: web
+    name: nexa-frontend
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    plan: free
+    envVars:
+      # Tell the frontend the public URL of the backend for client-side requests
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: nexa-backend
+          property: url
+    # --- Reverse Proxy Rules ---
+    # Route API and WebSocket traffic to the backend service
+    rewrites:
+      - source: /api/:path*
+        destination: /api/:path*
+      - source: /ws/:path*
+        destination: /ws/:path*

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType, LineStyle } from 'lightweight-charts';
+import { createChart, ColorType, Time } from 'lightweight-charts';
 import type { EquityDataPoint } from '@/lib/types';
 
 interface EquityCurveChartProps {
@@ -40,7 +40,10 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
       lineWidth: 2,
     });
 
-    areaSeries.setData(data);
+    // Cast the numerical timestamp to the strictly expected Time type
+    areaSeries.setData(data.map(point => ({
+      ...point, time: point.time as Time
+    })));
     chart.timeScale().fitContent();
 
     return () => chart.remove();

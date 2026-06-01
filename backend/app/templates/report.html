@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Performance Report</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; }
+        .container { width: 800px; margin: auto; }
+        .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #1a1a1a; }
+        .header p { margin: 5px 0; color: #777; }
+        .section { margin-bottom: 30px; }
+        .section h2 { border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.4em; color: #333; }
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .metric { background-color: #f9f9f9; border: 1px solid #eee; border-radius: 5px; padding: 15px; }
+        .metric-label { font-size: 0.9em; color: #666; margin-bottom: 5px; }
+        .metric-value { font-size: 1.5em; font-weight: bold; }
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+        th { background-color: #f2f2f2; font-size: 0.85em; text-transform: uppercase; }
+        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.8em; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NEXA Performance Report</h1>
+            <p>Portfolio: <strong>{{ report.portfolio_id }}</strong></p>
+            <p>Period: {{ report.period_start.strftime('%Y-%m-%d') }} to {{ report.period_end.strftime('%Y-%m-%d') }}</p>
+        </div>
+
+        <div class="section">
+            <h2>Performance Summary</h2>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-label">Total P&L</div>
+                    <div class="metric-value {% if perf.total_pnl >= 0 %}positive{% else %}negative{% endif %}">
+                        ${{ "%.2f"|format(perf.total_pnl) }}
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Win Rate</div>
+                    <div class="metric-value">{{ "%.2f"|format(perf.win_rate_pct) }}%</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Best Trade</div>
+                    <div class="metric-value positive">${{ "%.2f"|format(perf.best_trade) }}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Worst Trade</div>
+                    <div class="metric-value negative">-${{ "%.2f"|format(perf.worst_trade|abs) }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Trade Summary</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Total Trades</th>
+                        <th>Winning Trades</th>
+                        <th>Losing Trades</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ summary.total_trades }}</td>
+                        <td>{{ perf.winning_trades }}</td>
+                        <td>{{ perf.losing_trades }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            Generated on {{ now.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+        </div>
+    </div>
+</body>
+</html>
+```
+
+#### Step 3: Create the PDF Download Endpoint
+
+Now, add a new endpoint to your `reports.py` router that finds a report, renders the HTML template, and serves it as a PDF.
+
+```diff
+--- a/d:/Ewealthtech/Lionexai/backend/app/api/routes/reports.py
++++ b/d:/Ewealthtech/Lionexai/backend/app/api/routes/reports.py
+@@ -1,12 +1,15 @@
+-from fastapi import APIRouter, Depends, HTTPException
++from fastapi import APIRouter, Depends, HTTPException, Request
+ from sqlalchemy.orm import Session
+ from sqlalchemy import func
+ from typing import List
+ from datetime import datetime, timedelta
+ import uuid
++from fastapi.responses import HTMLResponse
++from fastapi.templating import Jinja2Templates
++from weasyprint import HTML
+ 
+ from app.core.database import get_db
+ from app.models import schemas, domain
+@@ -16,6 +19,8 @@
+ 
+ router = APIRouter()
+ 
++templates = Jinja2Templates(directory="app/templates")
++
+ @router.post("/generate", response_model=schemas.Report)
+ def generate_report(
+     report_in: schemas.ReportGenerate,
+@@ -112,3 +117,31 @@
+ 
+     reports = query.order_by(domain.Report.created_at.desc()).limit(limit).all()
+     return reports
++
++@router.get("/{report_id}/download")
++def download_report(
+     report_id: str,
++    request: Request,
+     db: Session = Depends(get_db),
+     current_user: domain.User = Depends(get_current_user)
++):
++    """Generate and stream a PDF report."""
++    report = db.query(domain.Report).filter(domain.Report.id == report_id).first()
++    if not report or report.portfolio.user_id != current_user.id:
++        raise HTTPException(status_code=404, detail="Report not found")
++
++    template_context = {
++        "request": request,
++        "report": report,
++        "perf": report.performance_metrics,
++        "summary": report.trades_summary,
++        "now": datetime.utcnow()
++    }
++    
++    html_string = templates.get_template("report.html").render(template_context)
++    
++    pdf_bytes = HTML(string=html_string).write_pdf()
++
++    return HTMLResponse(content=pdf_bytes, media_type="application/pdf", headers={
++        "Content-Disposition": f'attachment; filename="report_{report.id}.pdf"'
++    })
+
+```
+
+#### Step 4: Add a Download Button to the Frontend
+
+Finally, update your `reports/page.tsx` to include a download button for each report. We'll use a simple `<a>` tag to trigger the browser's native file download.
+
+```diff
+--- a/d:/Ewealthtech/Lionexai/frontend/src/app/reports/page.tsx
++++ b/d:/Ewealthtech/Lionexai/frontend/src/app/reports/page.tsx
+@@ -4,7 +4,7 @@
+ import { portfolioAPI, reportsAPI } from '@/lib/api';
+ import type { Portfolio, Report, ReportGenerate } from '@/lib/types';
+ import { PageHeader } from '@/components/ui/PageHeader';
+-import { Loader2, FileText, Calendar, BarChart2 } from 'lucide-react';
++import { Loader2, FileText, Calendar, BarChart2, Download } from 'lucide-react';
+ 
+ export default function ReportsPage() {
+   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+@@ -102,18 +102,24 @@
+         {!loading && reports.length > 0 && (
+           <ul className="divide-y divide-border-secondary">
+             {reports.map(report => (
+-              <li key={report.id} className="p-4 hover:bg-white/5 transition-colors">
++              <li key={report.id} className="p-4 hover:bg-white/5 transition-colors group">
+                 <div className="flex justify-between items-center">
+                   <div>
+                     <p className="font-semibold text-text-primary">{report.report_type} Report</p>
+@@ -124,12 +130,17 @@
+                       {new Date(report.period_start).toLocaleDateString()} - {new Date(report.period_end).toLocaleDateString()}
+                     </p>
+                   </div>
+-                  <div className="text-right">
+-                    <p className={`font-mono font-semibold text-lg ${report.performance_metrics?.total_pnl >= 0 ? 'text-status-success' : 'text-status-danger'}`}>
+-                      {report.performance_metrics?.total_pnl >= 0 ? '+' : ''}${report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'}
+-                    </p>
+-                    <p className="text-xs text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
++                  <div className="flex items-center gap-6">
++                    <div className="text-right">
++                      <p className={`font-mono font-semibold text-lg ${report.performance_metrics?.total_pnl >= 0 ? 'text-status-success' : 'text-status-danger'}`}>
++                        {report.performance_metrics?.total_pnl >= 0 ? '+' : ''}${report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'}
++                      </p>
++                      <p className="text-xs text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
++                    </div>
++                    <a href={`${process.env.NEXT_PUBLIC_API_URL}/api/reports/${report.id}/download`} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-md hover:bg-white/10">
++                      <Download className="w-5 h-5 text-text-muted" />
++                    </a>
+                   </div>
+                 </div>
+               </li>
+
+```
+
+With these changes in place, you can now generate reports and, by hovering over a report item, a download icon will appear, allowing you to export a clean, professional PDF of the performance summary.
+
+<!--
+[PROMPT_SUGGESTION]Let's build the UI for creating and editing Risk Mandates.[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]How can we add an equity chart to the PDF reports?[/PROMPT_SUGGESTION]
+-->

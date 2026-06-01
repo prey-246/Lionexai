@@ -2,13 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
-import uuid
 from datetime import datetime, timedelta
+import uuid
 
 from app.core.database import get_db
-from app.services import audit_service
+from app.models import schemas, domain
 from app.api.deps import get_current_user
-from app.models import domain, schemas
 
 router = APIRouter()
 
@@ -18,9 +17,7 @@ def generate_report(
     db: Session = Depends(get_db),
     current_user: domain.User = Depends(get_current_user)
 ):
-    """
-    Generate a performance report for a portfolio.
-    """
+    """Generate a new performance report for a portfolio."""
     portfolio = db.query(domain.Portfolio).filter(
         domain.Portfolio.id == report_in.portfolio_id,
         domain.Portfolio.user_id == current_user.id
@@ -30,71 +27,79 @@ def generate_report(
 
     # Determine date range
     end_date = report_in.end_date or datetime.utcnow()
-    if report_in.report_type == "WEEKLY":
-        start_date = report_in.start_date or (end_date - timedelta(days=7))
-    elif report_in.report_type == "MONTHLY":
-        start_date = report_in.start_date or (end_date - timedelta(days=30))
+    if report_in.report_type == 'WEEKLY':
+        start_date = end_date - timedelta(days=7)
+    elif report_in.report_type == 'MONTHLY':
+        start_date = end_date - timedelta(days=30)
+    elif report_in.report_type == 'CUSTOM' and report_in.start_date:
+        start_date = report_in.start_date
     else:
-        raise HTTPException(status_code=400, detail="Invalid report type")
+        # Default to last 30 days if custom start is not provided
+        start_date = end_date - timedelta(days=30)
 
-    # Query trades within the date range
+    # Fetch trades within the date range
     trades = db.query(domain.Trade).filter(
-        domain.Trade.portfolio_id == portfolio.id,
+        domain.Trade.portfolio_id == report_in.portfolio_id,
         domain.Trade.status == "CLOSED",
         domain.Trade.closed_at >= start_date,
         domain.Trade.closed_at <= end_date
     ).all()
-    
-    total_trades = len(trades)
-    winning_trades = len([t for t in trades if t.pnl > 0])
-    total_pnl = sum(t.pnl for t in trades)
-    
-    performance_metrics = {
-        "total_return_pct": round((total_pnl / portfolio.total_equity) * 100, 2) if portfolio.total_equity > 0 else 0,
-        "win_rate": round((winning_trades / total_trades) * 100, 2) if total_trades > 0 else 0,
-        "winning_trades": winning_trades,
-        "total_trades": total_trades,
-    }
-    risk_metrics = {"max_drawdown_pct": 0.0} # Placeholder
-    trades_summary = {"total_trades": total_trades}
 
+    # --- Calculate Metrics (Simplified) ---
+    total_trades = len(trades)
+    if total_trades == 0:
+        performance_metrics = {"total_pnl": 0, "win_rate_pct": 0, "winning_trades": 0, "losing_trades": 0}
+    else:
+        pnls = [t.pnl for t in trades if t.pnl is not None]
+        winning_trades = len([p for p in pnls if p > 0])
+        losing_trades = len([p for p in pnls if p < 0])
+        performance_metrics = {
+            "total_pnl": round(sum(pnls), 2),
+            "win_rate_pct": round((winning_trades / total_trades) * 100, 2),
+            "winning_trades": winning_trades,
+            "losing_trades": losing_trades,
+            "best_trade": round(max(pnls), 2) if pnls else 0,
+            "worst_trade": round(min(pnls), 2) if pnls else 0,
+        }
+
+    # Create and save the report
     new_report = domain.Report(
         id=f"report_{uuid.uuid4().hex[:12]}",
-        portfolio_id=portfolio.id,
+        portfolio_id=report_in.portfolio_id,
         report_type=report_in.report_type,
         period_start=start_date,
         period_end=end_date,
         performance_metrics=performance_metrics,
-        risk_metrics=risk_metrics,
-        trades_summary=trades_summary,
+        risk_metrics={"max_drawdown_pct": portfolio.current_drawdown_pct}, # Simplified
+        trades_summary={"total_trades": total_trades}
     )
     db.add(new_report)
     db.commit()
     db.refresh(new_report)
 
-    audit_service.create_audit_log(
-        db,
-        action_type="REPORT_GENERATED",
-        description=f"User '{current_user.email}' generated a {report_in.report_type} report for portfolio '{report_in.portfolio_id}'.",
-        metadata={
-            "user_id": current_user.id,
-            "user_email": current_user.email,
-            "portfolio_id": report_in.portfolio_id,
-            "report_id": new_report.id,
-            "report_type": report_in.report_type
-        }
-    )
-    
     return new_report
 
 @router.get("/{portfolio_id}", response_model=List[schemas.Report])
 def get_reports(
     portfolio_id: str,
+    report_type: str | None = None,
+    limit: int = 10,
     db: Session = Depends(get_db),
     current_user: domain.User = Depends(get_current_user)
 ):
-    """
-    Retrieve generated reports for a portfolio.
-    """
-    reports = db.query(domain.Report).filter(domain.Report.portfolio_id == portfolio_id).order_by(domain.Report.created_at.desc()).all()
+    """List generated reports for a portfolio."""
+    # Verify user has access to the portfolio
+    portfolio = db.query(domain.Portfolio).filter(
+        domain.Portfolio.id == portfolio_id,
+        domain.Portfolio.user_id == current_user.id
+    ).first()
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+
+    query = db.query(domain.Report).filter(domain.Report.portfolio_id == portfolio_id)
+
+    if report_type:
+        query = query.filter(domain.Report.report_type == report_type)
+
+    reports = query.order_by(domain.Report.created_at.desc()).limit(limit).all()
     return reports

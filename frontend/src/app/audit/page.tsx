@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PaginationControls } from "@/components/ui/PaginationControls";
 import { FilterControls } from "@/components/ui/FilterControls";
-import { auditAPI, AuditLog } from "@/lib/api";
+import { auditAPI } from "@/lib/api";
+import type { AuditLog } from "@/lib/types";
 import { AlertTriangle, ZapOff, Check, FileText, ShieldBan } from "lucide-react";
 
 function formatTimestamp(isoString: string) {
@@ -93,7 +95,9 @@ export default async function AuditTrailPage({
       </div>
       {/* Ensure we pass an array to AuditTable, even if the response is malformed */}
       <AuditTable logs={response.logs || []} />
-      <PaginationControls totalItems={totalLogs} perPage={perPage} />
+      <Suspense fallback={<div className="h-12"></div>}>
+        <PaginationControls totalItems={totalLogs} perPage={perPage} />
+      </Suspense>
     </div>
   );
 }
