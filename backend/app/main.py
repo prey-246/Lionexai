@@ -1,5 +1,6 @@
 import asyncio
 import random
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,6 +10,8 @@ from app.api.routes import auth, system, audit, portfolios, reports, trading, ba
 from app.initial_data import seed_db
 from app.core.sockets import manager
 from app.services.market_data import MarketDataService
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
@@ -20,8 +23,8 @@ async def market_data_streamer():
     try:
         for sym in prices:
             prices[sym] = mds.fetch_live_price(sym)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Could not fetch initial live prices, using defaults. Error: {e}")
 
     while True:
         await asyncio.sleep(1) # Broadcast every 1 second
@@ -37,14 +40,22 @@ async def market_data_streamer():
 
 @app.on_event("startup")
 def on_startup():
-    db = SessionLocal()
-    seed_db(db)
-    db.close()
+    # Seeding the database on every application startup is not recommended for production.
+    # This can lead to errors or duplicate data on service restarts.
+    # This should be a one-time setup step or a separate "Job" in your deployment platform (see render.yaml).
+    # For local development, you might run this once.
+    # db = SessionLocal()
+    # seed_db(db)
+    # db.close()
     # Start the live market data background task
     asyncio.create_task(market_data_streamer())
 
-# In a real application, you would want to restrict this to your frontend's domain
-origins = ["*"]
+# IMPORTANT: For production, restrict this to your frontend's domain.
+# Using a wildcard ("*") is a security risk.
+origins = [
+    "http://localhost:3000", # For local development
+    # "https://your-frontend-app.onrender.com" # Add your production frontend URL here from Render
+]
 
 app.add_middleware(
     CORSMiddleware,

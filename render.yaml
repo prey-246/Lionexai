@@ -1,56 +1,84 @@
-databases:
-  # 1. PostgreSQL Database
-  - name: nexa-db
-    databaseName: nexa_mvp
-    user: nexa_admin
-    plan: free
+# render.yaml
+# This file configures your application for deployment on Render.
+# Place it in the root of your repository.
+# See https://render.com/docs/blueprint-spec for more details.
 
 services:
-  # 2. Redis Instance
+  # 1. PostgreSQL Database
+  - type: psql
+    name: nexa-db
+    databaseName: nexa_mvp
+    plan: free # Or a paid plan for production
+    # Render will automatically set the POSTGRES_USER and POSTGRES_PASSWORD
+    # from your environment group or generate new ones.
+    # The DATABASE_URL will be available to other services.
+
+  # 2. Redis Cache
   - type: redis
     name: nexa-redis
-    plan: free
-    ipAllowList: [] # Allow all internal Render services
+    plan: free # Or a paid plan for production
+    # The REDIS_URL will be available to other services.
 
-  # 3. FastAPI Backend Service (Internal)
+  # 3. Backend API (FastAPI)
   - type: web
     name: nexa-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    plan: free
-    healthCheckPath: /api/health
+    healthCheck:
+      path: /api/health
     envVars:
-      - key: SECRET_KEY
-        generateValue: true
-      - key: POSTGRES_PASSWORD
-        fromDatabase:
+      - key: DATABASE_URL
+        fromService:
+          type: psql
           name: nexa-db
-          property: password
-      - key: POSTGRES_USER
-        fromDatabase:
-          name: nexa-db
-          property: user
-      - key: POSTGRES_DB
-        fromDatabase:
-          name: nexa-db
-          property: database
-      - key: POSTGRES_HOST
-        fromDatabase:
-          name: nexa-db
-          property: host
       - key: REDIS_URL
         fromService:
           type: redis
           name: nexa-redis
-          property: connectionString
+      - key: SECRET_KEY # IMPORTANT: Set this as a secret in your Render Environment Group
+        sync: false
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
+      # This tells Gunicorn how many worker processes to run.
+      - key: WEB_CONCURRENCY
+        value: 4 # Adjust based on your plan's CPU/memory
+    # Production start command using Gunicorn for performance and stability.
+    # Ensure gunicorn and uvicorn are in your backend's requirements.txt.
+    # This command first applies database migrations and then starts the production server.
+    startCommand: alembic upgrade head && gunicorn -k uvicorn.workers.UvicornWorker -w $WEB_CONCURRENCY -b 0.0.0.0:8000 app.main:app
 
-  # 4. Next.js Frontend Service (Public Facing with Reverse Proxy)
+  # 4. Frontend Web App (Next.js)
   - type: web
     name: nexa-frontend
     runtime: docker
     dockerfilePath: ./frontend/Dockerfile
-    plan: free
+    healthCheck:
+      path: /
     envVars:
-      # For Server-Side Rendering, the frontend container talks to the backend container directly.
+      # URL for client-side API calls (points to the backend's public URL)
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: nexa-backend
+          property: url
+      # URL for server-side API calls (points to the backend's internal service address)
       - key: INTERNAL_API_URL
-        value: http://nexa-backend:8000
+        fromService:
+          type: web
+          name: nexa-backend
+          property: host # Use 'host' for internal, 'url' for public
+    # The default start command for a Next.js app is usually `npm start`.
+    # Ensure your frontend/package.json has a "start": "next start" script.
+
+  # 5. (Optional but Recommended) Database Seeding Job
+  - type: job
+    name: nexa-db-seed
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    # This job runs a script to seed the database. It only runs when you trigger it from the Render dashboard.
+    startCommand: python -c "from app.initial_data import seed_db; from app.core.database import SessionLocal; db = SessionLocal(); seed_db(db); db.close(); print('Database seeding complete.')"
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: psql
+          name: nexa-db
