@@ -1,11 +1,12 @@
-services:
-  # 1. PostgreSQL Database
-  - type: psql
+databases:
+  # 1. PostgreSQL Database (defined as a top-level database service)
+  - name: nexa-db
     name: nexa-db
     databaseName: nexa_mvp
     user: nexa_admin
     plan: free
 
+services:
   # 2. Redis Instance
   - type: redis
     name: nexa-redis
