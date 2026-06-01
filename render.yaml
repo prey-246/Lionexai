@@ -17,8 +17,7 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     plan: free
-    healthCheck:
-      path: /api/health
+    healthCheckPath: /api/health
     # Command to run migrations before starting the server
     startCommand: "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     envVars:
@@ -65,7 +64,7 @@ services:
     # --- Reverse Proxy Rules ---
     # Route API and WebSocket traffic to the backend service
     rewrites:
-      - source: /api/:path*
-        destination: /api/:path*
-      - source: /ws/:path*
-        destination: /ws/:path*
+      - source: /api/:path* # Proxy all API calls to the backend
+        destination: http://nexa-backend:8000/api/:path*
+      - source: /ws/:path* # Proxy all WebSocket connections to the backend
+        destination: http://nexa-backend:8000/ws/:path*
