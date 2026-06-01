@@ -9,7 +9,6 @@ export default function RiskMonitoring() {
   const [riskEvents, setRiskEvents] = useState<any[]>([]);
   const [rejections, setRejections] = useState<any[]>([]);
   const [killSwitchEvents, setKillSwitchEvents] = useState<any[]>([]);
-  const [portfolioId, setPortfolioId] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +17,6 @@ export default function RiskMonitoring() {
         setLoading(true);
         const portfolios = await portfolioAPI.listPortfolios();
         if (portfolios.length > 0) {
-          setPortfolioId(portfolios[0].id);
           const events = await portfolioAPI.getRiskEvents(portfolios[0].id);
           setRiskEvents(events);
         }

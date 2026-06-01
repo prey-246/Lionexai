@@ -14,32 +14,25 @@ class TradeRequest(BaseModel):
     symbol: str
     side: str
     size: float
+    stop_loss: float | None = None
 
-@router.get("/portfolio", summary="Get active simulator portfolio")
-def get_active_portfolio(db: Session = Depends(get_db)):
-    portfolio = db.query(Portfolio).first()
+@router.post("/{portfolio_id}/execute", summary="Process simulated order via Risk Engine")
+def execute_trade(portfolio_id: str, req: TradeRequest, db: Session = Depends(get_db)):
+    portfolio = db.query(Portfolio).filter(Portfolio.id == portfolio_id).first()
     if not portfolio:
-        raise HTTPException(status_code=404, detail="System initialization pending")
-    return portfolio
-
-@router.post("/execute", summary="Process simulated order via Risk Engine")
-def execute_trade(req: TradeRequest, db: Session = Depends(get_db)):
-    portfolio = db.query(Portfolio).first()
+        raise HTTPException(status_code=404, detail=f"Portfolio with id {portfolio_id} not found.")
     mandate = portfolio.mandate
     risk = RiskEngine(db)
 
     # 1. Fetch live execution price
-    try:
-        ticker = market.exchange.fetch_ticker(req.symbol)
-        current_price = float(ticker['last'])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Market feed offline: {str(e)}")
-
+    current_price = market.fetch_live_price(req.symbol)
     order_context = {
         "symbol": req.symbol,
         "side": req.side,
         "size": req.size,
-        "current_price": current_price
+        "current_price": current_price,
+        "stop_loss": req.stop_loss,
+        "portfolio_id": portfolio_id
     }
 
     # 2. Institutional Risk Gatekeeper

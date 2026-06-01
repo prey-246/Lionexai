@@ -1,28 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { MetricDisplay } from '@/components/ui/MetricDisplay';
-import { tradeAPI } from '@/lib/api';
-import { Target, Loader2, ShieldAlert, CheckCircle } from 'lucide-react';
+import { portfolioAPI, tradeAPI } from '@/lib/api';
+import { Loader2, ShieldAlert, CheckCircle } from 'lucide-react';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function ExecutionTerminal() {
   const [portfolio, setPortfolio] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{type: 'success'|'error', msg: string} | null>(null);
 
-  // FIX 1: Allow size to be a string to handle the empty state when backspacing
   const [form, setForm] = useState({
     symbol: 'BTC/USDT',
     side: 'BUY',
-    size: 1.5 as number | string 
+    size: '' as number | string,
+    stop_loss: '' as number | string
   });
 
   const fetchPortfolio = async () => {
     try {
-      const data = await tradeAPI.getPortfolio();
+      // For the MVP, we'll hardcode the sim portfolio ID. A real app would use a selector.
+      const data = await portfolioAPI.getPortfolio("port_sim_01");
       setPortfolio(data);
-    } catch (err) {}
+    } catch {
+      setFeedback({ type: 'error', msg: 'Failed to fetch portfolio data.' });
+    }
   };
 
   useEffect(() => {
@@ -33,18 +35,25 @@ export default function ExecutionTerminal() {
     setLoading(true);
     setFeedback(null);
     try {
-      // Cast the string back to a strict number for the Python backend
+      if (!portfolio) throw new Error("Portfolio not loaded.");
+
       const payload = {
         ...form,
-        size: Number(form.size) || 0
+        size: Number(form.size) || 0,
+        stop_loss: form.stop_loss ? Number(form.stop_loss) : undefined
       };
 
       if (payload.size <= 0) {
         throw new Error("Order size must be greater than 0");
       }
 
-      const res = await tradeAPI.executeTrade(payload);
-      setFeedback({ type: 'success', msg: `Order FILLED at $${res.fill_price.toLocaleString()}` });
+      // The backend risk engine requires a stop loss for every trade.
+      if (!payload.stop_loss) {
+        throw new Error("A Stop Loss price is required for all trades.");
+      }
+
+      const res = await tradeAPI.executeTrade(portfolio.id, payload);
+      setFeedback({ type: 'success', msg: `Order filled at $${res.fill_price.toLocaleString()}` });
       await fetchPortfolio(); // Refresh balances
     } catch (err: any) {
       setFeedback({ type: 'error', msg: `RISK REJECTION: ${err.message}` });
@@ -54,84 +63,78 @@ export default function ExecutionTerminal() {
   };
 
   return (
-    <main className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      <header className="mb-8">
-        <h1 className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
-          <Target className="w-8 h-8 text-[#5EEAD4]" /> 
-          Live Execution & Risk Gatekeeper
-        </h1>
-        <p className="text-gray-400 mt-2 text-sm">Simulated Paper Orders passing through Mandate Validation</p>
-      </header>
+    <div className="space-y-8">
+      <PageHeader
+        title="Execution Terminal"
+        subtitle="Simulated paper orders passing through the NEXA Risk Gatekeeper"
+      />
 
-      {portfolio && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.04] mb-8">
-          <div className="bg-[#0B1020]">
-            <MetricDisplay label="Total Equity" value={`$${portfolio.total_equity.toLocaleString()}`} />
-          </div>
-          <div className="bg-[#0B1020]">
-            <MetricDisplay label="Available Margin" value={`$${portfolio.available_margin.toLocaleString()}`} />
-          </div>
-          <div className="bg-[#0B1020]">
-            <MetricDisplay label="Active Mandate" value={portfolio.mandate_id} />
-          </div>
-          <div className="bg-[#0B1020]">
-            <MetricDisplay label="Max Drawdown Limit" value="10.0%" trend="down" />
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GlassCard className="p-6">
-          <h2 className="font-medium text-white tracking-wide border-b border-white/[0.04] pb-4 mb-6">Order Entry</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2 bg-background-panel-1 border border-border-secondary rounded p-6">
+          <h2 className="font-mono text-base font-bold text-text-primary border-b border-border-primary pb-3 mb-6">ORDER ENTRY</h2>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Asset</label>
+                <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Asset</label>
                 <select 
-                  className="w-full bg-[#0B1020] border border-white/[0.1] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4]" 
+                  className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold" 
                   value={form.symbol} 
                   onChange={(e) => setForm({...form, symbol: e.target.value})}
                 >
-                  {/* FIX 2: Explicitly style the <option> tags so they don't default to a white OS background */}
-                  <option value="BTC/USDT" className="bg-[#0B1020] text-white">BTC/USDT</option>
-                  <option value="ETH/USDT" className="bg-[#0B1020] text-white">ETH/USDT</option>
-                  <option value="DOGE/USDT" className="bg-[#0B1020] text-white">DOGE/USDT (Unapproved)</option>
+                  <option value="BTC/USDT" className="bg-background-panel-2 text-text-primary">BTC/USDT</option>
+                  <option value="ETH/USDT" className="bg-background-panel-2 text-text-primary">ETH/USDT</option>
+                  <option value="DOGE/USDT" className="bg-background-panel-2 text-text-primary">DOGE/USDT (Unapproved)</option>
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Side</label>
+                <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Side</label>
                 <select 
-                  className="w-full bg-[#0B1020] border border-white/[0.1] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4]"
+                  className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
                   value={form.side} 
                   onChange={(e) => setForm({...form, side: e.target.value})}
                 >
-                  <option value="BUY" className="bg-[#0B1020] text-white">BUY</option>
-                  <option value="SELL" className="bg-[#0B1020] text-white">SELL</option>
+                  <option value="BUY" className="bg-background-panel-2 text-text-primary">BUY</option>
+                  <option value="SELL" className="bg-background-panel-2 text-text-primary">SELL</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Quantity</label>
+              <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Quantity</label>
               <input 
                 type="number" 
                 step="0.1" 
-                className="w-full bg-[#0B1020] border border-white/[0.1] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4]"
+                placeholder="0.00"
+                className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
                 value={form.size} 
                 onChange={(e) => {
                   const val = e.target.value;
-                  // Handle the empty string cleanly without triggering NaN
                   setForm({...form, size: val === '' ? '' : parseFloat(val)});
                 }} 
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Stop Loss Price</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="e.g. 64000.00"
+                className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
+                value={form.stop_loss}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm({...form, stop_loss: val === '' ? '' : parseFloat(val)});
+                }}
+              />
+            </div>
+
             <button 
               onClick={handleExecute}
-              disabled={loading}
-              className={`w-full mt-4 py-3 rounded-lg text-sm font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 ${
-                form.side === 'BUY' ? 'bg-[#10B981]/20 text-[#10B981] hover:bg-[#10B981]/30 border border-[#10B981]/30' 
-                : 'bg-[#EF4444]/20 text-[#EF4444] hover:bg-[#EF4444]/30 border border-[#EF4444]/30'
+              disabled={loading || !form.size}
+              className={`w-full mt-2 py-3 rounded text-sm font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                form.side === 'BUY' ? 'bg-primary-teal/20 text-primary-teal hover:bg-primary-teal/30 border border-primary-teal/30' 
+                : 'bg-danger/20 text-danger hover:bg-danger/30 border border-danger/30'
               }`}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -140,15 +143,31 @@ export default function ExecutionTerminal() {
           </div>
 
           {feedback && (
-            <div className={`mt-6 p-4 rounded-lg flex items-start gap-3 border ${
-              feedback.type === 'error' ? 'bg-[#EF4444]/10 border-[#EF4444]/20 text-[#EF4444]' : 'bg-[#10B981]/10 border-[#10B981]/20 text-[#10B981]'
+            <div className={`mt-6 p-4 rounded flex items-start gap-3 border ${
+              feedback.type === 'error' ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-primary-teal/10 border-primary-teal/20 text-primary-teal'
             }`}>
               {feedback.type === 'error' ? <ShieldAlert className="w-5 h-5 shrink-0" /> : <CheckCircle className="w-5 h-5 shrink-0" />}
-              <span className="text-sm font-medium leading-relaxed">{feedback.msg}</span>
+              <span className="text-sm font-mono leading-relaxed">{feedback.msg}</span>
             </div>
           )}
-        </GlassCard>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="font-mono text-base font-bold text-text-primary">PORTFOLIO STATUS</h2>
+          <div className="bg-background-panel-1 border border-border-secondary rounded p-4 space-y-1">
+            <p className="text-xs font-mono text-text-muted">TOTAL EQUITY</p>
+            <p className="text-2xl font-serif text-primary-gold font-semibold">${portfolio ? portfolio.total_equity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
+          </div>
+          <div className="bg-background-panel-1 border border-border-secondary rounded p-4 space-y-1">
+            <p className="text-xs font-mono text-text-muted">AVAILABLE MARGIN</p>
+            <p className="text-2xl font-serif text-text-primary font-semibold">${portfolio ? portfolio.available_margin.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
+          </div>
+          <div className="bg-background-panel-1 border border-border-secondary rounded p-4 space-y-1">
+            <p className="text-xs font-mono text-text-muted">ACTIVE MANDATE</p>
+            <p className="text-lg font-mono text-primary-blue font-bold">{portfolio ? portfolio.mandate_id : 'N/A'}</p>
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

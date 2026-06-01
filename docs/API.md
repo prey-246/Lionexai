@@ -712,7 +712,7 @@ List endpoints support pagination:
 
 ### Quick Health Check
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8000/api/health
 ```
 
 ### Get Mandates

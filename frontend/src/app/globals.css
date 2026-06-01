@@ -2,47 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 230 55% 5%;
-    --foreground: 0 0% 100%;
-    --card: 225 48% 9%;
-    --border: 225 40% 15%;
-    --muted: 225 30% 12%;
-    --primary: 171 77% 64%;
-    --accent: 187 92% 54%;
-    --success: 160 84% 39%;
-    --warning: 38 92% 50%;
-    --danger: 0 84% 60%;
-  }
+:root {
+  /* Backgrounds */
+  --background-root: #04060D;
+  --background-panel-1: #070B18;
+  --background-panel-2: #0A0F1F;
+
+  /* Accents */
+  --primary-gold: #D89B2B;
+  --primary-gold-light: #F0B23D;
+  --primary-teal: #00D4AA;
+  --primary-teal-light: #18E2B8;
+  --primary-blue: #4A8DFF;
+  --danger: #FF3E66;
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #C8D2E3;
+  --text-muted: #7C8BA5;
+
+  /* Borders */
+  --border-primary: #1B2A45;
+  --border-secondary: rgba(255, 255, 255, 0.08);
+
+  /* Fonts */
+  --font-serif: var(--font-cormorant-garamond);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-sans: var(--font-inter);
+
+  /* Radius */
+  --radius: 6px;
 }
 
 body {
-  background-color: #050816;
-  color: #ffffff;
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
+  color: var(--text-secondary);
+  background: var(--background-root);
+  font-family: var(--font-sans);
 }
 
-/* Custom Glassmorphism Theme Utilities */
-.glass-panel {
-  background: rgba(11, 16, 32, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.75rem;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
-.metric-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #9ca3af;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-
-.metric-value {
-  font-size: 2.25rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  color: #ffffff;
+::-webkit-scrollbar-track {
+  background: var(--background-panel-2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

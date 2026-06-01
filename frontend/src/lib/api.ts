@@ -1,4 +1,49 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import Cookies from 'js-cookie';
+
+/**
+ * Differentiates between server-side and client-side API calls.
+ * In server components, `window` is undefined, so we use the internal Docker network URL.
+ * In client components, we use the publicly exposed URL.
+ */
+const API_BASE_URL = typeof window === 'undefined'
+  ? process.env.INTERNAL_API_URL || "http://localhost:8000"
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// A wrapper for fetch that includes the auth token and handles errors
+const apiFetch = async (url: string, options: RequestInit = {}) => {
+  const headers: HeadersInit = { ...options.headers };
+
+  // On the client-side, we can access cookies to get the auth token
+  if (typeof window !== 'undefined') {
+    const token = Cookies.get('auth_token');
+    if (token) {
+      (headers as { [key: string]: string })['Authorization'] = `Bearer ${token}`;
+    }
+  }
+  
+  // For POST/PUT with a JSON body, ensure Content-Type is set
+  if (options.body && typeof options.body === 'string') {
+      if (!('Content-Type' in headers)) {
+          (headers as { [key: string]: string })['Content-Type'] = 'application/json';
+      }
+  }
+
+  const res = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (!res.ok) {
+    // Try to parse error detail from JSON response, otherwise use status text
+    const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(errorData.detail || "An API error occurred");
+  }
+
+  // Handle responses that might not have a body (e.g., 204 No Content)
+  if (res.status === 204) return;
+
+  return res.json();
+};
 
 export interface RiskMandate {
   id: string;
@@ -56,23 +101,26 @@ export interface AuditLog {
   metadata_json: any;
 }
 
+export interface PaginatedAuditLogs {
+  total: number;
+  limit: number;
+  offset: number;
+  logs: AuditLog[];
+}
+
 export const systemAPI = {
   getHealth: async (): Promise<EngineHealth> => {
-    const res = await fetch(`${API_BASE_URL}/health`, { next: { revalidate: 0 } });
+    const res = await fetch(`${API_BASE_URL}/api/health`, { next: { revalidate: 0 } });
     if (!res.ok) throw new Error("Risk Engine Offline");
     return res.json();
   },
 
-  getMandates: async (): Promise<RiskMandate[]> => {
-    const res = await fetch(`${API_BASE_URL}/api/mandates`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch risk parameters");
-    return res.json();
+  getMandates: (): Promise<RiskMandate[]> => {
+    return apiFetch(`${API_BASE_URL}/api/mandates`, { cache: 'no-store' });
   },
 
-  getMandate: async (id: string): Promise<RiskMandate> => {
-    const res = await fetch(`${API_BASE_URL}/api/mandates/${id}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch mandate");
-    return res.json();
+  getMandate: (id: string): Promise<RiskMandate> => {
+    return apiFetch(`${API_BASE_URL}/api/mandates/${id}`, { cache: 'no-store' });
   }
 };
 
@@ -98,155 +146,137 @@ export interface BacktestResponse {
 }
 
 export const quantAPI = {
-  runBacktest: async (payload: BacktestRequest): Promise<BacktestResponse> => {
-    const res = await fetch(`${API_BASE_URL}/api/backtest/run`, {
+  runBacktest: (payload: BacktestRequest): Promise<BacktestResponse> => {
+    return apiFetch(`${API_BASE_URL}/api/backtest/run`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || "Backtest engine failure");
-    }
-    return res.json();
   }
 };
 
 export const portfolioAPI = {
-  listPortfolios: async (): Promise<Portfolio[]> => {
-    const res = await fetch(`${API_BASE_URL}/api/portfolios`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch portfolios");
-    return res.json();
+  listPortfolios: (): Promise<Portfolio[]> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios`, { cache: 'no-store' });
   },
 
-  getPortfolio: async (id: string): Promise<Portfolio> => {
-    const res = await fetch(`${API_BASE_URL}/api/portfolios/${id}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch portfolio");
-    return res.json();
+  getPortfolio: (id: string): Promise<Portfolio> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}`, { cache: 'no-store' });
   },
 
-  getStats: async (id: string) => {
-    const res = await fetch(`${API_BASE_URL}/api/portfolios/${id}/stats`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch stats");
-    return res.json();
+  getStats: (id: string) => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/stats`, { cache: 'no-store' });
   },
 
-  getTrades: async (id: string, status?: string) => {
+  getTrades: (id: string, status?: string) => {
     const url = status ? `${API_BASE_URL}/api/portfolios/${id}/trades?status=${status}` : `${API_BASE_URL}/api/portfolios/${id}/trades`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch trades");
-    return res.json();
+    return apiFetch(url, { cache: 'no-store' });
   },
 
-  getEquityCurve: async (id: string, limit: number = 100) => {
-    const res = await fetch(`${API_BASE_URL}/api/portfolios/${id}/equity-curve?limit=${limit}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch equity curve");
-    return res.json();
+  getEquityCurve: (id: string, limit: number = 100) => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/equity-curve?limit=${limit}`, { cache: 'no-store' });
   },
 
-  getRiskEvents: async (id: string, limit: number = 50) => {
-    const res = await fetch(`${API_BASE_URL}/api/portfolios/${id}/risk-events?limit=${limit}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch risk events");
-    return res.json();
+  getRiskEvents: (id: string, limit: number = 50) => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/risk-events?limit=${limit}`, { cache: 'no-store' });
   }
 };
 
 export const tradeAPI = {
-  getPortfolio: async () => {
-    const res = await fetch(`${API_BASE_URL}/api/trading/portfolio`, { next: { revalidate: 0 } });
-    if (!res.ok) throw new Error("Failed to fetch portfolio");
-    return res.json();
-  },
-  executeTrade: async (payload: { symbol: string, side: string, size: number }) => {
-    const res = await fetch(`${API_BASE_URL}/api/trading/execute`, {
+  executeTrade: (portfolioId: string, payload: { symbol: string, side: string, size: number, stop_loss?: number }) => {
+    return apiFetch(`${API_BASE_URL}/api/trading/${portfolioId}/execute`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || "Trade execution failed");
-    }
-    return res.json();
   }
 };
 
 export const auditAPI = {
-  getLogs: async (actionType?: string, limit: number = 100, offset: number = 0) => {
+  getLogs: (actionType?: string, limit: number = 100, offset: number = 0): Promise<PaginatedAuditLogs> => {
     const params = new URLSearchParams();
     if (actionType) params.append('action_type', actionType);
     params.append('limit', limit.toString());
     params.append('offset', offset.toString());
 
-    const res = await fetch(`${API_BASE_URL}/api/audit?${params}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch audit logs");
-    return res.json();
+    return apiFetch(`${API_BASE_URL}/api/audit/?${params}`, { cache: 'no-store' });
   },
 
-  getRiskRejections: async (limit: number = 50) => {
-    const res = await fetch(`${API_BASE_URL}/api/audit/events/risk-rejections?limit=${limit}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch risk rejections");
-    return res.json();
+  getRiskRejections: (limit: number = 50) => {
+    return apiFetch(`${API_BASE_URL}/api/audit/events/risk-rejections?limit=${limit}`, { cache: 'no-store' });
   },
 
-  getKillSwitchEvents: async (limit: number = 50) => {
-    const res = await fetch(`${API_BASE_URL}/api/audit/events/kill-switch?limit=${limit}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch kill switch events");
-    return res.json();
+  getKillSwitchEvents: (limit: number = 50) => {
+    return apiFetch(`${API_BASE_URL}/api/audit/events/kill-switch?limit=${limit}`, { cache: 'no-store' });
   }
 };
 
 export const reportsAPI = {
-  generateReport: async (payload: { portfolio_id: string, report_type: string, start_date?: string, end_date?: string }) => {
-    const res = await fetch(`${API_BASE_URL}/api/reports/generate`, {
+  generateReport: (payload: { portfolio_id: string, report_type: string, start_date?: string, end_date?: string }) => {
+    return apiFetch(`${API_BASE_URL}/api/reports/generate`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to generate report");
-    return res.json();
   },
 
-  getReports: async (portfolioId: string, reportType?: string, limit: number = 10) => {
+  getReports: (portfolioId: string, reportType?: string, limit: number = 10) => {
     const url = reportType
       ? `${API_BASE_URL}/api/reports/${portfolioId}?report_type=${reportType}&limit=${limit}`
       : `${API_BASE_URL}/api/reports/${portfolioId}?limit=${limit}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch reports");
-    return res.json();
+    return apiFetch(url, { cache: 'no-store' });
   }
 };
 
 export const strategiesAPI = {
-  listStrategies: async () => {
-    const res = await fetch(`${API_BASE_URL}/api/strategies`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch strategies");
+  listStrategies: () => {
+    return apiFetch(`${API_BASE_URL}/api/strategies`, { cache: 'no-store' });
+  },
+
+  getStrategy: (id: string) => {
+    return apiFetch(`${API_BASE_URL}/api/strategies/${id}`, { cache: 'no-store' });
+  },
+
+  createStrategy: (payload: any) => {
+    return apiFetch(`${API_BASE_URL}/api/strategies`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateStrategy: (id: string, payload: any) => {
+    return apiFetch(`${API_BASE_URL}/api/strategies/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+};
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export const authAPI = {
+  login: async (formData: FormData): Promise<AuthResponse> => {
+    const res = await fetch(`${API_BASE_URL}/api/auth/token`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail || "Login failed. Please check your credentials.");
+    }
     return res.json();
   },
 
-  getStrategy: async (id: string) => {
-    const res = await fetch(`${API_BASE_URL}/api/strategies/${id}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error("Failed to fetch strategy");
-    return res.json();
-  },
-
-  createStrategy: async (payload: any) => {
-    const res = await fetch(`${API_BASE_URL}/api/strategies`, {
+  register: async (payload: { email: string, password: string }): Promise<{ id: string, email: string }> => {
+    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error("Failed to create strategy");
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.detail || "Registration failed. The email might already be in use.");
+    }
     return res.json();
   },
-
-  updateStrategy: async (id: string, payload: any) => {
-    const res = await fetch(`${API_BASE_URL}/api/strategies/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error("Failed to update strategy");
-    return res.json();
-  }
 };

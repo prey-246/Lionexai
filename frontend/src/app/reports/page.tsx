@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { reportsAPI, portfolioAPI } from "@/lib/api";
-import { FileText, Download, TrendingUp } from "lucide-react";
+import { FileText, Download } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 
 export default function ReportsPage() {

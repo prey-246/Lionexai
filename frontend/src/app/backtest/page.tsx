@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import { quantAPI, BacktestResponse } from '@/lib/api';
-import { Play, Loader2, Settings2, BarChart3 } from 'lucide-react';
+import { Play, Loader2, Settings2, BarChart3, FlaskConical } from 'lucide-react';
 
 export default function BacktestTerminal() {
   const [loading, setLoading] = useState(false);
@@ -179,14 +179,5 @@ export default function BacktestTerminal() {
 
       </div>
     </main>
-  );
-}
-
-// Temporary icon to avoid import errors if FlaskConical wasn't exported in the previous step
-function FlaskConical(props: any) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/><path d="M5.52 16h12.96"/>
-    </svg>
   );
 }
