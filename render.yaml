@@ -69,9 +69,9 @@ services:
           property: host # Use 'host' for internal, 'url' for public
     # The default start command for a Next.js app is usually `npm start`.
     # Ensure your frontend/package.json has a "start": "next start" script.
-
-  # 5. (Optional but Recommended) Database Seeding Job
-  - type: job
+jobs:
+  # 5. Database Seeding Job
+  - name: nexa-db-seed
     name: nexa-db-seed
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
