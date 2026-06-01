@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { portfolioAPI, tradeAPI } from "@/lib/api";
+import { portfolioAPI } from "@/lib/api";
 import { ArrowUpRight, ArrowDownLeft, TrendingUp, AlertCircle } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MetricDisplay } from "@/components/ui/MetricDisplay";
@@ -19,13 +19,18 @@ export default function ClientDashboard() {
         setLoading(true);
         setError(null);
 
-        const portfolioData = await tradeAPI.getPortfolio();
-        setPortfolio(portfolioData);
+        // This dashboard assumes a single primary portfolio. We'll fetch the list and use the first one.
+        const portfolios = await portfolioAPI.listPortfolios();
+        if (portfolios.length === 0) {
+          throw new Error("No portfolios found. Please create one in the 'Portfolios' section.");
+        }
+        const mainPortfolio = portfolios[0];
+        setPortfolio(mainPortfolio);
 
-        const statsData = await portfolioAPI.getStats(portfolioData.id);
+        const statsData = await portfolioAPI.getStats(mainPortfolio.id);
         setStats(statsData);
 
-        const tradesData = await portfolioAPI.getTrades(portfolioData.id);
+        const tradesData = await portfolioAPI.getTrades(mainPortfolio.id);
         setTrades(tradesData.slice(0, 10));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load dashboard");

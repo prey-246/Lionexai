@@ -1,4 +1,5 @@
-import Cookies from 'js-cookie';
+// We will import js-cookie dynamically for client-side execution
+import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioStats, Trade, RiskEvent, PaginatedAuditLogs, BacktestRequest, BacktestResponse, AuthResponse, TradeResponse, EquityDataPoint } from './types';
 
 /**
  * Differentiates between server-side and client-side API calls.
@@ -14,10 +15,19 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
   const headers: HeadersInit = { ...options.headers };
 
   // On the client-side, we can access cookies to get the auth token
-  if (typeof window !== 'undefined') {
-    const token = Cookies.get('auth_token');
+  if (typeof window !== "undefined") {
+    // Dynamically import js-cookie only on the client side
+    const Cookies = (await import("js-cookie")).default;
+    const token = Cookies.get("auth_token");
     if (token) {
       (headers as { [key: string]: string })['Authorization'] = `Bearer ${token}`;
+    }
+  } else {
+    // On the server-side, we use `next/headers` to get the cookie
+    const { cookies } = await import("next/headers");
+    const token = cookies().get("auth_token")?.value;
+    if (token) {
+      (headers as { [key: string]: string })["Authorization"] = `Bearer ${token}`;
     }
   }
   
@@ -45,69 +55,6 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
   return res.json();
 };
 
-export interface RiskMandate {
-  id: string;
-  name: string;
-  max_leverage: number;
-  max_drawdown_pct: number;
-  daily_loss_limit_pct: number;
-  kill_switch_active: boolean;
-}
-
-export interface EngineHealth {
-  status: string;
-  database: string;
-  active_mandates: number;
-}
-
-export interface Portfolio {
-  id: string;
-  user_id: string;
-  mandate_id: string;
-  total_equity: number;
-  available_margin: number;
-  current_drawdown_pct: number;
-}
-
-export interface Trade {
-  id: string;
-  portfolio_id: string;
-  symbol: string;
-  side: string;
-  size: number;
-  entry_price: number;
-  exit_price?: number;
-  status: string;
-  pnl: number;
-  created_at: string;
-  closed_at?: string;
-}
-
-export interface RiskEvent {
-  id: string;
-  portfolio_id: string;
-  event_type: string;
-  severity: string;
-  description: string;
-  triggered_at: string;
-  resolved: boolean;
-}
-
-export interface AuditLog {
-  id: string;
-  timestamp: string;
-  action_type: string;
-  description: string;
-  metadata_json: any;
-}
-
-export interface PaginatedAuditLogs {
-  total: number;
-  limit: number;
-  offset: number;
-  logs: AuditLog[];
-}
-
 export const systemAPI = {
   getHealth: async (): Promise<EngineHealth> => {
     const res = await fetch(`${API_BASE_URL}/api/health`, { next: { revalidate: 0 } });
@@ -122,27 +69,6 @@ export const systemAPI = {
   getMandate: (id: string): Promise<RiskMandate> => {
     return apiFetch(`${API_BASE_URL}/api/mandates/${id}`, { cache: 'no-store' });
   }
-};
-
-export interface BacktestRequest {
-  symbol: string;
-  timeframe: string;
-  strategy: string;
-}
-
-export interface BacktestMetrics {
-  final_capital: number;
-  total_return_pct: number;
-  max_drawdown_pct: number;
-  win_rate_pct: number;
-  sharpe_ratio: number;
-  total_trades_simulated: number;
-}
-
-export interface BacktestResponse {
-  status: string;
-  symbol: string;
-  metrics: BacktestMetrics;
 }
 
 export const quantAPI = {
@@ -163,26 +89,43 @@ export const portfolioAPI = {
     return apiFetch(`${API_BASE_URL}/api/portfolios/${id}`, { cache: 'no-store' });
   },
 
-  getStats: (id: string) => {
+  getSummary: (): Promise<PortfolioSummary> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/summary`, { cache: 'no-store' });
+  },
+
+  getStats: (id: string): Promise<PortfolioStats> => {
     return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/stats`, { cache: 'no-store' });
   },
 
-  getTrades: (id: string, status?: string) => {
+  getTrades: (id: string, status?: string): Promise<Trade[]> => {
     const url = status ? `${API_BASE_URL}/api/portfolios/${id}/trades?status=${status}` : `${API_BASE_URL}/api/portfolios/${id}/trades`;
     return apiFetch(url, { cache: 'no-store' });
   },
 
-  getEquityCurve: (id: string, limit: number = 100) => {
+  getEquityCurve: (id: string, limit: number = 100): Promise<EquityDataPoint[]> => {
     return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/equity-curve?limit=${limit}`, { cache: 'no-store' });
   },
 
-  getRiskEvents: (id: string, limit: number = 50) => {
+  getRiskEvents: (id: string, limit: number = 50): Promise<RiskEvent[]> => {
     return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/risk-events?limit=${limit}`, { cache: 'no-store' });
+  },
+
+  createPortfolio: (payload: { id: string, mandate_id: string, total_equity: number }): Promise<Portfolio> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deletePortfolio: (id: string): Promise<void> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}`, {
+      method: 'DELETE',
+    });
   }
 };
 
 export const tradeAPI = {
-  executeTrade: (portfolioId: string, payload: { symbol: string, side: string, size: number, stop_loss?: number }) => {
+  executeTrade: (portfolioId: string, payload: { symbol: string, side: string, size: number, stop_loss?: number }): Promise<TradeResponse> => {
     return apiFetch(`${API_BASE_URL}/api/trading/${portfolioId}/execute`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -220,7 +163,7 @@ export const reportsAPI = {
   getReports: (portfolioId: string, reportType?: string, limit: number = 10) => {
     const url = reportType
       ? `${API_BASE_URL}/api/reports/${portfolioId}?report_type=${reportType}&limit=${limit}`
-      : `${API_BASE_URL}/api/reports/${portfolioId}?limit=${limit}`;
+      : `${API_BASE_URL}/api/reports/${portfolioId}`;
     return apiFetch(url, { cache: 'no-store' });
   }
 };
@@ -248,11 +191,6 @@ export const strategiesAPI = {
     });
   }
 };
-
-export interface AuthResponse {
-  access_token: string;
-  token_type: string;
-}
 
 export const authAPI = {
   login: async (formData: FormData): Promise<AuthResponse> => {

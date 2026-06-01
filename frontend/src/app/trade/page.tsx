@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function ExecutionTerminal() {
   const [portfolio, setPortfolio] = useState<any>(null);
+  const [allPortfolios, setAllPortfolios] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{type: 'success'|'error', msg: string} | null>(null);
 
@@ -17,18 +18,28 @@ export default function ExecutionTerminal() {
     stop_loss: '' as number | string
   });
 
-  const fetchPortfolio = async () => {
+  const fetchAllPortfolios = async () => {
     try {
-      // For the MVP, we'll hardcode the sim portfolio ID. A real app would use a selector.
-      const data = await portfolioAPI.getPortfolio("port_sim_01");
-      setPortfolio(data);
-    } catch {
-      setFeedback({ type: 'error', msg: 'Failed to fetch portfolio data.' });
+      // Fetch the list of portfolios for the current user
+      const portfolios = await portfolioAPI.listPortfolios();
+      setAllPortfolios(portfolios);
+      if (portfolios.length > 0) {
+        // If no portfolio is selected, or the selected one is gone, default to the first.
+        if (!portfolio || !portfolios.find(p => p.id === portfolio.id)) {
+          setPortfolio(portfolios[0]);
+        }
+      } else {
+        // This user has no portfolios.
+        setPortfolio(null);
+        setFeedback({ type: 'error', msg: 'No portfolio found for your account. Please create one.' });
+      }
+    } catch (err: any) {
+      setFeedback({ type: 'error', msg: `Failed to fetch portfolio data: ${err.message}` });
     }
   };
 
   useEffect(() => {
-    fetchPortfolio();
+    fetchAllPortfolios();
   }, []);
 
   const handleExecute = async () => {
@@ -54,7 +65,13 @@ export default function ExecutionTerminal() {
 
       const res = await tradeAPI.executeTrade(portfolio.id, payload);
       setFeedback({ type: 'success', msg: `Order filled at $${res.fill_price.toLocaleString()}` });
-      await fetchPortfolio(); // Refresh balances
+      
+      // Refresh only the current portfolio's data to avoid resetting the dropdown
+      const updatedPortfolio = await portfolioAPI.getPortfolio(portfolio.id);
+      setPortfolio(updatedPortfolio);
+      // Also update the list in the background
+      const updatedList = await portfolioAPI.listPortfolios();
+      setAllPortfolios(updatedList);
     } catch (err: any) {
       setFeedback({ type: 'error', msg: `RISK REJECTION: ${err.message}` });
     } finally {
@@ -154,6 +171,21 @@ export default function ExecutionTerminal() {
 
         <div className="space-y-4">
           <h2 className="font-mono text-base font-bold text-text-primary">PORTFOLIO STATUS</h2>
+          {allPortfolios.length > 1 && (
+            <div className="bg-background-panel-1 border border-border-secondary rounded p-4">
+              <label className="block text-xs font-mono text-text-muted mb-1.5">SELECT PORTFOLIO</label>
+              <select
+                className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
+                value={portfolio?.id || ''}
+                onChange={(e) => {
+                  const selected = allPortfolios.find(p => p.id === e.target.value);
+                  setPortfolio(selected || null);
+                }}
+              >
+                {allPortfolios.map(p => <option key={p.id} value={p.id}>{p.id}</option>)}
+              </select>
+            </div>
+          )}
           <div className="bg-background-panel-1 border border-border-secondary rounded p-4 space-y-1">
             <p className="text-xs font-mono text-text-muted">TOTAL EQUITY</p>
             <p className="text-2xl font-serif text-primary-gold font-semibold">${portfolio ? portfolio.total_equity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>

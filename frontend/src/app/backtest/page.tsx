@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
-import { quantAPI, BacktestResponse } from '@/lib/api';
+import { quantAPI } from '@/lib/api';
+import type { BacktestRequest, BacktestResponse } from '@/lib/types';
+import { EquityCurveChart } from '@/components/charts/EquityCurveChart';
 import { Play, Loader2, Settings2, BarChart3, FlaskConical } from 'lucide-react';
 
 export default function BacktestTerminal() {
@@ -14,14 +16,49 @@ export default function BacktestTerminal() {
   const [form, setForm] = useState({
     symbol: 'BTC/USDT',
     timeframe: '1d',
-    strategy: 'MA_CROSSOVER'
+    strategy: 'MA_CROSSOVER',
+    initial_capital: 100000,
   });
+  
+  const [strategyParams, setStrategyParams] = useState({
+    short_window: 20,
+    long_window: 50,
+    rsi_period: 14,
+    oversold_level: 30,
+    overbought_level: 70,
+  });
+
+  const handleParamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setStrategyParams(prev => ({ ...prev, [name]: Number(value) }));
+  };
 
   const handleRun = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await quantAPI.runBacktest(form);
+      const payload: BacktestRequest = {
+        symbol: form.symbol,
+        timeframe: form.timeframe,
+        strategy: form.strategy,
+        initial_capital: form.initial_capital,
+        strategy_params: {}
+      };
+
+      if (form.strategy === 'MA_CROSSOVER') {
+        payload.strategy_params = {
+            short_window: strategyParams.short_window,
+            long_window: strategyParams.long_window,
+        };
+      } else if (form.strategy === 'RSI_MEAN_REVERSION') {
+          payload.strategy_params = {
+              rsi_period: strategyParams.rsi_period,
+              oversold_level: strategyParams.oversold_level,
+              overbought_level: strategyParams.overbought_level,
+          };
+      }
+
+      const res = await quantAPI.runBacktest(payload);
       setResults(res);
     } catch (err: any) {
       setError(err.message);
@@ -78,6 +115,18 @@ export default function BacktestTerminal() {
               </div>
 
               <div>
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Initial Capital</label>
+                <input 
+                  type="number"
+                  className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors"
+                  value={form.initial_capital}
+                  onChange={(e) => setForm({...form, initial_capital: Number(e.target.value)})}
+                  step={10000}
+                  min={1000}
+                />
+              </div>
+
+              <div>
                 <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Algorithm Class</label>
                 <select 
                   className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors"
@@ -85,8 +134,42 @@ export default function BacktestTerminal() {
                   onChange={(e) => setForm({...form, strategy: e.target.value})}
                 >
                   <option value="MA_CROSSOVER">Moving Average Crossover (20/50)</option>
+                  <option value="RSI_MEAN_REVERSION">RSI Mean Reversion (14/30/70)</option>
                 </select>
               </div>
+
+              {/* DYNAMIC STRATEGY PARAMETERS */}
+              {form.strategy === 'MA_CROSSOVER' && (
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/[0.04]">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Short MA</label>
+                    <input type="number" name="short_window" value={strategyParams.short_window} onChange={handleParamChange} className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors" />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Long MA</label>
+                    <input type="number" name="long_window" value={strategyParams.long_window} onChange={handleParamChange} className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors" />
+                  </div>
+                </div>
+              )}
+
+              {form.strategy === 'RSI_MEAN_REVERSION' && (
+                <div className="space-y-3 pt-3 border-t border-white/[0.04]">
+                   <div>
+                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">RSI Period</label>
+                    <input type="number" name="rsi_period" value={strategyParams.rsi_period} onChange={handleParamChange} className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Oversold</label>
+                      <input type="number" name="oversold_level" value={strategyParams.oversold_level} onChange={handleParamChange} className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Overbought</label>
+                      <input type="number" name="overbought_level" value={strategyParams.overbought_level} onChange={handleParamChange} className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors" />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button 
                 onClick={handleRun}
@@ -171,6 +254,12 @@ export default function BacktestTerminal() {
                       />
                     </div>
                   </div>
+
+                  <div className="mt-6">
+                    <h3 className="text-sm font-medium text-gray-300 mb-2">Equity Curve</h3>
+                    <EquityCurveChart data={results.equity_curve} />
+                  </div>
+
                 </div>
               )}
             </div>

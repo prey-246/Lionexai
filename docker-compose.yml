@@ -80,6 +80,8 @@ services:
     environment:
       # For Client-Side Rendering (in the browser), connects to the host machine's exposed port
       - NEXT_PUBLIC_API_URL=http://localhost:8000 
+      # Enable polling for file changes, which is more reliable in some Docker environments
+      - CHOKIDAR_USEPOLLING=true
       # For Server-Side Rendering (inside the container), connects to the backend service name
       - INTERNAL_API_URL=http://backend:8000
     depends_on:
