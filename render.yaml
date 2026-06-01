@@ -3,22 +3,22 @@
 # Place it in the root of your repository.
 # See https://render.com/docs/blueprint-spec for more details.
 
-services:
+databases:
   # 1. PostgreSQL Database
-  - type: psql
-    name: nexa-db
+  - name: nexa-db
     databaseName: nexa_mvp
     plan: free # Or a paid plan for production
     # Render will automatically set the POSTGRES_USER and POSTGRES_PASSWORD
     # from your environment group or generate new ones.
     # The DATABASE_URL will be available to other services.
 
+redis:
   # 2. Redis Cache
-  - type: redis
-    name: nexa-redis
+  - name: nexa-redis
     plan: free # Or a paid plan for production
     # The REDIS_URL will be available to other services.
 
+services:
   # 3. Backend API (FastAPI)
   - type: web
     name: nexa-backend
