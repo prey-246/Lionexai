@@ -72,7 +72,6 @@ services:
 jobs:
   # 5. Database Seeding Job
   - name: nexa-db-seed
-    name: nexa-db-seed
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     # This job runs a script to seed the database. It only runs when you trigger it from the Render dashboard.
