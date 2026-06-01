@@ -55,12 +55,15 @@ services:
     dockerfilePath: ./frontend/Dockerfile
     plan: free
     envVars:
-      # NEXT_PUBLIC_API_URL is intentionally omitted.
-      # Client-side requests will use relative paths to trigger the rewrite rules.
-      - key: INTERNAL_API_URL # For server-side rendering within the container
-        value: http://nexa-backend:8000
-    # --- Reverse Proxy Rules ---
-    # Route API and WebSocket traffic to the backend service
-    rewrites:
-      - source: /api/:path* # Proxy all API and WebSocket traffic to the backend
-        destination: http://nexa-backend:8000/api/:path*
+      # Tell the frontend the public URL of the backend for client-side requests
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: nexa-backend
+          property: url
+      # For Server-Side Rendering, we can also use the public URL.
+      - key: INTERNAL_API_URL
+        fromService:
+          type: web
+          name: nexa-backend
+          property: url

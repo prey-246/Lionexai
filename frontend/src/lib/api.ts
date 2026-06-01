@@ -8,7 +8,7 @@ import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioS
  */
 const API_BASE_URL = typeof window === 'undefined'
   ? process.env.INTERNAL_API_URL || "http://localhost:8000"
-  : process.env.NEXT_PUBLIC_API_URL || ""; // Default to empty string for relative paths
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // A wrapper for fetch that includes the auth token and handles errors
 const apiFetch = async (url: string, options: RequestInit = {}) => {
