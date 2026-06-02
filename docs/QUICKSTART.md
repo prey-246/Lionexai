@@ -165,9 +165,9 @@ docker network inspect nexa_default
 ```
 Your Browser
     ↓ (HTTP/WebSocket)
-    ├─► Next.js Frontend (port 3000)
+    ├─► Next.js Frontend (port 3000) - `nexa_frontend_prod`
     │
-    ├─► FastAPI Backend (port 8000)
+    ├─► FastAPI Backend (port 8000) - `nexa_backend_prod`
     │    ├─ Risk Engine
     │    ├─ Backtester
     │    └─ Market Data
