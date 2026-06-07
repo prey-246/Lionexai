@@ -1,5 +1,5 @@
 // We will import js-cookie dynamically for client-side execution
-import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioStats, Trade, RiskEvent, AuditLog, PaginatedAuditLogs, BacktestRequest, BacktestResponse, AuthResponse, TradeResponse, EquityDataPoint } from './types';
+import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioStats, Trade, RiskEvent, AuditLog, PaginatedAuditLogs, BacktestRequest, BacktestResponse, AuthResponse, TradeResponse, EquityDataPoint, MarketNewsArticle, MarketSensitivityScore, User } from './types';
 
 /**
  * Differentiates between server-side and client-side API calls.
@@ -289,5 +289,26 @@ export const authAPI = {
     Cookies.remove('auth_token');
     Cookies.remove('user_role');
     window.location.href = '/login';
+  }
+};
+
+export const intelligenceAPI = {
+  getNews: (limit: number = 5): Promise<MarketNewsArticle[]> => {
+    return apiFetch(`${API_BASE_URL}/api/intelligence/news?limit=${limit}`, { cache: 'no-store' });
+  },
+  getSentiment: (symbol: string): Promise<MarketSensitivityScore> => {
+    return apiFetch(`${API_BASE_URL}/api/intelligence/sentiment/${encodeURIComponent(symbol)}`, { cache: 'no-store' });
+  }
+};
+
+export const usersAPI = {
+  listUsers: (): Promise<User[]> => {
+    return apiFetch(`${API_BASE_URL}/api/users`, { cache: 'no-store' });
+  },
+  updateRole: (userId: string, role_tier: string): Promise<User> => {
+    return apiFetch(`${API_BASE_URL}/api/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role_tier }),
+    });
   }
 };

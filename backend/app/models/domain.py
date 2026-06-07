@@ -192,3 +192,49 @@ class MarketDataOHLCV(Base):
     low: Mapped[float] = mapped_column(Float)
     close: Mapped[float] = mapped_column(Float)
     volume: Mapped[float] = mapped_column(Float)
+
+# --- NEXA Intelligence Foundation (AI / Alt-Data Layer) ---
+
+class MarketNewsArticle(Base):
+    __tablename__ = "market_news_articles"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(String(30), unique=True, index=True, default=lambda: f"news_{uuid.uuid4().hex[:12]}")
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False) # e.g., 'Reuters', 'CoinDesk'
+    url: Mapped[str] = mapped_column(String, nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=True)
+    published_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+class EconomicEvent(Base):
+    __tablename__ = "economic_events"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(String(30), unique=True, index=True, default=lambda: f"eco_{uuid.uuid4().hex[:12]}")
+    event_name: Mapped[str] = mapped_column(String, nullable=False) # e.g., 'US CPI (MoM)'
+    country: Mapped[str] = mapped_column(String, nullable=False)
+    impact: Mapped[str] = mapped_column(String, nullable=False) # e.g., 'HIGH', 'MEDIUM', 'LOW'
+    actual_value: Mapped[str] = mapped_column(String, nullable=True)
+    forecast_value: Mapped[str] = mapped_column(String, nullable=True)
+    previous_value: Mapped[str] = mapped_column(String, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+class NLPSentiment(Base):
+    __tablename__ = "nlp_sentiments"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(String(30), unique=True, index=True, default=lambda: f"nlp_{uuid.uuid4().hex[:12]}")
+    reference_id: Mapped[str] = mapped_column(String, index=True) # Links to news.id or eco.id
+    reference_type: Mapped[str] = mapped_column(String) # 'NEWS' or 'ECONOMIC_EVENT'
+    sentiment_score: Mapped[float] = mapped_column(Float, nullable=False) # -1.0 (Extreme Fear) to 1.0 (Extreme Greed)
+    sentiment_label: Mapped[str] = mapped_column(String, nullable=False) # 'BULLISH', 'BEARISH', 'NEUTRAL'
+    model_version: Mapped[str] = mapped_column(String, nullable=True) # e.g., 'finbert-v1'
+    processed_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+class MarketSensitivityScore(Base):
+    __tablename__ = "market_sensitivity_scores"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(String(30), unique=True, index=True, default=lambda: f"sens_{uuid.uuid4().hex[:12]}")
+    symbol: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False) # Aggregate AI score -1.0 to 1.0
+    contributing_factors: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)

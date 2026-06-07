@@ -203,3 +203,39 @@ class BacktestResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- NEXA Intelligence Schemas ---
+class MarketNewsArticle(BaseModel):
+    id: str
+    title: str
+    source: str
+    url: str | None = None
+    content: str | None = None
+    published_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class EconomicEvent(BaseModel):
+    id: str
+    event_name: str
+    country: str
+    impact: str
+    actual_value: str | None = None
+    forecast_value: str | None = None
+    previous_value: str | None = None
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+class MarketSensitivityScore(BaseModel):
+    id: str
+    symbol: str
+    score: float
+    contributing_factors: dict | None = None
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True

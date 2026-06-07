@@ -180,3 +180,28 @@ export interface ReportGenerate {
   portfolio_id: string;
   report_type: 'WEEKLY' | 'MONTHLY';
 }
+
+export interface MarketNewsArticle {
+  id: string;
+  title: string;
+  source: string;
+  url?: string;
+  content?: string;
+  published_at: string;
+  created_at: string;
+}
+
+export interface MarketSensitivityScore {
+  id: string;
+  symbol: string;
+  score: number;
+  contributing_factors?: Record<string, any>;
+  timestamp: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  is_active: boolean;
+  role_tier: 'client' | 'operator' | 'risk_manager' | 'admin' | string;
+}

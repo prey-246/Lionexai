@@ -105,12 +105,31 @@ def get_portfolio_summary(
     ).scalar() or 0
 
     win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+    
+    # Calculate Best and Worst Portfolios by PNL
+    portfolio_pnls = {p.pk_id: 0.0 for p in portfolios}
+    pnl_by_portfolio = db.query(
+        domain.Trade.portfolio_id, func.sum(domain.Trade.pnl)
+    ).filter(
+        domain.Trade.portfolio_id.in_(portfolio_pk_ids), 
+        domain.Trade.status == 'CLOSED'
+    ).group_by(domain.Trade.portfolio_id).all()
+
+    for pk_id, pnl in pnl_by_portfolio:
+        if pnl is not None:
+            portfolio_pnls[pk_id] = pnl
+
+    best_pk = max(portfolio_pnls, key=portfolio_pnls.get) if portfolio_pnls else None
+    worst_pk = min(portfolio_pnls, key=portfolio_pnls.get) if portfolio_pnls else None
+    pk_to_id = {p.pk_id: p.id for p in portfolios}
 
     return schemas.PortfolioSummary(
         portfolio_count=len(portfolios),
         total_equity=total_equity,
         total_pnl=total_pnl,
-        overall_win_rate_pct=win_rate
+        overall_win_rate_pct=win_rate,
+        best_performing_id=pk_to_id.get(best_pk) if best_pk else None,
+        worst_performing_id=pk_to_id.get(worst_pk) if worst_pk else None
     )
 
 @router.get("/{portfolio_id}", response_model=schemas.PortfolioResponse)
