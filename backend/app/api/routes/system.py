@@ -6,8 +6,10 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models import domain
+from app.models import schemas
 from app.services.historical_data import HistoricalDataService
 from app.core.database import SessionLocal
+from app.api.deps import require_role, get_current_user
 import logging
 import ccxt as ccxt_sync
 
@@ -24,15 +26,22 @@ class EngineHealth(BaseModel):
     status: str
     database: str
     active_mandates: int
+    trades_today: int = 0
+    active_users: int = 0
     timestamp: datetime
 
 @router.get("/system/environment", response_model=EnvironmentState, tags=["System"])
-def get_environment_state():
+def get_environment_state(db: Session = Depends(get_db)):
     """
     Returns the current global operating environment of the platform.
     This state dictates UI presentation and certain backend behaviors.
     """
-    env_state = os.getenv("ENVIRONMENT_STATE", "PAPER").upper()
+    settings = db.query(domain.GlobalSettings).filter_by(id="default").first()
+    if settings:
+        env_state = settings.environment_state.upper()
+    else:
+        env_state = os.getenv("ENVIRONMENT_STATE", "PAPER").upper()
+        
     if env_state not in get_args(Environment):
         env_state = "PAPER" # Default to a safe value if invalid
     return {"environment": env_state}
@@ -44,9 +53,17 @@ def get_health(db: Session = Depends(get_db)):
     """
     db_status = "disconnected"
     active_mandates = 0
+    trades_today = 0
+    active_users = 0
     try:
         # A simple query to check if the DB is responsive
         active_mandates = db.query(domain.Mandate).filter(domain.Mandate.is_active == True).count()
+        
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        trades_today = db.query(domain.Trade).filter(domain.Trade.created_at >= today_start).count()
+        
+        active_users = db.query(domain.User).filter(domain.User.is_active == True).count()
+        
         db_status = "connected"
     except Exception:
         pass
@@ -55,6 +72,8 @@ def get_health(db: Session = Depends(get_db)):
         "status": "online",
         "database": db_status,
         "active_mandates": active_mandates,
+        "trades_today": trades_today,
+        "active_users": active_users,
         "timestamp": datetime.now(timezone.utc)
     }
 
@@ -88,3 +107,35 @@ async def trigger_backfill(
     """
     background_tasks.add_task(run_backfill_task, symbol, days)
     return {"message": f"Accepted: Backfill task for {symbol} started in the background. Check backend logs for progress."}
+
+@router.get("/system/settings", response_model=schemas.GlobalSettings, tags=["System"])
+def get_global_settings(db: Session = Depends(get_db)):
+    """Retrieves the global platform settings."""
+    settings = db.query(domain.GlobalSettings).filter_by(id="default").first()
+    if not settings:
+        # Initialize default settings if they don't exist yet
+        settings = domain.GlobalSettings(id="default")
+        db.add(settings)
+        db.commit()
+        db.refresh(settings)
+    return settings
+
+@router.put("/system/settings", response_model=schemas.GlobalSettings, tags=["System"], dependencies=[Depends(require_role(["admin"]))])
+def update_global_settings(
+    settings_in: schemas.GlobalSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: domain.User = Depends(get_current_user)
+):
+    """Updates the global platform settings."""
+    settings = db.query(domain.GlobalSettings).filter_by(id="default").first()
+    if not settings:
+        settings = domain.GlobalSettings(id="default")
+        db.add(settings)
+
+    update_data = settings_in.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(settings, key, value)
+        
+    db.commit()
+    db.refresh(settings)
+    return settings

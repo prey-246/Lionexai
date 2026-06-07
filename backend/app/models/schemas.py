@@ -179,8 +179,8 @@ class BacktestRequest(BaseModel):
     timeframe: str
     strategy: str
     initial_capital: float
-    commission_pct: float = 0.1
-    slippage_pct: float = 0.1
+    commission_pct: float | None = None
+    slippage_pct: float | None = None
     strategy_params: dict | None = None
 
 class BacktestMetrics(BaseModel):
@@ -236,6 +236,30 @@ class MarketSensitivityScore(BaseModel):
     score: float
     contributing_factors: dict | None = None
     timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- System Settings Schemas ---
+class GlobalSettingsBase(BaseModel):
+    environment_state: str
+    extreme_bearish_threshold: float
+    global_max_leverage: float
+    default_commission_pct: float
+    default_slippage_pct: float
+    global_kill_switch_active: bool
+
+class GlobalSettingsUpdate(BaseModel):
+    environment_state: str | None = None
+    extreme_bearish_threshold: float | None = None
+    global_max_leverage: float | None = None
+    default_commission_pct: float | None = None
+    default_slippage_pct: float | None = None
+    global_kill_switch_active: bool | None = None
+
+class GlobalSettings(GlobalSettingsBase):
+    id: str
+    updated_at: datetime
 
     class Config:
         from_attributes = True

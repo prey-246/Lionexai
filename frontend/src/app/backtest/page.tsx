@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
-import { quantAPI } from '@/lib/api';
+import { quantAPI, systemAPI } from '@/lib/api';
 import type { BacktestRequest, BacktestResponse } from '@/lib/types';
 import { EquityCurveChart } from '@/components/charts/EquityCurveChart';
 import { Play, Loader2, Settings2, BarChart3, FlaskConical } from 'lucide-react';
@@ -12,6 +12,17 @@ export default function BacktestTerminal() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<BacktestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    systemAPI.getGlobalSettings()
+      .then(settings => {
+        setForm(prev => ({
+          ...prev,
+          commission_pct: settings.default_commission_pct,
+          slippage_pct: settings.default_slippage_pct
+        }));
+      }).catch(console.error);
+  }, []);
 
   const [form, setForm] = useState({
     symbol: 'BTC/USDT',

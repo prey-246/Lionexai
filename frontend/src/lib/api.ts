@@ -1,5 +1,5 @@
 // We will import js-cookie dynamically for client-side execution
-import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioStats, Trade, RiskEvent, AuditLog, PaginatedAuditLogs, BacktestRequest, BacktestResponse, AuthResponse, TradeResponse, EquityDataPoint, MarketNewsArticle, MarketSensitivityScore, User } from './types';
+import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioStats, Trade, RiskEvent, AuditLog, PaginatedAuditLogs, BacktestRequest, BacktestResponse, AuthResponse, TradeResponse, EquityDataPoint, MarketNewsArticle, MarketSensitivityScore, User, GlobalSettings } from './types';
 
 /**
  * Differentiates between server-side and client-side API calls.
@@ -58,6 +58,17 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
 export const systemAPI = {
   getEnvironmentState: (): Promise<{ environment: 'BACKTEST' | 'PAPER' | 'DEMO' | 'LIVE_DISABLED'}> => {
     return apiFetch(`${API_BASE_URL}/api/system/environment`, { cache: 'no-store' });
+  },
+
+  getGlobalSettings: (): Promise<GlobalSettings> => {
+    return apiFetch(`${API_BASE_URL}/api/system/settings`, { cache: 'no-store' });
+  },
+
+  updateGlobalSettings: (payload: Partial<GlobalSettings>): Promise<GlobalSettings> => {
+    return apiFetch(`${API_BASE_URL}/api/system/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
   },
 
   getHealth: async (): Promise<EngineHealth> => {

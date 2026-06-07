@@ -76,8 +76,12 @@ def run_backtest(
     portfolio['timestamp'] = df['timestamp']
 
     # Cost parameters
-    commission_pct = getattr(backtest_in, 'commission_pct', 0.1)
-    slippage_pct = getattr(backtest_in, 'slippage_pct', 0.1)
+    global_settings = db.query(domain.GlobalSettings).filter_by(id="default").first()
+    default_comm = global_settings.default_commission_pct if global_settings else 0.1
+    default_slip = global_settings.default_slippage_pct if global_settings else 0.1
+
+    commission_pct = backtest_in.commission_pct if backtest_in.commission_pct is not None else default_comm
+    slippage_pct = backtest_in.slippage_pct if backtest_in.slippage_pct is not None else default_slip
 
     # Vectorized backtest approach with realistic trading costs
     positions[backtest_in.symbol] = df['signal'] # Hold 1 unit of the asset when signal is 1

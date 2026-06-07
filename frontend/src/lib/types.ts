@@ -56,6 +56,8 @@ export interface EngineHealth {
   status: string;
   database: string;
   active_mandates: number;
+  trades_today?: number;
+  active_users?: number;
   timestamp: string;
 }
 
@@ -204,4 +206,15 @@ export interface User {
   email: string;
   is_active: boolean;
   role_tier: 'client' | 'operator' | 'risk_manager' | 'admin' | string;
+}
+
+export interface GlobalSettings {
+  id: string;
+  environment_state: 'PAPER' | 'BACKTEST' | 'DEMO' | 'LIVE_DISABLED';
+  extreme_bearish_threshold: number;
+  global_max_leverage: number;
+  default_commission_pct: number;
+  default_slippage_pct: number;
+  global_kill_switch_active: boolean;
+  updated_at: string;
 }

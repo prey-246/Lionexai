@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, Tuple
-from app.models.domain import Mandate, Portfolio, RiskEvent, Trade, MarketSensitivityScore
+from app.models.domain import Mandate, Portfolio, RiskEvent, Trade, MarketSensitivityScore, GlobalSettings
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -42,6 +42,10 @@ class RiskEngine:
         return True
 
     def _check_kill_switch(self, portfolio: Portfolio, mandate: Mandate, order: Dict[str, Any]) -> bool:
+        global_settings = self.db.query(GlobalSettings).filter_by(id="default").first()
+        if global_settings and global_settings.global_kill_switch_active:
+            raise RiskRejectionError("System halted: Global Kill Switch is active.")
+            
         if mandate.kill_switch_active:
             raise RiskRejectionError("System halted: Kill switch active.")
         return True

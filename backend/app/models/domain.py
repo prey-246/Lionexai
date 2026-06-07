@@ -238,3 +238,14 @@ class MarketSensitivityScore(Base):
     score: Mapped[float] = mapped_column(Float, nullable=False) # Aggregate AI score -1.0 to 1.0
     contributing_factors: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)
+
+class GlobalSettings(Base):
+    __tablename__ = "global_settings"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default="default")
+    environment_state: Mapped[str] = mapped_column(String, default="PAPER")
+    extreme_bearish_threshold: Mapped[float] = mapped_column(Float, default=-0.5)
+    global_max_leverage: Mapped[float] = mapped_column(Float, default=5.0)
+    default_commission_pct: Mapped[float] = mapped_column(Float, default=0.1)
+    default_slippage_pct: Mapped[float] = mapped_column(Float, default=0.1)
+    global_kill_switch_active: Mapped[bool] = mapped_column(Boolean, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())

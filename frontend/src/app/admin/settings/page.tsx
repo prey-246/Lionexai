@@ -1,19 +1,57 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Settings, Save, ShieldAlert, SlidersHorizontal, Activity, Loader2 } from 'lucide-react';
+import { systemAPI } from '@/lib/api';
+import type { GlobalSettings } from '@/lib/types';
 
 export default function AdminSettingsPage() {
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<Partial<GlobalSettings>>({
+    environment_state: 'PAPER',
+    extreme_bearish_threshold: -0.5,
+    global_max_leverage: 5.0,
+    default_commission_pct: 0.1,
+    default_slippage_pct: 0.1,
+    global_kill_switch_active: false
+  });
 
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => {
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const settings = await systemAPI.getGlobalSettings();
+        setForm(settings);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await systemAPI.updateGlobalSettings(form);
+      alert("Global Settings updated successfully!");
+    } catch (err: any) {
+      alert(`Failed to save settings: ${err.message}`);
+    } finally {
       setSaving(false);
-      alert("Settings updated successfully! (Note: Global settings are currently saved to local session in this MVP version).");
-    }, 800);
+    }
   };
+
+  const handleKillSwitch = async () => {
+    setForm({ ...form, global_kill_switch_active: !form.global_kill_switch_active });
+  };
+
+  if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-gold" /></div>;
+  if (error) return <div className="text-center text-danger">{error}</div>;
 
   return (
     <div className="space-y-8">
@@ -29,10 +67,25 @@ export default function AdminSettingsPage() {
           
           <div className="space-y-4">
             <div>
+              <label className="block text-sm font-medium text-text-muted mb-1.5">Operating Environment</label>
+              <select 
+                value={form.environment_state}
+                onChange={(e) => setForm({ ...form, environment_state: e.target.value as any })}
+                className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
+              >
+                <option value="PAPER">PAPER (Simulated Trading)</option>
+                <option value="BACKTEST">BACKTEST (Historical Engine)</option>
+                <option value="DEMO">DEMO (Client Showcase)</option>
+                <option value="LIVE_DISABLED">LIVE (Disabled for MVP)</option>
+              </select>
+              <p className="text-xs text-text-muted mt-1">Changes the UI state and environment banner across the entire platform.</p>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-text-muted mb-1.5">Extreme Bearish Threshold (AI Score)</label>
               <input 
                 type="number" 
-                defaultValue="-0.5" 
+                value={form.extreme_bearish_threshold} 
+                onChange={(e) => setForm({ ...form, extreme_bearish_threshold: parseFloat(e.target.value) })}
                 step="0.1"
                 className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
               />
@@ -43,7 +96,8 @@ export default function AdminSettingsPage() {
               <label className="block text-sm font-medium text-text-muted mb-1.5">Global Maximum Leverage (x)</label>
               <input 
                 type="number" 
-                defaultValue="5.0" 
+                value={form.global_max_leverage} 
+                onChange={(e) => setForm({ ...form, global_max_leverage: parseFloat(e.target.value) })}
                 step="0.5"
                 className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
               />
@@ -64,7 +118,8 @@ export default function AdminSettingsPage() {
               <label className="block text-sm font-medium text-text-muted mb-1.5">Default Commission Rate (%)</label>
               <input 
                 type="number" 
-                defaultValue="0.1" 
+                value={form.default_commission_pct} 
+                onChange={(e) => setForm({ ...form, default_commission_pct: parseFloat(e.target.value) })}
                 step="0.01"
                 className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
               />
@@ -74,7 +129,8 @@ export default function AdminSettingsPage() {
               <label className="block text-sm font-medium text-text-muted mb-1.5">Default Slippage Impact (%)</label>
               <input 
                 type="number" 
-                defaultValue="0.1" 
+                value={form.default_slippage_pct} 
+                onChange={(e) => setForm({ ...form, default_slippage_pct: parseFloat(e.target.value) })}
                 step="0.01"
                 className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
               />
@@ -83,10 +139,10 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Emergency Controls */}
-        <div className="bg-danger/5 border border-danger/20 rounded-lg p-6 lg:col-span-2">
-          <div className="flex items-center gap-3 mb-6 border-b border-danger/20 pb-4">
-            <ShieldAlert className="w-5 h-5 text-danger" />
-            <h3 className="text-lg font-semibold text-danger">Emergency Controls</h3>
+        <div className={`${form.global_kill_switch_active ? 'bg-danger/20 border-danger/50' : 'bg-danger/5 border-danger/20'} border rounded-lg p-6 lg:col-span-2 transition-colors`}>
+          <div className={`flex items-center gap-3 mb-6 border-b ${form.global_kill_switch_active ? 'border-danger/50' : 'border-danger/20'} pb-4`}>
+            <ShieldAlert className={`w-5 h-5 ${form.global_kill_switch_active ? 'text-danger' : 'text-danger/70'}`} />
+            <h3 className={`text-lg font-semibold ${form.global_kill_switch_active ? 'text-danger' : 'text-danger/80'}`}>Emergency Controls</h3>
           </div>
           
           <div className="flex items-center justify-between">
@@ -94,8 +150,11 @@ export default function AdminSettingsPage() {
               <p className="text-sm font-medium text-text-primary">Global Trading Halt (System-wide Kill Switch)</p>
               <p className="text-xs text-text-muted mt-1">Instantly suspends all trade execution across every portfolio and mandate.</p>
             </div>
-            <button className="bg-danger hover:bg-danger/80 text-white px-6 py-2.5 rounded-md text-sm font-bold transition-colors shadow-lg">
-              ENGAGE HALT
+            <button 
+              onClick={handleKillSwitch}
+              className={`${form.global_kill_switch_active ? 'bg-background-panel-1 text-danger border-danger' : 'bg-danger hover:bg-danger/80 text-white'} border px-6 py-2.5 rounded-md text-sm font-bold transition-colors shadow-lg`}
+            >
+              {form.global_kill_switch_active ? 'DISENGAGE HALT' : 'ENGAGE HALT'}
             </button>
           </div>
         </div>

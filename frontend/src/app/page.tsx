@@ -93,8 +93,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-background-panel-1 border-2 border-dashed border-border-secondary rounded-lg p-6 text-center"><Server className="w-8 h-8 mx-auto text-text-muted mb-2" /><h4 className="font-semibold text-text-primary">Trades Today</h4><p className="text-2xl font-mono">1,234</p><p className="text-xs text-text-muted">(Placeholder)</p></div>
-        <div className="bg-background-panel-1 border-2 border-dashed border-border-secondary rounded-lg p-6 text-center"><Users className="w-8 h-8 mx-auto text-text-muted mb-2" /><h4 className="font-semibold text-text-primary">Connected Users</h4><p className="text-2xl font-mono">56</p><p className="text-xs text-text-muted">(Placeholder)</p></div>
+        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6 text-center"><Server className="w-8 h-8 mx-auto text-primary-blue mb-2" /><h4 className="font-semibold text-text-primary">Trades Today</h4><p className="text-2xl font-mono">{health?.trades_today || 0}</p><p className="text-xs text-text-muted">Live Executions</p></div>
+        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6 text-center"><Users className="w-8 h-8 mx-auto text-primary-teal mb-2" /><h4 className="font-semibold text-text-primary">Registered Users</h4><p className="text-2xl font-mono">{health?.active_users || 0}</p><p className="text-xs text-text-muted">System Accounts</p></div>
       </div>
     </div>
   );
