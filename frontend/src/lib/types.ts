@@ -1,25 +1,62 @@
+import { Time } from "lightweight-charts";
+
 export interface RiskMandate {
+  pk_id: number;
   id: string;
   name: string;
+  description: string;
+  risk_tier: string;
+  max_position_size_pct: number;
+  max_portfolio_exposure_pct: number;
   max_leverage: number;
-  max_drawdown_pct: number;
   daily_loss_limit_pct: number;
+  max_drawdown_pct: number;
+  max_open_positions: number;
+  restricted_assets_enabled: boolean;
+  kill_switch_enabled: boolean;
+  allowed_assets: string[];
+  is_active: boolean;
   kill_switch_active: boolean;
+  version: number;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface EngineHealth {
-  status: string;
-  database: string;
-  active_mandates: number;
+export interface PortfolioRiskContext {
+  mandate_name?: string;
+  risk_tier?: string;
+  daily_loss_limit?: number;
+  max_drawdown?: number;
+  current_drawdown?: number;
+  capital_at_risk?: number;
+  exposure_used?: number;
+  leverage_used?: number;
+  kill_switch_status?: boolean;
+  mandate_id?: string;
+  daily_loss_limit_pct?: number;
+  max_drawdown_pct?: number;
+  current_drawdown_pct?: number;
+  leverage_limit?: number;
+  exposure_utilization_pct?: number;
 }
 
 export interface Portfolio {
   id: string;
   user_id: string;
   mandate_id: string;
+  mandate_pk_id: number;
   total_equity: number;
   available_margin: number;
   current_drawdown_pct: number;
+  risk_context: PortfolioRiskContext;
+}
+
+// Other types can be added here as needed
+export interface EngineHealth {
+  status: string;
+  database: string;
+  active_mandates: number;
+  timestamp: string;
 }
 
 export interface PortfolioSummary {
@@ -27,8 +64,8 @@ export interface PortfolioSummary {
   total_equity: number;
   total_pnl: number;
   overall_win_rate_pct: number;
-  best_performing_portfolio: string | null;
-  worst_performing_portfolio: string | null;
+  best_performing_id: string;
+  worst_performing_id: string;
 }
 
 export interface PortfolioStats {
@@ -44,48 +81,23 @@ export interface PortfolioStats {
 
 export interface Trade {
   id: string;
-  portfolio_id: string;
+  portfolio_id: number;
   symbol: string;
-  side: string;
+  side: 'BUY' | 'SELL';
   size: number;
   entry_price: number;
   exit_price?: number;
-  status: string;
+  status: 'OPEN' | 'CLOSED' | 'REJECTED';
   pnl: number;
   created_at: string;
   closed_at?: string;
 }
 
-export interface TradeResponse {
-  status: string;
-  trade_id: string;
-  fill_price: number;
-}
-
-export interface ReportGenerate {
-  portfolio_id: string;
-  report_type: 'WEEKLY' | 'MONTHLY' | 'CUSTOM';
-  start_date?: string;
-  end_date?: string;
-}
-
-export interface Report {
-  id: string;
-  portfolio_id: string;
-  report_type: string;
-  period_start: string;
-  period_end: string;
-  performance_metrics: any;
-  risk_metrics: any;
-  trades_summary: any;
-  created_at: string;
-}
-
 export interface RiskEvent {
   id: string;
-  portfolio_id: string;
+  portfolio_id: number;
   event_type: string;
-  severity: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
   description: string;
   triggered_at: string;
   resolved: boolean;
@@ -98,12 +110,11 @@ export interface AuditLog {
   description: string;
   metadata_json: any;
 }
-
 export interface PaginatedAuditLogs {
+  logs: AuditLog[];
   total: number;
   limit: number;
   offset: number;
-  logs: AuditLog[];
 }
 
 export interface BacktestRequest {
@@ -111,7 +122,9 @@ export interface BacktestRequest {
   timeframe: string;
   strategy: string;
   initial_capital: number;
-  strategy_params?: { [key: string]: any };
+  strategy_params?: {
+    [key: string]: any;
+  };
 }
 
 export interface BacktestMetrics {
@@ -121,11 +134,6 @@ export interface BacktestMetrics {
   win_rate_pct: number;
   sharpe_ratio: number;
   total_trades_simulated: number;
-}
-
-export interface EquityDataPoint {
-  time: number;
-  value: number;
 }
 
 export interface BacktestResponse {
@@ -138,4 +146,31 @@ export interface BacktestResponse {
 export interface AuthResponse {
   access_token: string;
   token_type: string;
+}
+export interface TradeResponse {
+  status: string;
+  trade_id: string;
+  fill_price: number;
+}
+export interface EquityDataPoint { time: Time, value: number }
+
+export interface Report {
+  id: string;
+  portfolio_id: number;
+  report_type: 'WEEKLY' | 'MONTHLY';
+  period_start: string;
+  period_end: string;
+  performance_metrics: {
+    total_return_pct: number;
+    total_pnl: number;
+    winning_trades: number;
+    losing_trades: number;
+    win_rate_pct: number;
+  };
+  created_at: string;
+}
+
+export interface ReportGenerate {
+  portfolio_id: string;
+  report_type: 'WEEKLY' | 'MONTHLY';
 }

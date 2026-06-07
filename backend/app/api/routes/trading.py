@@ -36,7 +36,7 @@ def execute_trade(
 
     # --- Use the dedicated Risk Engine ---
     risk_engine = RiskEngine(db, background_tasks)
-    mandate = db.query(domain.Mandate).filter(domain.Mandate.id == portfolio.mandate_id).first()
+    mandate = db.query(domain.Mandate).filter(domain.Mandate.pk_id == portfolio.mandate_pk_id).first()
     mock_price = 65000.0 if trade_in.symbol == "BTC/USDT" else 3500.0
 
     order_details = {
@@ -49,12 +49,27 @@ def execute_trade(
     try:
         risk_engine.evaluate_pre_trade(portfolio, mandate, order_details)
     except RiskRejectionError as e:
+        # Save the rejected trade so it appears in the UI
+        rejected_trade = domain.Trade(
+            id=f"trade_{uuid.uuid4().hex[:12]}",
+            portfolio_id=portfolio.pk_id,
+            symbol=trade_in.symbol,
+            side=trade_in.side,
+            quantity=trade_in.size,
+            entry_price=mock_price,
+            status="REJECTED",
+            created_at=datetime.utcnow(),
+            closed_at=datetime.utcnow(),
+            pnl=0.0
+        )
+        db.add(rejected_trade)
         audit_service.create_audit_log(
             db,
             action_type="RISK_REJECTION",
             description=str(e),
-            metadata={"portfolio_id": portfolio_id, "user_id": current_user.id, "user_email": current_user.email, "order": order_details}
+            metadata_json={"portfolio_id": portfolio_id, "user_id": current_user.id, "user_email": current_user.email, "order": order_details, "trade_id": rejected_trade.id}
         )
+        db.commit() # Ensure both the trade and log are saved!
         background_tasks.add_task(
             manager.broadcast,
             {
@@ -73,10 +88,10 @@ def execute_trade(
     # Create a new trade record
     new_trade = domain.Trade(
         id=f"trade_{uuid.uuid4().hex[:12]}",
-        portfolio_id=portfolio.id,
+        portfolio_id=portfolio.pk_id,
         symbol=trade_in.symbol,
         side=trade_in.side,
-        size=trade_in.size,
+        quantity=trade_in.size,
         entry_price=mock_price,
         status="OPEN",
         created_at=datetime.utcnow()
@@ -103,13 +118,19 @@ def execute_trade(
 
     portfolio.available_margin += required_margin
     portfolio.total_equity += pnl
+    
+    equity_point = domain.EquityCurve(
+        portfolio_id=portfolio.pk_id,
+        equity=portfolio.total_equity
+    )
+    db.add(equity_point)
     db.commit()
 
     audit_service.create_audit_log(
         db,
         action_type="TRADE_EXECUTED",
         description=f"Trade {new_trade.id} ({trade_in.side} {trade_in.size} {trade_in.symbol}) executed and closed with P&L: ${pnl:,.2f}.",
-        metadata={
+        metadata_json={
             "trade_id": new_trade.id,
             "portfolio_id": portfolio.id,
             "user_id": current_user.id,
@@ -156,7 +177,7 @@ def reset_kill_switch(
         db,
         action_type="KILL_SWITCH_RESET",
         description=f"Kill switch manually reset for mandate {mandate_id} by {current_user.email}",
-        metadata={"mandate_id": mandate_id, "user_id": current_user.id}
+        metadata_json={"mandate_id": mandate_id, "user_id": current_user.id}
     )
     db.commit()
 

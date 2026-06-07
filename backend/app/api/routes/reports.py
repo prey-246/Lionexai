@@ -1,13 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
 from datetime import datetime, timedelta
 import uuid
+import os
+from jinja2 import Environment, FileSystemLoader
 
 from app.core.database import get_db
 from app.models import schemas, domain
 from app.api.deps import get_current_user
+from app.services.audit_service import create_audit_log
 
 router = APIRouter()
 
@@ -39,7 +42,7 @@ def generate_report(
 
     # Fetch trades within the date range
     trades = db.query(domain.Trade).filter(
-        domain.Trade.portfolio_id == report_in.portfolio_id,
+        domain.Trade.portfolio_id == portfolio.pk_id,
         domain.Trade.status == "CLOSED",
         domain.Trade.closed_at >= start_date,
         domain.Trade.closed_at <= end_date
@@ -53,11 +56,13 @@ def generate_report(
         pnls = [t.pnl for t in trades if t.pnl is not None]
         winning_trades = len([p for p in pnls if p > 0])
         losing_trades = len([p for p in pnls if p < 0])
+        initial_equity_for_period = portfolio.total_equity - sum(pnls)
         performance_metrics = {
             "total_pnl": round(sum(pnls), 2),
             "win_rate_pct": round((winning_trades / total_trades) * 100, 2),
             "winning_trades": winning_trades,
             "losing_trades": losing_trades,
+            "total_return_pct": round((sum(pnls) / initial_equity_for_period) * 100, 2) if initial_equity_for_period > 0 else 0,
             "best_trade": round(max(pnls), 2) if pnls else 0,
             "worst_trade": round(min(pnls), 2) if pnls else 0,
         }
@@ -65,19 +70,83 @@ def generate_report(
     # Create and save the report
     new_report = domain.Report(
         id=f"report_{uuid.uuid4().hex[:12]}",
-        portfolio_id=report_in.portfolio_id,
+        portfolio_id=portfolio.pk_id,
         report_type=report_in.report_type,
         period_start=start_date,
         period_end=end_date,
-        performance_metrics=performance_metrics,
-        risk_metrics={"max_drawdown_pct": portfolio.current_drawdown_pct}, # Simplified
-        trades_summary={"total_trades": total_trades}
+        performance_metrics=performance_metrics
     )
     db.add(new_report)
+
+    create_audit_log(
+        db,
+        action_type="REPORT_GENERATE",
+        description=f"User '{current_user.email}' generated a '{new_report.report_type}' report for portfolio '{portfolio.id}'.",
+        metadata_json={"report_id": new_report.id, "portfolio_id": portfolio.id, "user_id": current_user.id}
+    )
     db.commit()
     db.refresh(new_report)
 
     return new_report
+
+@router.get("/{report_id}/download")
+def download_report(
+    report_id: str,
+    db: Session = Depends(get_db),
+    current_user: domain.User = Depends(get_current_user)
+):
+    """Download a generated report as a PDF."""
+    report = db.query(domain.Report).filter(domain.Report.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    portfolio = db.query(domain.Portfolio).filter(
+        domain.Portfolio.pk_id == report.portfolio_id,
+        domain.Portfolio.user_id == current_user.id
+    ).first()
+
+    if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+
+    try:
+        import weasyprint
+    except ImportError:
+        raise HTTPException(
+            status_code=501, 
+            detail="PDF generation relies on 'weasyprint' which is not installed in the current environment."
+        )
+
+    # Locate and render the Jinja2 Template
+    template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
+    if not os.path.exists(template_dir):
+        os.makedirs(template_dir)
+
+    env = Environment(loader=FileSystemLoader(template_dir))
+    
+    try:
+        template = env.get_template("report.html")
+        html_out = template.render(
+            report=report,
+            portfolio=portfolio,
+            user=current_user,
+            date_generated=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        )
+    except Exception as e:
+        # Fallback if the file hasn't been created yet
+        html_out = f"<h1>NEXA Report</h1><p>Portfolio: {portfolio.id}</p><p>Total P&L: ${report.performance_metrics.get('total_pnl', 0)}</p>"
+
+    # Generate PDF buffer
+    pdf_bytes = weasyprint.HTML(string=html_out).write_pdf()
+
+    # Return as an inline downloadable attachment
+    headers = {
+        'Content-Disposition': f'attachment; filename="NEXA_{portfolio.id}_{report.report_type}.pdf"'
+    }
+    return Response(
+        content=pdf_bytes, 
+        media_type="application/pdf", 
+        headers=headers
+    )
 
 @router.get("/{portfolio_id}", response_model=List[schemas.Report])
 def get_reports(
@@ -96,7 +165,7 @@ def get_reports(
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
-    query = db.query(domain.Report).filter(domain.Report.portfolio_id == portfolio_id)
+    query = db.query(domain.Report).filter(domain.Report.portfolio_id == portfolio.pk_id)
 
     if report_type:
         query = query.filter(domain.Report.report_type == report_type)

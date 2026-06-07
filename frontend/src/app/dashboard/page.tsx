@@ -1,66 +1,45 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { portfolioAPI } from "@/lib/api";
-import { ArrowUpRight, ArrowDownLeft, TrendingUp, AlertCircle } from "lucide-react";
-import { GlassCard } from "@/components/ui/GlassCard";
-import { MetricDisplay } from "@/components/ui/MetricDisplay";
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { portfolioAPI } from '@/lib/api';
+import type { Portfolio, PortfolioSummary } from '@/lib/types';
+import { PageHeader } from "@/components/ui/PageHeader";
+import { MetricDisplay } from '@/components/ui/MetricDisplay';
+import { Loader2, AlertTriangle, Wallet, Activity, TrendingUp, ArrowRight, Star, ShieldAlert } from 'lucide-react';
+import MandateBadge from '@/components/ui/MandateBadge';
 
 export default function ClientDashboard() {
-  const [portfolio, setPortfolio] = useState<any>(null);
-  const [stats, setStats] = useState<any>(null);
-  const [trades, setTrades] = useState<any[]>([]);
+  const [summary, setSummary] = useState<PortfolioSummary | null>(null);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [livePrices, setLivePrices] = useState<{[key: string]: number}>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [portfoliosList, setPortfoliosList] = useState<any[]>([]);
-  const [activePortfolioId, setActivePortfolioId] = useState<string | null>(null);
 
   useEffect(() => {
-    let currentId = activePortfolioId;
-
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
         setError(null);
-
-        const portfolios = await portfolioAPI.listPortfolios();
-        setPortfoliosList(portfolios);
-        if (portfolios.length === 0) {
-          throw new Error("No portfolios found. Please create one in the 'Portfolios' section.");
-        }
-
-        const targetId = currentId || portfolios[0].id;
-        if (!currentId) {
-          currentId = targetId;
-          setActivePortfolioId(targetId);
-        }
-
-        const mainPortfolio = portfolios.find(p => p.id === targetId) || portfolios[0];
-        setPortfolio(mainPortfolio);
-
-        const statsData = await portfolioAPI.getStats(mainPortfolio.id);
-        setStats(statsData);
-
-        const tradesData = await portfolioAPI.getTrades(mainPortfolio.id);
-        setTrades(tradesData.slice(0, 10));
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load dashboard");
+        const [summaryData, portfoliosData] = await Promise.all([
+          portfolioAPI.getSummary(),
+          portfolioAPI.listPortfolios(),
+        ]);
+        setSummary(summaryData);
+        setPortfolios(portfoliosData || []);
+      } catch (err: any) {
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
+    fetchDashboardData();
     
-    // --- WebSocket: Live Market Data ---
     const wsUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/^http/, 'ws');
     const marketWs = new WebSocket(`${wsUrl}/api/ws/market`);
-    
     marketWs.onopen = () => {
       marketWs.send(JSON.stringify({ type: 'SUBSCRIBE', symbols: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'] }));
     };
-
     marketWs.onmessage = (event) => {
       const message = JSON.parse(event.data);
       if (message.type === 'MARKET_TICK') {
@@ -68,195 +47,105 @@ export default function ClientDashboard() {
       }
     };
 
-    // --- WebSocket: Live Portfolio Updates ---
-    const portfolioWs = new WebSocket(`${wsUrl}/api/ws/portfolio`);
-    
-    portfolioWs.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'PORTFOLIO_UPDATE') {
-        // Re-fetch all data to ensure equity, margins, and the recent trades list are perfectly synced
-        fetchData();
-      }
-    };
-
-    // Cleanup on unmount
-    return () => { clearInterval(interval); marketWs.close(); portfolioWs.close(); };
-  }, [activePortfolioId]);
+    return () => { marketWs.close(); };
+  }, []);
 
   if (loading) {
-    return (
-      <main className="min-h-screen p-6 md:p-8 max-w-7xl mx-auto">
-        <div className="text-center text-gray-400">Loading portfolio data...</div>
-      </main>
-    );
+    return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   }
 
   if (error) {
     return (
-      <main className="min-h-screen p-6 md:p-8 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2 text-red-400 bg-red-900/10 p-4 rounded border border-red-900/30">
-          <AlertCircle className="w-5 h-5" />
-          {error}
-        </div>
-      </main>
+      <div className="flex flex-col items-center justify-center h-64 text-danger">
+        <AlertTriangle className="w-12 h-12 mb-4" />
+        <h2 className="text-xl font-semibold">Failed to load dashboard</h2>
+        <p className="text-sm">{error}</p>
+      </div>
     );
   }
 
-  const returnPct = portfolio ? ((portfolio.total_equity - 100000) / 100000) * 100 : 0;
-  const winRate = stats?.win_rate || 0;
+  if (!summary) {
+    return <div>No summary data available.</div>;
+  }
 
   return (
-    <main className="min-h-screen p-6 md:p-8 max-w-7xl mx-auto space-y-8">
-      {/* HEADER */}
-      <header className="border-b border-gray-800 pb-6 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-white">Portfolio Dashboard</h1>
-          <p className="text-gray-400 text-sm mt-1">Real-time performance & position monitoring</p>
-        </div>
-        {portfoliosList.length > 0 && (
-          <div className="w-full md:w-64">
-            <label className="block text-xs font-medium text-gray-400 mb-1">Select Portfolio</label>
-            <select
-              value={activePortfolioId || ''}
-              onChange={(e) => { setLoading(true); setActivePortfolioId(e.target.value); }}
-              className="w-full bg-[#0B1020] border border-gray-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-[#22D3EE] transition-colors"
-            >
-              {portfoliosList.map(p => (
-                <option key={p.id} value={p.id}>{p.id} ({p.mandate_id})</option>
-              ))}
-            </select>
-          </div>
-        )}
-      </header>
+    <div className="space-y-8">
+      <PageHeader title="My Dashboard" subtitle="Aggregate performance overview of all your portfolios" />
 
-      {/* LIVE MARKET TICKER */}
       <div className="flex gap-4 overflow-hidden py-1">
-        {Object.entries(livePrices).length > 0 ? (
-          Object.entries(livePrices).map(([symbol, price]) => (
-            <div key={symbol} className="flex items-center gap-2 text-sm font-mono bg-black/20 px-3 py-1.5 rounded-md border border-gray-800/50 shadow-sm">
-              <span className="text-gray-400">{symbol}</span>
-              <span className="text-[#22D3EE] font-bold">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        {Object.entries(livePrices || {}).length > 0 ? (
+          Object.entries(livePrices || {}).map(([symbol, price]) => (
+            <div key={symbol} className="flex items-center gap-2 text-sm font-mono bg-background-panel-2 px-3 py-1.5 rounded-md border border-border-secondary/50 shadow-sm">
+              <span className="text-text-muted">{symbol}</span>
+              <span className="text-primary-teal font-bold">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           ))
         ) : (
-          <div className="text-sm text-gray-500 font-mono animate-pulse flex items-center gap-2">
-             <div className="w-2 h-2 bg-gray-500 rounded-full animate-ping"></div>
+          <div className="text-sm text-text-muted font-mono animate-pulse flex items-center gap-2">
+             <div className="w-2 h-2 bg-text-muted rounded-full animate-ping"></div>
              Connecting to live market feed...
           </div>
         )}
       </div>
 
-      {/* KEY METRICS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricDisplay
-          label="Current Equity"
-          value={`$${(portfolio?.total_equity || 0).toFixed(2)}`}
-          change={returnPct}
-          icon={TrendingUp}
-        />
-        <MetricDisplay
-          label="Available Margin"
-          value={`$${(portfolio?.available_margin || 0).toFixed(2)}`}
-          change={0}
-          icon={TrendingUp}
-        />
-        <MetricDisplay
-          label="Total Return"
-          value={`${returnPct.toFixed(2)}%`}
-          change={returnPct}
-          icon={returnPct >= 0 ? ArrowUpRight : ArrowDownLeft}
-        />
-        <MetricDisplay
-          label="Win Rate"
-          value={`${winRate.toFixed(1)}%`}
-          change={0}
-          icon={TrendingUp}
-        />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MetricDisplay label="Total Equity" value={`$${summary.total_equity.toLocaleString()}`} icon={Wallet} />
+        <MetricDisplay label="Total P&L" value={`$${summary.total_pnl.toLocaleString()}`} trend={summary.total_pnl > 0 ? 'up' : 'down'} icon={Activity} />
+        <MetricDisplay label="Overall Win Rate" value={`${summary.overall_win_rate_pct}%`} icon={TrendingUp} />
+        <MetricDisplay label="Active Portfolios" value={summary.portfolio_count} icon={ShieldAlert} />
       </div>
 
-      {/* PERFORMANCE OVERVIEW */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <GlassCard className="p-6">
-          <div className="text-gray-400 text-sm mb-2">Drawdown Risk</div>
-          <div className="text-2xl font-semibold text-white">{(portfolio?.current_drawdown_pct || 0).toFixed(2)}%</div>
-          <div className="text-xs text-gray-500 mt-2">Current peak-to-trough</div>
-        </GlassCard>
-
-        <GlassCard className="p-6">
-          <div className="text-gray-400 text-sm mb-2">Total Trades</div>
-          <div className="text-2xl font-semibold text-white">{stats?.total_trades || 0}</div>
-          <div className="text-xs text-gray-500 mt-2">Closed positions</div>
-        </GlassCard>
-
-        <GlassCard className="p-6">
-          <div className="text-gray-400 text-sm mb-2">Total P&L</div>
-          <div className={`text-2xl font-semibold ${(stats?.total_pnl || 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
-            ${(stats?.total_pnl || 0).toFixed(2)}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4">Top Performers</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-text-muted flex items-center gap-2"><Star className="w-4 h-4 text-primary-gold"/>Best Portfolio</span>
+              <span className="font-mono text-primary-gold">{summary.best_performing_id || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-text-muted flex items-center gap-2"><TrendingUp className="w-4 h-4 text-danger transform scale-y-[-1]"/>Worst Portfolio</span>
+              <span className="font-mono text-danger">{summary.worst_performing_id || 'N/A'}</span>
+            </div>
           </div>
-          <div className="text-xs text-gray-500 mt-2">Realized gains/losses</div>
-        </GlassCard>
-      </div>
-
-      {/* RECENT TRADES */}
-      <section className="space-y-4">
-        <div className="border-b border-gray-800 pb-2">
-          <h2 className="text-lg font-medium tracking-tight text-white">Recent Trades</h2>
         </div>
-        <GlassCard className="overflow-hidden border border-gray-800 bg-[#0B1020]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-black/40 text-gray-400 uppercase tracking-wider text-[10px] border-b border-gray-800">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Symbol</th>
-                  <th className="px-6 py-4 font-medium">Side</th>
-                  <th className="px-6 py-4 font-medium">Size</th>
-                  <th className="px-6 py-4 font-medium">Entry</th>
-                  <th className="px-6 py-4 font-medium">Exit</th>
-                  <th className="px-6 py-4 font-medium">P&L</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-850">
-                {trades.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500 italic">
-                      No trades yet. Start trading to build your track record.
-                    </td>
-                  </tr>
-                ) : (
-                  trades.map((trade) => (
-                    <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-[#22D3EE] text-xs">{trade.symbol}</td>
-                      <td className="px-6 py-4">
-                        <span className={`font-semibold ${trade.side === "BUY" ? "text-green-400" : "text-red-400"}`}>
-                          {trade.side}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-200 font-mono">{trade.size}</td>
-                      <td className="px-6 py-4 text-gray-400 font-mono">${trade.entry_price?.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-gray-400 font-mono">{trade.exit_price ? `$${trade.exit_price.toFixed(2)}` : "—"}</td>
-                      <td className={`px-6 py-4 font-semibold font-mono ${trade.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        ${trade.pnl.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider ${
-                          trade.status === "CLOSED"
-                            ? "bg-blue-900/20 text-blue-300 border border-blue-900/30"
-                            : trade.status === "OPEN"
-                            ? "bg-yellow-900/20 text-yellow-300 border border-yellow-900/30"
-                            : "bg-red-900/20 text-red-300 border border-red-900/30"
-                        }`}>
-                          {trade.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </GlassCard>
-      </section>
-    </main>
+        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4">Quick Actions</h3>
+           <div className="flex gap-4">
+              <Link href="/portfolios" className="flex-1 text-center bg-primary-blue/10 text-primary-blue border border-primary-blue/20 hover:bg-primary-blue/20 rounded-md p-3 text-sm font-semibold transition-colors">
+                Manage Portfolios
+              </Link>
+              <Link href="/trade" className="flex-1 text-center bg-primary-teal/10 text-primary-teal border border-primary-teal/20 hover:bg-primary-teal/20 rounded-md p-3 text-sm font-semibold transition-colors">
+                Go to Terminal
+              </Link>
+           </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Portfolio List</h3>
+        <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
+          <ul className="divide-y divide-border-secondary">
+            {portfolios?.length > 0 ? portfolios.map(p => (
+              <li key={p.id}>
+                <Link href={`/portfolios/${p.id}`} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors group">
+                  <div>
+                    <p className="font-mono text-primary-gold group-hover:text-primary-teal">{p.id}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <MandateBadge mandateId={p.mandate_id} />
+                      <span className="text-xs text-text-muted">|</span>
+                      <p className="text-xs text-text-muted">Equity: ${p.total_equity.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-text-muted group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </li>
+            )) : (
+              <li className="p-4 text-center text-text-muted">No portfolios found. Create one in the 'Portfolios' section to get started.</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
   );
 }

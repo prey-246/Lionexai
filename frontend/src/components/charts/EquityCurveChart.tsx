@@ -2,21 +2,22 @@
 
 import { useEffect, useRef } from 'react';
 import { createChart, ColorType, Time } from 'lightweight-charts';
-import type { EquityDataPoint } from '@/lib/types';
 
 interface EquityCurveChartProps {
-  data: EquityDataPoint[];
+  // Accept both API response formats: 
+  // 1. Portfolio API: { timestamp: string, equity: number }
+  // 2. Backtest API: { time: number, value: number }
+  data: any[];
 }
 
 export function EquityCurveChart({ data }: EquityCurveChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!chartContainerRef.current || data.length === 0) return;
+    if (!chartContainerRef.current || !data || !Array.isArray(data)) return;
 
     const chart = createChart(chartContainerRef.current, {
-      width: chartContainerRef.current.clientWidth,
-      height: 300,
+      autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#D1D5DB',
@@ -40,14 +41,51 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
       lineWidth: 2,
     });
 
-    // Cast the numerical timestamp to the strictly expected Time type
-    areaSeries.setData(data.map(point => ({
-      ...point, time: point.time as Time
-    })));
-    chart.timeScale().fitContent();
+    // Format, deduplicate, and sort the data for the chart:
+    const dataMap = new Map<number, number>();
+    
+    if (data.length > 0) {
+      data.forEach(point => {
+        let timeKey: number;
+        let val: number;
+        
+        if (point.timestamp !== undefined && point.equity !== undefined) {
+          timeKey = Math.floor(new Date(point.timestamp).getTime() / 1000);
+          val = point.equity;
+        } else {
+          timeKey = Math.floor(point.time);
+          val = point.value;
+        }
+        
+        // Map automatically deduplicates identical timestamps (keeping the latest)
+        dataMap.set(timeKey, val);
+      });
+    }
+
+    const formattedData = Array.from(dataMap.entries())
+      .map(([time, value]) => ({ time: time as Time, value }))
+      .sort((a, b) => (a.time as number) - (b.time as number));
+
+    // Lightweight charts requires at least 2 points to draw an area/line.
+    // If a portfolio is brand new, duplicate the point 1 hour into the future to draw a flat line.
+    if (formattedData.length === 1) {
+      formattedData.push({
+        time: ((formattedData[0].time as number) + 3600) as Time,
+        value: formattedData[0].value,
+      });
+    }
+
+    if (formattedData.length > 0) {
+      areaSeries.setData(formattedData);
+      chart.timeScale().fitContent();
+    }
 
     return () => chart.remove();
   }, [data]);
 
-  return <div ref={chartContainerRef} />;
+  if (!data || data.length === 0) {
+    return <div className="flex justify-center items-center h-[300px] w-full bg-background-panel-1 border border-border-secondary/30 rounded-lg text-text-muted text-sm italic">No equity data available for this portfolio yet.</div>;
+  }
+
+  return <div ref={chartContainerRef} className="w-full h-[300px]" />;
 }

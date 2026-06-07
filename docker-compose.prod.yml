@@ -34,6 +34,8 @@ services:
     restart: always
     # Use Gunicorn for a production-grade WSGI server
     command: /bin/sh -c "alembic upgrade head && gunicorn -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 app.main:app"
+    volumes:
+      - ./backend:/code
     ports:
       - "8000:8000"
     env_file:
@@ -42,6 +44,7 @@ services:
       - POSTGRES_HOST=db
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=production
+      - ENVIRONMENT_STATE=${ENVIRONMENT_STATE:-PAPER}
     depends_on:
       db:
         condition: service_healthy

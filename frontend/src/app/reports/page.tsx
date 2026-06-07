@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { portfolioAPI, reportsAPI } from '@/lib/api';
 import type { Portfolio, Report, ReportGenerate } from '@/lib/types';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Loader2, FileText, Calendar, BarChart2 } from 'lucide-react';
+import { Loader2, FileText, Calendar, BarChart2, Download } from 'lucide-react';
 
 export default function ReportsPage() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -116,11 +116,20 @@ export default function ReportsPage() {
                       {new Date(report.period_start).toLocaleDateString()} - {new Date(report.period_end).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className={`font-mono font-semibold text-lg ${report.performance_metrics?.total_pnl >= 0 ? 'text-status-success' : 'text-status-danger'}`}>
-                      {report.performance_metrics?.total_pnl >= 0 ? '+' : ''}${report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'}
-                    </p>
-                    <p className="text-xs text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
+                  <div className="text-right flex items-center gap-4">
+                    <div>
+                      <p className={`font-mono font-semibold text-lg ${report.performance_metrics?.total_pnl >= 0 ? 'text-status-success' : 'text-status-danger'}`}>
+                        {report.performance_metrics?.total_pnl >= 0 ? '+' : ''}${report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'}
+                      </p>
+                      <p className="text-xs text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
+                    </div>
+                    <button 
+                      onClick={() => reportsAPI.downloadReport(report.id, `NEXA_${selectedPortfolio}_${report.report_type}.pdf`)}
+                      className="p-2 bg-background-panel-2 hover:bg-primary-blue/20 text-primary-blue border border-border-secondary hover:border-primary-blue/30 rounded-md transition-colors"
+                      title="Download PDF"
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
               </li>

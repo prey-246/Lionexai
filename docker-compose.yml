@@ -59,7 +59,7 @@ services:
         condition: service_healthy
     healthcheck:
       # This test runs inside the container
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/system/health"]
       interval: 10s
       timeout: 5s
       retries: 5

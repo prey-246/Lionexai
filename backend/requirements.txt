@@ -15,3 +15,7 @@ python-multipart>=0.0.9
 ccxt>=4.2.82
 pandas>=2.2.1
 numpy>=1.26.4
+typer
+rich>=13.0.0
+WeasyPrint==62.3
+Jinja2==3.1.4

@@ -2,56 +2,108 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from './GlassCard';
-import { Radio, FlaskConical, Target, BarChart3, AlertTriangle, FileText } from 'lucide-react';
+import { Home, LayoutDashboard, Terminal, BrainCircuit, FileText, Shield, Wallet, FileSliders, LogOut, UserCog, Briefcase, Settings } from 'lucide-react';
+import { authAPI } from '@/lib/api';
+import { useUser } from '@/contexts/UserContext';
 
-export function NavBar() {
+const navSections = {
+  client: [
+    { href: '/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
+    { href: '/portfolios', label: 'Portfolios', icon: Wallet },
+    { href: '/backtest', label: 'Backtest', icon: BrainCircuit },
+    { href: '/reports', label: 'Reports', icon: FileText },
+    { href: '/risk', label: 'Risk Monitoring', icon: Shield },
+  ],
+  operator: [
+    { href: '/', label: 'System Operations', icon: Home },
+    { href: '/audit', label: 'Audit Trail', icon: Briefcase },
+  ],
+  risk: [
+    { href: '/mandates', label: 'Mandates', icon: FileSliders },
+    { href: '/audit', label: 'Audit Trail', icon: Briefcase }, // Also for risk
+  ],
+  admin: [
+    { href: '/admin/users', label: 'User Management', icon: UserCog },
+    { href: '/admin/settings', label: 'Settings', icon: Settings },
+  ],
+  // Terminal is a special case, available to clients, operators, and admins
+  terminal: { href: '/trade', label: 'Terminal', icon: Terminal, roles: ['client', 'operator', 'admin'] }
+};
+
+
+const NavBar = () => {
   const pathname = usePathname();
+  const { user, isLoading } = useUser();
 
-  const navItems = [
-    { name: 'Operations', path: '/', icon: Radio },
-    { name: 'Dashboard', path: '/dashboard', icon: BarChart3 },
-    { name: 'Execution', path: '/trade', icon: Target },
-    { name: 'Backtest', path: '/backtest', icon: FlaskConical },
-    { name: 'Reports', path: '/reports', icon: FileText },
-    { name: 'Risk', path: '/risk', icon: AlertTriangle },
-  ];
+  const handleLogout = async () => {
+    await authAPI.logout();
+  };
+
+  const getNavItemsForRole = () => {
+    if (!user) return [];
+    
+    let items: { href: string; label: string; icon: React.ElementType; }[] = [];
+    
+    switch (user.role_tier) {
+      case 'admin':
+        items = [...navSections.client, navSections.terminal, ...navSections.operator, ...navSections.risk, ...navSections.admin];
+        break;
+      case 'operator':
+        items = [...navSections.client, navSections.terminal, ...navSections.operator];
+        break;
+      case 'risk_manager':
+        items = [...navSections.client, ...navSections.risk];
+        break;
+      case 'client':
+      default:
+        items = [...navSections.client, navSections.terminal];
+        break;
+    }
+    // Remove duplicates
+    return items.filter((item, index, self) => index === self.findIndex((t) => t.href === item.href));
+  };
+
+  const navItems = getNavItemsForRole();
 
   return (
-    <nav className="border-b border-white/[0.04] bg-[#050816]/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 md:px-8 h-16 flex items-center gap-8">
-        <div className="flex items-center gap-2 mr-4">
-          <div className="w-6 h-6 rounded bg-gradient-to-br from-[#5EEAD4] to-[#22D3EE] flex items-center justify-center shadow-glow">
-            <span className="text-[#050816] font-bold text-[10px] tracking-tighter">NX</span>
-          </div>
-          <span className="text-white font-bold tracking-widest text-sm uppercase">UnifyX</span>
-        </div>
-
-        <div className="flex gap-1 h-full overflow-x-auto">
+    <aside className="w-64 bg-background-panel-1 border-r border-border-secondary p-6 flex-col hidden md:flex">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-primary-gold font-serif">NEXA</h1>
+        <p className="text-xs text-text-muted font-mono">QUANT PLATFORM</p>
+      </div>
+      <nav className="flex flex-col space-y-2">
+        <div className="flex-grow">
+          {isLoading && <div className="text-sm text-text-muted">Loading...</div>}
+          {!isLoading && !user && <div className="text-sm text-text-muted">Not logged in.</div>}
+          
           {navItems.map((item) => {
-            const isActive = pathname === item.path;
-            const Icon = item.icon;
+            const isActive = pathname === item.href;
             return (
               <Link
-                key={item.path}
-                href={item.path}
-                className={cn(
-                  "flex items-center gap-2 px-4 h-full text-sm font-medium transition-colors border-b-2 whitespace-nowrap",
-                  isActive
-                    ? "text-white border-[#5EEAD4] bg-white/[0.02]"
-                    : "text-gray-400 border-transparent hover:text-gray-200 hover:bg-white/[0.01]"
-                )}
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                  isActive ? 'bg-primary-gold/10 text-primary-gold' : 'text-text-muted hover:bg-gray-700/50 hover:text-text-primary'
+                }`}
               >
-                <Icon className="w-4 h-4" />
-                {item.name}
+                <item.icon className="w-5 h-5" />
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </div>
+      </nav>
+      <div className="mt-auto">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-md text-sm font-medium transition-colors text-text-muted hover:bg-danger/10 hover:text-danger"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>Sign Out</span>
+        </button>
       </div>
-    </nav>
+    </aside>
   );
-}
+};
 
-
-
+export default NavBar;

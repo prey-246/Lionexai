@@ -1,6 +1,10 @@
+import asyncio
+import random
 import ccxt
 import pandas as pd
 import logging
+
+from app.core.sockets import ConnectionManager
 
 logger = logging.getLogger("nexa.market_data")
 
@@ -30,3 +34,21 @@ class MarketDataService:
         except Exception as e:
             logger.error(f"Failed to fetch market data: {str(e)}")
             raise e
+
+async def market_data_streamer(conn_manager: ConnectionManager):
+    """Simulates a high-frequency market data feed with a random walk."""
+    prices = {"BTC/USDT": 65000.0, "ETH/USDT": 3500.0, "SOL/USDT": 150.0}
+    
+    logger.info("Starting market data streamer with random walk.")
+
+    while True:
+        await asyncio.sleep(1) # Broadcast every 1 second
+        if "market" in conn_manager.channels and conn_manager.channels["market"]:
+            tick_data = {}
+            for sym in prices:
+                # Random walk: max 0.05% movement per second
+                change = (random.random() - 0.5) * 2 * 0.0005 * prices[sym]
+                prices[sym] = round(prices[sym] + change, 2)
+                tick_data[sym] = prices[sym]
+
+            await conn_manager.broadcast({"type": "MARKET_TICK", "data": tick_data}, "market")

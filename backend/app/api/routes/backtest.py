@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 import random
 import time
-import ccxt
 import pandas as pd
 import numpy as np
+from sqlalchemy.orm import Session
+from datetime import datetime, timedelta, timezone
 
 from app.models import schemas
 from app.api.deps import get_current_user
+from app.core.database import get_db
 from app.models import domain
 from app.strategies import get_strategy
 
@@ -15,24 +17,47 @@ router = APIRouter()
 @router.post("/run", response_model=schemas.BacktestResponse)
 def run_backtest(
     backtest_in: schemas.BacktestRequest,
+    db: Session = Depends(get_db),
     current_user: domain.User = Depends(get_current_user)
 ):
     """
-    Runs a simplified, simulated backtest.
-    In a real system, this would fetch historical data and run a complex simulation.
+    Runs a backtest using historical daily data from the database.
     """
-    # 1. Fetch historical data using ccxt, using the requested timeframe
-    exchange = ccxt.binance()
-    # Fetch 500 candles to have enough data for the selected timeframe
-    try:
-        ohlcv = exchange.fetch_ohlcv(backtest_in.symbol, backtest_in.timeframe, limit=500)
-        if len(ohlcv) < 50: # Not enough data to be meaningful
-            raise ValueError("Not enough historical data for this symbol/timeframe combination.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to fetch market data: {e}")
+    # 1. Fetch historical data from the database
+    # NOTE: This assumes `schemas.BacktestRequest` is updated with optional `start_date` and `end_date`.
+    # Using getattr for safety in case the schema is not yet updated.
+    end_date = getattr(backtest_in, 'end_date', None) or datetime.now(timezone.utc)
+    start_date = getattr(backtest_in, 'start_date', None) or end_date - timedelta(days=365)
 
-    df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    # The backfilled data is daily, so we enforce the '1d' timeframe for now.
+    if backtest_in.timeframe != '1d':
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only '1d' timeframe is supported for database backtests at the moment. Please backfill data for other timeframes if needed."
+        )
+
+    try:
+        query = db.query(
+            domain.MarketDataOHLCV.timestamp,
+            domain.MarketDataOHLCV.open,
+            domain.MarketDataOHLCV.high,
+            domain.MarketDataOHLCV.low,
+            domain.MarketDataOHLCV.close,
+            domain.MarketDataOHLCV.volume
+        ).filter(
+            domain.MarketDataOHLCV.symbol == backtest_in.symbol,
+            domain.MarketDataOHLCV.timestamp >= start_date,
+            domain.MarketDataOHLCV.timestamp <= end_date
+        ).order_by(domain.MarketDataOHLCV.timestamp.asc())
+        
+        df = pd.read_sql(query.statement, db.bind)
+
+        if len(df) < 50:
+            raise ValueError(f"Not enough historical data in the database for {backtest_in.symbol} between {start_date.date()} and {end_date.date()}. Please backfill more data.")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to fetch market data from database: {e}")
+
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
 
     # 2. Select and run the strategy
     strategy_class = get_strategy(backtest_in.strategy)

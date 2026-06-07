@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Cormorant_Garamond } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { AppShell } from "@/components/shell/AppShell";
+import EnvironmentBanner from "@/components/ui/EnvironmentBanner";
+import NavBar from "@/components/ui/NavBar";
+import { UserProvider } from "@/contexts/UserContext";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const jetbrains_mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-jetbrains-mono" });
-const cormorant_garamond = Cormorant_Garamond({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-cormorant-garamond" });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "NEXA | Institutional Terminal",
-  description: "Institutional Monitoring Console & Global Risk Parameters",
+  title: "NEXA Platform",
+  description: "Quantitative Trading Intelligence",
 };
 
 export default function RootLayout({
@@ -18,12 +18,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains_mono.variable} ${cormorant_garamond.variable}`}>
-      <body>
-        <AppShell>
-          {children}
-        </AppShell>
-      </body>
+    <html lang="en">
+      <UserProvider>
+        <body className={`${inter.className} bg-gray-900 text-gray-100 flex flex-col min-h-screen`}>
+          <EnvironmentBanner />
+          <div className="flex flex-1">
+            <NavBar />
+            <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+          </div>
+        </body>
+      </UserProvider>
     </html>
   );
 }

@@ -1,251 +1,144 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { auditAPI, portfolioAPI, systemAPI, tradeAPI } from "@/lib/api";
-import type { RiskEvent, AuditLog, RiskMandate } from "@/lib/types";
-import { AlertTriangle, ShieldAlert, CheckCircle, Unlock } from "lucide-react";
-import { GlassCard } from "@/components/ui/GlassCard";
+import { useState, useEffect } from 'react';
+import { portfolioAPI, systemAPI, auditAPI, tradeAPI } from '@/lib/api';
+import type { Portfolio, RiskMandate, AuditLog } from '@/lib/types';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Loader2, AlertTriangle, ShieldAlert, Unlock, TrendingDown, Gauge, Ban, Wallet } from 'lucide-react';
+import MandateBadge from '@/components/ui/MandateBadge';
 
 export default function RiskMonitoring() {
-  const [riskEvents, setRiskEvents] = useState<RiskEvent[]>([]);
-  const [rejections, setRejections] = useState<AuditLog[]>([]);
-  const [killSwitchEvents, setKillSwitchEvents] = useState<AuditLog[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [lockedMandates, setLockedMandates] = useState<RiskMandate[]>([]);
+  const [rejections, setRejections] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [portfolioData, mandateData, rejectionData] = await Promise.all([
+        portfolioAPI.listPortfolios(),
+        systemAPI.getMandates(),
+        auditAPI.getRiskRejections(20),
+      ]);
+      setPortfolios(portfolioData || []);
+      setLockedMandates((mandateData || []).filter((m: RiskMandate) => m.kill_switch_active));
+      setRejections(rejectionData || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const portfolios = await portfolioAPI.listPortfolios();
-        if (portfolios.length > 0) {
-          const events = await portfolioAPI.getRiskEvents(portfolios[0].id);
-          setRiskEvents(events);
-        }
-
-        const rejectionData = await auditAPI.getRiskRejections();
-        setRejections(rejectionData);
-
-        const killSwitchData = await auditAPI.getKillSwitchEvents();
-        setKillSwitchEvents(killSwitchData);
-
-        const mandatesData = await systemAPI.getMandates();
-        setLockedMandates(mandatesData.filter(m => m.kill_switch_active));
-      } catch (err) {
-        console.error("Failed to load risk data", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-    
-    const wsUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/^http/, 'ws');
-    const ws = new WebSocket(`${wsUrl}/api/ws/alerts`);
-    
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'RISK_ALERT') {
-        const data = message.data;
-        if (data.event_type === 'KILL_SWITCH_TRIGGERED' || data.event_type === 'KILL_SWITCH_RESET') {
-          // Fetch full data sync to instantly update the red lock-box states
-          fetchData(); 
-        } else if (data.event_type === 'RISK_REJECTION') {
-          setRejections(prev => [{
-            id: `ws-${Date.now()}`,
-            timestamp: data.triggered_at,
-            action_type: 'RISK_REJECTION',
-            description: data.description,
-            metadata_json: {}
-          }, ...prev].slice(0, 10));
-        } else {
-          setRiskEvents(prev => [{
-            id: `ws-${Date.now()}`,
-            portfolio_id: '', // Add missing required property
-            event_type: data.event_type,
-            severity: data.severity,
-            description: data.description,
-            triggered_at: data.triggered_at,
-            resolved: false
-          }, ...prev].slice(0, 10));
-        }
-      }
-    };
-    
-    return () => ws.close();
   }, []);
 
   const handleUnlock = async (mandateId: string) => {
-    try {
-      await tradeAPI.resetKillSwitch(mandateId);
-      setLockedMandates(lockedMandates.filter(m => m.id !== mandateId));
-      alert(`Mandate ${mandateId} has been successfully unlocked.`);
-    } catch (err: any) {
-      alert(`Failed to unlock mandate: ${err.message}`);
+    if (confirm(`Are you sure you want to reset the kill switch for mandate "${mandateId}"?`)) {
+      try {
+        await tradeAPI.resetKillSwitch(mandateId);
+        await fetchData(); // Re-fetch all data to update the UI
+      } catch (err: any) {
+        alert(`Failed to unlock mandate: ${err.message}`);
+      }
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "CRITICAL":
-        return "bg-red-900/20 border-red-900/30 text-red-300";
-      case "WARNING":
-        return "bg-yellow-900/20 border-yellow-900/30 text-yellow-300";
-      default:
-        return "bg-blue-900/20 border-blue-900/30 text-blue-300";
-    }
-  };
+  if (loading) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-gold" /></div>;
+  }
 
-  if (loading) return <div className="p-6 text-center text-gray-400">Loading risk data...</div>;
+  if (error) {
+    return <div className="text-center text-danger">{error}</div>;
+  }
+
+  const RiskProgressBar = ({ value, limit, label }: { value: number, limit: number, label: string }) => {
+    const percentage = limit > 0 ? (value / limit) * 100 : 0;
+    let colorClass = 'bg-success';
+    if (percentage > 75) {
+      colorClass = 'bg-danger';
+    } else if (percentage > 50) {
+      colorClass = 'bg-warning';
+    }
+  
+    return (
+      <div>
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-text-muted">{label}</span>
+          <span className="font-mono text-text-primary">{value.toFixed(2)}% / {limit.toFixed(2)}%</span>
+        </div>
+        <div className="w-full bg-background-panel-2 rounded-full h-2">
+          <div className={`${colorClass} h-2 rounded-full`} style={{ width: `${Math.min(percentage, 100)}%` }}></div>
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <main className="min-h-screen p-6 md:p-8 max-w-7xl mx-auto space-y-8">
-      <header className="border-b border-gray-800 pb-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
-          <ShieldAlert className="w-8 h-8 text-[#F59E0B]" />
-          Risk Monitoring
-        </h1>
-        <p className="text-gray-400 text-sm mt-1">Real-time risk events & audit trail</p>
-      </header>
+    <div className="space-y-8">
+      <PageHeader title="Risk Monitoring" subtitle="System-wide exposure, drawdown, and risk event overview." />
 
-      {/* LOCKED MANDATES / ADMIN OVERRIDE */}
-      {lockedMandates.length > 0 && (
-        <section className="space-y-4 mb-8">
-          <div className="border-b border-red-900/50 pb-2 flex justify-between items-center">
-            <h2 className="text-lg font-medium tracking-tight text-red-400">System Halts (Action Required)</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {lockedMandates.map((mandate) => (
-              <GlassCard key={mandate.id} className="p-5 border border-red-900/50 bg-red-900/10">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-red-400 flex items-center gap-2">
-                      <ShieldAlert className="w-5 h-5" /> 
-                      {mandate.name} ({mandate.id})
-                    </h3>
-                    <p className="text-sm text-red-300 mt-2">This mandate's kill switch has been engaged due to a severe risk breach. All trading is halted.</p>
-                  </div>
-                  <button 
-                    onClick={() => handleUnlock(mandate.id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-900/40 hover:bg-red-900/60 text-red-200 border border-red-800 rounded-md transition-colors text-sm font-semibold"
-                  >
-                    <Unlock className="w-4 h-4" />
-                    Reset & Unlock
-                  </button>
+      {lockedMandates?.length > 0 && (
+        <div className="bg-danger/10 border border-danger/30 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-danger mb-4 flex items-center gap-2"><ShieldAlert /> System Halts Active</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {lockedMandates?.map(mandate => (
+              <div key={mandate.pk_id} className="bg-background-panel-2 p-4 rounded-md flex justify-between items-center">
+                <div>
+                  <p className="font-semibold text-text-primary">{mandate.name}</p>
+                  <p className="font-mono text-sm text-danger">{mandate.id}</p>
                 </div>
-              </GlassCard>
+                <button onClick={() => handleUnlock(mandate.id)} className="flex items-center gap-2 px-3 py-1.5 bg-danger/20 hover:bg-danger/40 text-danger border border-danger/30 rounded-md text-xs font-semibold transition-colors">
+                  <Unlock className="w-4 h-4" />
+                  Reset
+                </button>
+              </div>
             ))}
           </div>
-        </section>
+        </div>
       )}
 
-      {/* CRITICAL ALERTS */}
-      <section className="space-y-4">
-        <div className="border-b border-gray-800 pb-2">
-          <h2 className="text-lg font-medium tracking-tight text-white">Risk Events</h2>
-        </div>
-        {riskEvents.length === 0 ? (
-          <GlassCard className="p-8 text-center text-gray-500">
-            <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500 opacity-50" />
-            No risk events detected
-          </GlassCard>
-        ) : (
-          <div className="space-y-3">
-            {riskEvents.slice(0, 10).map((event) => (
-              <GlassCard
-                key={event.id}
-                className={`p-4 border ${getSeverityColor(event.severity)}`}
-              >
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <div className="font-semibold">{event.event_type}</div>
-                    <div className="text-sm mt-1">{event.description}</div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      {new Date(event.triggered_at).toLocaleString()}
-                    </div>
-                  </div>
-                  {event.resolved && (
-                    <span className="text-xs bg-green-900/20 text-green-300 px-2 py-1 rounded">
-                      Resolved
-                    </span>
-                  )}
+      <div>
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Live Portfolio Risk Exposure</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {portfolios?.map(p => (
+            <div key={p.id} className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 space-y-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-mono text-primary-gold">{p.id}</p>
+                  <MandateBadge mandateId={p.mandate_id} />
                 </div>
-              </GlassCard>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* RISK REJECTIONS */}
-      <section className="space-y-4">
-        <div className="border-b border-gray-800 pb-2">
-          <h2 className="text-lg font-medium tracking-tight text-white">Risk Rejections</h2>
-        </div>
-        {rejections.length === 0 ? (
-          <GlassCard className="p-8 text-center text-gray-500">
-            No trade rejections
-          </GlassCard>
-        ) : (
-          <GlassCard className="overflow-hidden border border-gray-800 bg-[#0B1020]">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-black/40 text-gray-400 uppercase tracking-wider text-[10px] border-b border-gray-800">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">Time</th>
-                    <th className="px-6 py-4 font-medium">Action</th>
-                    <th className="px-6 py-4 font-medium">Reason</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-850">
-                  {rejections.slice(0, 10).map((log) => (
-                    <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-gray-400 text-xs">
-                        {new Date(log.timestamp).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 font-mono text-[#EF4444]">RISK_REJECTION</td>
-                      <td className="px-6 py-4 text-gray-300 text-sm">{log.description}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                <div className="text-right">
+                  <p className="text-xs text-text-muted">Capital at Risk</p>
+                  <p className="font-mono text-text-primary">${(p.risk_context?.capital_at_risk || 0).toLocaleString()}</p>
+                </div>
+              </div>
+              <RiskProgressBar value={p.risk_context?.current_drawdown_pct || p.current_drawdown_pct || 0} limit={p.risk_context?.max_drawdown_pct || 100} label="Max Drawdown" />
+              <RiskProgressBar value={p.risk_context?.exposure_utilization_pct || 0} limit={100} label="Exposure" />
             </div>
-          </GlassCard>
-        )}
-      </section>
-
-      {/* KILL SWITCH EVENTS */}
-      <section className="space-y-4">
-        <div className="border-b border-gray-800 pb-2">
-          <h2 className="text-lg font-medium tracking-tight text-white">Kill Switch Events</h2>
+          ))}
+          {portfolios?.length === 0 && <p className="text-sm text-text-muted text-center p-4 col-span-full">No active portfolios to monitor.</p>}
         </div>
-        {killSwitchEvents.length === 0 ? (
-          <GlassCard className="p-8 text-center text-gray-500">
-            <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500 opacity-50" />
-            No kill switch triggered
-          </GlassCard>
-        ) : (
-          <div className="space-y-3">
-            {killSwitchEvents.slice(0, 5).map((event) => (
-              <GlassCard
-                key={event.id}
-                className="p-4 border border-red-900/30 bg-red-900/10"
-              >
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-400" />
-                  <div className="flex-1">
-                    <div className="font-semibold text-red-300">KILL SWITCH ENGAGED</div>
-                    <div className="text-sm text-red-200 mt-1">{event.description}</div>
-                    <div className="text-xs text-red-400/70 mt-2">
-                      {new Date(event.timestamp).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        )}
-      </section>
-    </main>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-text-primary mb-4">Recent Trade Rejections</h3>
+        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 space-y-3">
+          {rejections?.slice(0, 5).map(log => (
+            <div key={log.id} className="text-sm flex items-start gap-3 p-2 rounded-md hover:bg-background-panel-2">
+              <Ban className="w-4 h-4 text-danger mt-0.5 shrink-0" />
+              <div>
+                <p className="text-text-primary">{log.description}</p>
+                <p className="text-xs text-text-muted font-mono">{new Date(log.timestamp).toLocaleString()}</p>
+              </div>
+            </div>
+          ))}
+          {rejections?.length === 0 && <p className="text-sm text-text-muted text-center p-4">No rejections in the log.</p>}
+        </div>
+      </div>
+    </div>
   );
 }

@@ -56,14 +56,18 @@ const apiFetch = async (url: string, options: RequestInit = {}) => {
 };
 
 export const systemAPI = {
+  getEnvironmentState: (): Promise<{ environment: 'BACKTEST' | 'PAPER' | 'DEMO' | 'LIVE_DISABLED'}> => {
+    return apiFetch(`${API_BASE_URL}/api/system/environment`, { cache: 'no-store' });
+  },
+
   getHealth: async (): Promise<EngineHealth> => {
-    const res = await fetch(`${API_BASE_URL}/api/health`, { next: { revalidate: 0 } });
+    const res = await fetch(`${API_BASE_URL}/api/system/health`, { next: { revalidate: 0 } });
     if (!res.ok) throw new Error("Risk Engine Offline");
     return res.json();
   },
 
   getMandates: (): Promise<RiskMandate[]> => {
-    return apiFetch(`${API_BASE_URL}/api/mandates`, { cache: 'no-store' });
+    return apiFetch(`${API_BASE_URL}/api/mandates/`, { cache: 'no-store' });
   },
 
   getMandate: (id: string): Promise<RiskMandate> => {
@@ -110,7 +114,7 @@ export const portfolioAPI = {
     return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/risk-events?limit=${limit}`, { cache: 'no-store' });
   },
 
-  createPortfolio: (payload: { id: string, mandate_id: string, total_equity: number }): Promise<Portfolio> => {
+  createPortfolio: (payload: { id: string, mandate_pk_id: string, total_equity: number }): Promise<Portfolio> => {
     return apiFetch(`${API_BASE_URL}/api/portfolios`, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -173,6 +177,33 @@ export const reportsAPI = {
       ? `${API_BASE_URL}/api/reports/${portfolioId}?report_type=${reportType}&limit=${limit}`
       : `${API_BASE_URL}/api/reports/${portfolioId}`;
     return apiFetch(url, { cache: 'no-store' });
+  },
+
+  downloadReport: async (reportId: string, filename: string = "NEXA_Report.pdf") => {
+    const headers: HeadersInit = {};
+    if (typeof window !== "undefined") {
+      const Cookies = (await import("js-cookie")).default;
+      const token = Cookies.get("auth_token");
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/api/reports/${reportId}/download`, { headers });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: "Failed to download report" }));
+      throw new Error(error.detail || "Failed to download report");
+    }
+
+    // Convert response to a blob and trigger a simulated browser download
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   }
 };
 
@@ -225,4 +256,22 @@ export const authAPI = {
     }
     return res.json();
   },
+
+  getMe: async (): Promise<{ id: string, email: string, role_tier: 'client' | 'operator' | 'risk_manager' | 'admin' }> => {
+    return apiFetch(`${API_BASE_URL}/api/users/me`);
+  },
+
+  logout: async (): Promise<void> => {
+    // Call the backend logout endpoint to create an audit log.
+    // We wrap this in a try/catch so that the client-side logout proceeds even if the API call fails.
+    try {
+      await apiFetch(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' });
+    } catch (error) {
+      console.error("Logout API call failed, proceeding with client-side logout:", error);
+    }
+    // Dynamically import js-cookie only on the client side
+    const Cookies = (await import("js-cookie")).default;
+    Cookies.remove('auth_token');
+    window.location.href = '/login';
+  }
 };

@@ -57,7 +57,7 @@ class RiskEngine:
         today_pnl = self.db.query(func.sum(
             Trade.pnl
         )).filter(
-            Trade.portfolio_id == portfolio.id,
+            Trade.portfolio_id == portfolio.pk_id,
             Trade.created_at >= today_start,
             Trade.status == "CLOSED"
         ).scalar() or 0
@@ -90,7 +90,7 @@ class RiskEngine:
             self.db,
             action_type="KILL_SWITCH_TRIGGERED",
             description=f"System halted for mandate {mandate.id}: {reason}",
-            metadata={"mandate_id": mandate.id, "reason": reason}
+            metadata_json={"mandate_id": mandate.id, "reason": reason}
         )
         self.db.commit() # Force commit before the exception rolls back the session
         
@@ -103,7 +103,7 @@ class RiskEngine:
 
     def _log_risk_event(self, portfolio: Portfolio, event_type: str, description: str, severity: str = "WARNING"):
         event = RiskEvent(
-            portfolio_id=portfolio.id,
+            portfolio_id=portfolio.pk_id,
             event_type=event_type,
             severity=severity,
             description=description

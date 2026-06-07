@@ -1,103 +1,132 @@
-import { Suspense } from "react";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { PaginationControls } from "@/components/ui/PaginationControls";
-import { FilterControls } from "@/components/ui/FilterControls";
-import { auditAPI } from "@/lib/api";
-import type { AuditLog } from "@/lib/types";
-import { AlertTriangle, ZapOff, Check, FileText, ShieldBan } from "lucide-react";
+'use client';
 
-function formatTimestamp(isoString: string) {
-  const date = new Date(isoString);
-  return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-}
+import { useState, useEffect } from 'react';
+import { auditAPI } from '@/lib/api';
+import type { AuditLog } from '@/lib/types';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Loader2 } from 'lucide-react';
 
-const actionTypeConfig = {
-  RISK_REJECTION: { icon: ShieldBan, color: "text-status-warning", label: "Risk Rejection" },
-  KILL_SWITCH_TRIGGERED: { icon: ZapOff, color: "text-status-danger", label: "Kill Switch" },
-  TRADE_EXECUTED: { icon: Check, color: "text-status-success", label: "Trade Executed" },
-  REPORT_GENERATED: { icon: FileText, color: "text-primary-blue", label: "Report Generated" },
-  DEFAULT: { icon: AlertTriangle, color: "text-text-muted", label: "System Event" },
+const ActionBadge = ({ type }: { type: string }) => {
+  let color = 'bg-gray-700 text-gray-300';
+  if (type.includes('CREATE')) color = 'bg-green-500/20 text-green-400';
+  if (type.includes('UPDATE')) color = 'bg-blue-500/20 text-blue-400';
+  if (type.includes('LOGIN')) color = 'bg-cyan-500/20 text-cyan-400';
+  if (type.includes('REJECTION') || type.includes('KILL')) color = 'bg-red-500/20 text-red-400';
+  if (type.includes('REPORT')) color = 'bg-purple-500/20 text-purple-400';
+
+  return <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${color}`}>{type}</span>;
 };
 
-function ActionBadge({ type }: { type: string }) {
-  const config = actionTypeConfig[type as keyof typeof actionTypeConfig] || actionTypeConfig.DEFAULT;
-  const Icon = config.icon;
-  return (
-    <span className={`inline-flex items-center gap-2 text-xs font-medium ${config.color}`}>
-      <Icon className="w-3.5 h-3.5" />
-      {config.label}
-    </span>
-  );
-}
+export default function AuditTrailPage() {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterType, setFilterType] = useState('');
+  const logsPerPage = 20;
 
-function AuditTable({ logs }: { logs: AuditLog[] }) {
-  return (
-    <div className="bg-background-panel-1 border border-border-secondary rounded-lg overflow-hidden">
-      <table className="min-w-full divide-y divide-border-secondary">
-        <thead className="bg-background-panel-2">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Timestamp</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Action</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Description</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Details</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border-secondary">
-          {logs.map((log) => (
-            <tr key={log.id} className="hover:bg-background-panel-2 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-text-muted font-mono">{formatTimestamp(log.timestamp)}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                <ActionBadge type={log.action_type} />
-              </td>
-              <td className="px-6 py-4 text-sm text-text-primary">{log.description}</td>
-              <td className="px-6 py-4 text-xs text-text-muted font-mono">
-                {log.metadata_json ? (
-                  <pre className="bg-background-root p-2 rounded overflow-x-auto">
-                    {JSON.stringify(log.metadata_json, null, 2)}
-                  </pre>
-                ) : (
-                  'N/A'
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+  useEffect(() => {
+    setLoading(true);
+    const offset = (currentPage - 1) * logsPerPage;
+    auditAPI.getLogs(filterType || undefined, logsPerPage, offset)
+      .then(data => {
+        setLogs(data?.logs || []);
+        setTotalLogs(data?.total || 0);
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [currentPage, filterType]);
 
-export default async function AuditTrailPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
-}) {
-  const page = searchParams['page'] ?? '1';
-  const filter = searchParams['filter'] as string | undefined;
-  const perPage = 20; // Number of items per page
-  const offset = (Number(page) - 1) * perPage;
+  const totalPages = Math.ceil(totalLogs / logsPerPage);
 
-  const actionType = filter === 'ALL' ? undefined : filter;
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterType(e.target.value);
+    setCurrentPage(1); // Reset to first page on filter change
+  };
 
-  // The API returns a paginated object like { total: number, logs: AuditLog[] }
-  // We need to access the 'logs' property from the response.
-  const response = await auditAPI.getLogs(actionType, perPage, offset).catch(() => ({ total: 0, limit: perPage, offset: 0, logs: [] }));
-  const totalLogs = response.total;
+  if (loading) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-gold" /></div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-danger">{error}</div>;
+  }
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        title="Audit Trail"
-        subtitle={`Displaying ${response.logs.length} of ${totalLogs} total events ${actionType ? `(filtered by ${actionType})` : ''}`}
-      />
+      <PageHeader title="Audit Trail" subtitle="An immutable log of all critical system events and user actions." />
+      
       <div className="flex justify-between items-center">
-        <FilterControls />
+        <div>
+          <label htmlFor="action-type-filter" className="text-sm font-medium text-text-muted mr-2">Filter by Action:</label>
+          <select
+            id="action-type-filter"
+            value={filterType}
+            onChange={handleFilterChange}
+            className="bg-background-panel-2 border border-border-secondary rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+          >
+            <option value="">All Actions</option>
+            <option value="USER_LOGIN">User Login</option>
+            <option value="MANDATE_CREATE">Mandate Create</option>
+            <option value="MANDATE_UPDATE">Mandate Update</option>
+            <option value="REPORT_GENERATE">Report Generate</option>
+            <option value="RISK_REJECTION">Risk Rejection</option>
+            <option value="KILL_SWITCH_TRIGGERED">Kill Switch Triggered</option>
+            <option value="KILL_SWITCH_RESET">Kill Switch Reset</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-text-muted">
+            Page {currentPage} of {totalPages > 0 ? totalPages : 1}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(p => p - 1)}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 bg-background-panel-2 border border-border-secondary rounded-md text-sm font-semibold hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => p + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-3 py-1.5 bg-background-panel-2 border border-border-secondary rounded-md text-sm font-semibold hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
-      {/* Ensure we pass an array to AuditTable, even if the response is malformed */}
-      <AuditTable logs={response.logs || []} />
-      <Suspense fallback={<div className="h-12"></div>}>
-        <PaginationControls totalItems={totalLogs} perPage={perPage} />
-      </Suspense>
+
+      <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-background-panel-2">
+              <tr>
+                <th className="px-6 py-3 font-medium text-text-muted">Timestamp</th>
+                <th className="px-6 py-3 font-medium text-text-muted">Action Type</th>
+                <th className="px-6 py-3 font-medium text-text-muted">Description</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-secondary">
+              {logs?.length > 0 ? (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-background-panel-2/50">
+                    <td className="px-6 py-4 whitespace-nowrap text-text-muted font-mono">{new Date(log.timestamp).toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap"><ActionBadge type={log.action_type} /></td>
+                    <td className="px-6 py-4 text-text-primary">{log.description}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-text-muted">No audit logs found matching the criteria.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

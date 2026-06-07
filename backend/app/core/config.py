@@ -1,7 +1,11 @@
 from pydantic_settings import BaseSettings
+from typing import Literal
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "NEXA Risk Engine"
+
+    # Infrastructure
+    ENVIRONMENT_STATE: Literal["BACKTEST", "PAPER", "DEMO", "LIVE_DISABLED"] = "PAPER"
 
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str

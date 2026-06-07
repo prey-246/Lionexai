@@ -6,6 +6,7 @@ import type { Portfolio, RiskMandate } from '@/lib/types';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Loader2, PlusCircle, Trash2, Wallet, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import MandateBadge from '@/components/ui/MandateBadge';
 
 export default function PortfoliosPage() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -27,7 +28,7 @@ export default function PortfoliosPage() {
         setPortfolios(portfolioData);
         setMandates(mandateData);
         if (mandateData.length > 0) {
-          setSelectedMandate(mandateData[0].id);
+          setSelectedMandate(mandateData[0].pk_id.toString());
         }
       } catch (err: any) {
         setError(err.message);
@@ -41,7 +42,7 @@ export default function PortfoliosPage() {
   const handleCreate = async () => {
     if (!newPortfolioId || !selectedMandate) return;
     try {
-      const newPortfolio = await portfolioAPI.createPortfolio({ id: newPortfolioId, mandate_id: selectedMandate, total_equity: initialEquity });
+      const newPortfolio = await portfolioAPI.createPortfolio({ id: newPortfolioId, mandate_pk_id: selectedMandate, total_equity: initialEquity });
       setPortfolios([...portfolios, newPortfolio]);
       setNewPortfolioId('');
     } catch (err: any) {
@@ -88,7 +89,7 @@ export default function PortfoliosPage() {
               onChange={(e) => setSelectedMandate(e.target.value)}
               className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary-blue transition-colors"
             >
-              {mandates.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {mandates.map(m => <option key={m.pk_id} value={m.pk_id}>{m.name}</option>)}
             </select>
           </div>
           <div>
@@ -116,7 +117,11 @@ export default function PortfoliosPage() {
               <Link href={`/portfolios/${p.id}`} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors group">
                 <div>
                   <p className="font-mono text-primary-gold group-hover:text-primary-teal">{p.id}</p>
-                  <p className="text-xs text-text-muted">Mandate: {p.mandate_id} | Equity: ${p.total_equity.toLocaleString()}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MandateBadge mandateId={p.mandate_id} />
+                    <span className="text-xs text-text-muted">|</span>
+                    <p className="text-xs text-text-muted">Equity: ${p.total_equity.toLocaleString()}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <button onClick={(e) => { e.preventDefault(); handleDelete(p.id); }} className="text-danger/50 hover:text-danger transition-colors z-10">
