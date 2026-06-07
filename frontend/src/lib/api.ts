@@ -241,7 +241,22 @@ export const authAPI = {
       const error = await res.json();
       throw new Error(error.detail || "Login failed. Please check your credentials.");
     }
-    return res.json();
+    
+    const data = await res.json();
+    
+    // Automatically set tokens and fetch role so the middleware knows who we are
+    if (typeof window !== "undefined") {
+      const Cookies = (await import("js-cookie")).default;
+      Cookies.set("auth_token", data.access_token);
+      try {
+        const profile = await authAPI.getMe();
+        Cookies.set("user_role", profile.role_tier);
+      } catch (e) {
+        console.error("Could not fetch user role during login", e);
+      }
+    }
+    
+    return data;
   },
 
   register: async (payload: { email: string, password: string }): Promise<{ id: string, email: string }> => {
@@ -272,6 +287,7 @@ export const authAPI = {
     // Dynamically import js-cookie only on the client side
     const Cookies = (await import("js-cookie")).default;
     Cookies.remove('auth_token');
+    Cookies.remove('user_role');
     window.location.href = '/login';
   }
 };
