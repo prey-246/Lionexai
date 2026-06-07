@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, Tuple
-from app.models.domain import Mandate, Portfolio, RiskEvent, Trade
+from app.models.domain import Mandate, Portfolio, RiskEvent, Trade, MarketSensitivityScore
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -26,6 +26,7 @@ class RiskEngine:
             ("daily_loss_limit", self._check_daily_loss_limit),
             ("leverage_limit", self._check_leverage_limit),            
             ("stop_loss_attached", self._check_stop_loss_attached),
+            ("market_sentiment", self._check_market_sentiment),
         ]
 
         for check_name, check_func in checks:
@@ -79,6 +80,19 @@ class RiskEngine:
     def _check_stop_loss_attached(self, portfolio: Portfolio, mandate: Mandate, order: Dict[str, Any]) -> bool:
         if 'stop_loss' not in order or order['stop_loss'] is None:
             raise RiskRejectionError("Trade must have a stop loss attached")
+        return True
+
+    def _check_market_sentiment(self, portfolio: Portfolio, mandate: Mandate, order: Dict[str, Any]) -> bool:
+        # Only block BUY orders if the AI is extremely bearish. We don't want to stop users from selling/cutting losses!
+        if order.get('side') == 'BUY':
+            symbol = order.get('symbol')
+            sentiment = self.db.query(MarketSensitivityScore).filter(
+                MarketSensitivityScore.symbol == symbol
+            ).order_by(MarketSensitivityScore.timestamp.desc()).first()
+            
+            if sentiment and sentiment.score <= -0.5:
+                raise RiskRejectionError(f"AI Sentiment is extremely bearish (Score: {sentiment.score}) for {symbol}. BUY orders are temporarily blocked to protect capital.")
+                
         return True
 
     def _trigger_kill_switch(self, mandate: Mandate, reason: str):

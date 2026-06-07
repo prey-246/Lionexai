@@ -6,30 +6,20 @@ import { Home, LayoutDashboard, Terminal, BrainCircuit, FileText, Shield, Wallet
 import { authAPI } from '@/lib/api';
 import { useUser } from '@/contexts/UserContext';
 
-const navSections = {
-  client: [
-    { href: '/dashboard', label: 'My Dashboard', icon: LayoutDashboard },
-    { href: '/portfolios', label: 'Portfolios', icon: Wallet },
-    { href: '/backtest', label: 'Backtest', icon: BrainCircuit },
-    { href: '/reports', label: 'Reports', icon: FileText },
-    { href: '/risk', label: 'Risk Monitoring', icon: Shield },
-  ],
-  operator: [
-    { href: '/', label: 'System Operations', icon: Home },
-    { href: '/audit', label: 'Audit Trail', icon: Briefcase },
-  ],
-  risk: [
-    { href: '/mandates', label: 'Mandates', icon: FileSliders },
-    { href: '/audit', label: 'Audit Trail', icon: Briefcase }, // Also for risk
-  ],
-  admin: [
-    { href: '/admin/users', label: 'User Management', icon: UserCog },
-    { href: '/admin/settings', label: 'Settings', icon: Settings },
-  ],
-  // Terminal is a special case, available to clients, operators, and admins
-  terminal: { href: '/trade', label: 'Terminal', icon: Terminal, roles: ['client', 'operator', 'admin'] }
-};
-
+// Define all available routes and the roles permitted to see them
+const NAV_LINKS = [
+  { href: '/dashboard', label: 'My Dashboard', icon: LayoutDashboard, roles: ['client', 'operator', 'admin'] },
+  { href: '/portfolios', label: 'Portfolios', icon: Wallet, roles: ['client', 'operator', 'risk_manager', 'admin'] },
+  { href: '/trade', label: 'Terminal', icon: Terminal, roles: ['client', 'operator', 'admin'] },
+  { href: '/backtest', label: 'Backtest', icon: BrainCircuit, roles: ['client', 'operator', 'admin'] },
+  { href: '/reports', label: 'Reports', icon: FileText, roles: ['client', 'operator', 'risk_manager', 'admin'] },
+  { href: '/risk', label: 'Risk Monitoring', icon: Shield, roles: ['client', 'operator', 'risk_manager', 'admin'] },
+  { href: '/mandates', label: 'Mandates', icon: FileSliders, roles: ['risk_manager', 'admin'] },
+  { href: '/', label: 'System Operations', icon: Home, roles: ['operator', 'admin'] },
+  { href: '/audit', label: 'Audit Trail', icon: Briefcase, roles: ['operator', 'admin'] },
+  { href: '/admin/users', label: 'User Management', icon: UserCog, roles: ['admin'] },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
+];
 
 const NavBar = () => {
   const pathname = usePathname();
@@ -42,25 +32,8 @@ const NavBar = () => {
   const getNavItemsForRole = () => {
     if (!user) return [];
     
-    let items: { href: string; label: string; icon: React.ElementType; }[] = [];
-    
-    switch (user.role_tier) {
-      case 'admin':
-        items = [...navSections.client, navSections.terminal, ...navSections.operator, ...navSections.risk, ...navSections.admin];
-        break;
-      case 'operator':
-        items = [...navSections.client, navSections.terminal, ...navSections.operator];
-        break;
-      case 'risk_manager':
-        items = [...navSections.client, ...navSections.risk];
-        break;
-      case 'client':
-      default:
-        items = [...navSections.client, navSections.terminal];
-        break;
-    }
-    // Remove duplicates
-    return items.filter((item, index, self) => index === self.findIndex((t) => t.href === item.href));
+    // Filter the links based on the current user's role
+    return NAV_LINKS.filter(link => link.roles.includes(user.role_tier));
   };
 
   const navItems = getNavItemsForRole();

@@ -72,8 +72,23 @@ export const systemAPI = {
 
   getMandate: (id: string): Promise<RiskMandate> => {
     return apiFetch(`${API_BASE_URL}/api/mandates/${id}`, { cache: 'no-store' });
+  },
+
+  updateMandate: (pkId: number, payload: Partial<RiskMandate>): Promise<RiskMandate> => {
+    return apiFetch(`${API_BASE_URL}/api/mandates/${pkId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  activateMandate: (pkId: number): Promise<RiskMandate> => {
+    return apiFetch(`${API_BASE_URL}/api/mandates/${pkId}/activate`, { method: 'POST' });
+  },
+
+  deactivateMandate: (pkId: number): Promise<RiskMandate> => {
+    return apiFetch(`${API_BASE_URL}/api/mandates/${pkId}/deactivate`, { method: 'POST' });
   }
-}
+};
 
 export const quantAPI = {
   runBacktest: (payload: BacktestRequest): Promise<BacktestResponse> => {
