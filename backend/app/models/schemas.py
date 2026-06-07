@@ -179,11 +179,17 @@ class BacktestRequest(BaseModel):
     timeframe: str
     strategy: str
     initial_capital: float
+    commission_pct: float = 0.1
+    slippage_pct: float = 0.1
     strategy_params: dict | None = None
 
 class BacktestMetrics(BaseModel):
     final_capital: float
     total_return_pct: float
+    gross_return_pct: float = 0.0
+    net_return_pct: float = 0.0
+    total_fees_paid: float = 0.0
+    slippage_impact: float = 0.0
     max_drawdown_pct: float
     win_rate_pct: float
     sharpe_ratio: float

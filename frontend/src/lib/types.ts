@@ -122,6 +122,8 @@ export interface BacktestRequest {
   timeframe: string;
   strategy: string;
   initial_capital: number;
+  commission_pct?: number;
+  slippage_pct?: number;
   strategy_params?: {
     [key: string]: any;
   };
@@ -130,6 +132,10 @@ export interface BacktestRequest {
 export interface BacktestMetrics {
   final_capital: number;
   total_return_pct: number;
+  gross_return_pct: number;
+  net_return_pct: number;
+  total_fees_paid: number;
+  slippage_impact: number;
   max_drawdown_pct: number;
   win_rate_pct: number;
   sharpe_ratio: number;

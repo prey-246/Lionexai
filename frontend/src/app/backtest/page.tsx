@@ -18,6 +18,8 @@ export default function BacktestTerminal() {
     timeframe: '1d',
     strategy: 'MA_CROSSOVER',
     initial_capital: 100000,
+    commission_pct: 0.1,
+    slippage_pct: 0.1,
   });
   
   const [strategyParams, setStrategyParams] = useState({
@@ -42,6 +44,8 @@ export default function BacktestTerminal() {
         timeframe: form.timeframe,
         strategy: form.strategy,
         initial_capital: form.initial_capital,
+        commission_pct: form.commission_pct,
+        slippage_pct: form.slippage_pct,
         strategy_params: {}
       };
 
@@ -124,6 +128,33 @@ export default function BacktestTerminal() {
                   step={10000}
                   min={1000}
                 />
+              </div>
+
+              <div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Commission (%)</label>
+                    <input 
+                      type="number"
+                      className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors"
+                      value={form.commission_pct}
+                      onChange={(e) => setForm({...form, commission_pct: Number(e.target.value)})}
+                      step={0.01}
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5">Slippage (%)</label>
+                    <input 
+                      type="number"
+                      className="w-full bg-[#050816] border border-white/[0.06] rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#5EEAD4] transition-colors"
+                      value={form.slippage_pct}
+                      onChange={(e) => setForm({...form, slippage_pct: Number(e.target.value)})}
+                      step={0.01}
+                      min={0}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -217,9 +248,48 @@ export default function BacktestTerminal() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-px bg-white/[0.04] rounded-xl overflow-hidden border border-white/[0.04]">
                     <div className="bg-[#0B1020]">
                       <MetricDisplay 
-                        label="Total Return" 
-                        value={`${results.metrics.total_return_pct}%`} 
-                        trend={results.metrics.total_return_pct > 0 ? 'up' : results.metrics.total_return_pct < 0 ? 'down' : 'neutral'}
+                        label="Gross Return" 
+                        value={`${results.metrics.gross_return_pct}%`} 
+                        trend={results.metrics.gross_return_pct > 0 ? 'up' : results.metrics.gross_return_pct < 0 ? 'down' : 'neutral'}
+                      />
+                    </div>
+                    <div className="bg-[#0B1020]">
+                      <MetricDisplay 
+                        label="Net Return (After Fees)" 
+                        value={`${results.metrics.net_return_pct}%`} 
+                        trend={results.metrics.net_return_pct > 0 ? 'up' : results.metrics.net_return_pct < 0 ? 'down' : 'neutral'}
+                      />
+                    </div>
+                    <div className="bg-[#0B1020]">
+                      <MetricDisplay 
+                        label="Final Equity" 
+                        value={`$${results.metrics.final_capital.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} 
+                      />
+                    </div>
+                    <div className="bg-[#0B1020]">
+                      <MetricDisplay 
+                        label="Total Fees Paid" 
+                        value={`$${results.metrics.total_fees_paid.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} 
+                        trend="down"
+                      />
+                    </div>
+                    <div className="bg-[#0B1020]">
+                      <MetricDisplay 
+                        label="Slippage Impact" 
+                        value={`$${results.metrics.slippage_impact.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} 
+                        trend="down"
+                      />
+                    </div>
+                    <div className="bg-[#0B1020]">
+                      <MetricDisplay 
+                        label="Trades Executed" 
+                        value={results.metrics.total_trades_simulated} 
+                      />
+                    </div>
+                    <div className="bg-[#0B1020]">
+                      <MetricDisplay 
+                        label="Win Rate" 
+                        value={`${results.metrics.win_rate_pct}%`} 
                       />
                     </div>
                     <div className="bg-[#0B1020]">
@@ -233,24 +303,6 @@ export default function BacktestTerminal() {
                       <MetricDisplay 
                         label="Sharpe Ratio" 
                         value={results.metrics.sharpe_ratio} 
-                      />
-                    </div>
-                    <div className="bg-[#0B1020]">
-                      <MetricDisplay 
-                        label="Win Rate" 
-                        value={`${results.metrics.win_rate_pct}%`} 
-                      />
-                    </div>
-                    <div className="bg-[#0B1020]">
-                      <MetricDisplay 
-                        label="Trades Executed" 
-                        value={results.metrics.total_trades_simulated} 
-                      />
-                    </div>
-                    <div className="bg-[#0B1020]">
-                      <MetricDisplay 
-                        label="Final Equity" 
-                        value={`$${results.metrics.final_capital.toLocaleString()}`} 
                       />
                     </div>
                   </div>

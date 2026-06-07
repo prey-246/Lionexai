@@ -75,11 +75,21 @@ def run_backtest(
     portfolio = pd.DataFrame(index=df.index).fillna(0.0)
     portfolio['timestamp'] = df['timestamp']
 
-    # Correctly simulate portfolio value - This is a vectorized backtest approach
+    # Cost parameters
+    commission_pct = getattr(backtest_in, 'commission_pct', 0.1)
+    slippage_pct = getattr(backtest_in, 'slippage_pct', 0.1)
+
+    # Vectorized backtest approach with realistic trading costs
     positions[backtest_in.symbol] = df['signal'] # Hold 1 unit of the asset when signal is 1
     portfolio['holdings'] = positions[backtest_in.symbol] * df['close']
-    portfolio['cash'] = initial_capital - (df['position'] * df['close']).cumsum()
-    portfolio['total'] = portfolio['cash'] + portfolio['holdings'] # Corrected from 'positions' to 'holdings'
+    
+    trade_notional_value = abs(df['position']) * df['close']
+    fees = trade_notional_value * (commission_pct / 100)
+    slippage = trade_notional_value * (slippage_pct / 100)
+    total_costs = fees + slippage
+    
+    portfolio['cash'] = initial_capital - (df['position'] * df['close']).cumsum() - total_costs.cumsum()
+    portfolio['total'] = portfolio['cash'] + portfolio['holdings']
     portfolio['returns'] = portfolio['total'].pct_change()
 
     # 5. Prepare Equity Curve data for charting
@@ -88,8 +98,13 @@ def run_backtest(
         equity_curve_data.append(schemas.EquityDataPoint(time=int(row['timestamp'].timestamp()), value=row['total']))
 
     # 4. Calculate final metrics
-    final_capital = portfolio['total'].iloc[-1]
-    total_return_pct = (final_capital - initial_capital) / initial_capital * 100
+    final_net_capital = portfolio['total'].iloc[-1]
+    final_gross_capital = (initial_capital - (df['position'] * df['close']).cumsum() + portfolio['holdings']).iloc[-1]
+    
+    gross_return_pct = (final_gross_capital - initial_capital) / initial_capital * 100
+    net_return_pct = (final_net_capital - initial_capital) / initial_capital * 100
+    total_fees_paid = fees.sum()
+    slippage_impact = slippage.sum()
     
     # Calculate Drawdown
     rolling_max = portfolio['total'].cummax()
@@ -120,8 +135,12 @@ def run_backtest(
     total_trades_simulated = len(trade_pnls)
     
     metrics = schemas.BacktestMetrics(
-        final_capital=round(final_capital, 2),
-        total_return_pct=round(total_return_pct, 2),
+        final_capital=round(final_net_capital, 2),
+        total_return_pct=round(net_return_pct, 2), # Kept for backward compatibility
+        gross_return_pct=round(gross_return_pct, 2),
+        net_return_pct=round(net_return_pct, 2),
+        total_fees_paid=round(total_fees_paid, 2),
+        slippage_impact=round(slippage_impact, 2),
         max_drawdown_pct=round(abs(max_drawdown_pct), 2),
         win_rate_pct=round(win_rate_pct, 2),
         sharpe_ratio=round(sharpe_ratio, 2),
