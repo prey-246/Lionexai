@@ -86,43 +86,43 @@ export default function ExecutionTerminal() {
         subtitle="Simulated paper orders passing through the NEXA Risk Gatekeeper"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2 bg-background-panel-1 border border-border-secondary rounded p-6">
-          <h2 className="font-mono text-base font-bold text-text-primary border-b border-border-primary pb-3 mb-6">ORDER ENTRY</h2>
+      <div className="g212 items-start">
+        <div className="card blue shadow-lg">
+          <h2 className="sec-head mb-6">Order Entry</h2>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Asset</label>
+                <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Asset</label>
                 <select 
-                  className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold" 
+                  className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" 
                   value={form.symbol} 
                   onChange={(e) => setForm({...form, symbol: e.target.value})}
                 >
-                  <option value="BTC/USDT" className="bg-background-panel-2 text-text-primary">BTC/USDT</option>
-                  <option value="ETH/USDT" className="bg-background-panel-2 text-text-primary">ETH/USDT</option>
-                  <option value="DOGE/USDT" className="bg-background-panel-2 text-text-primary">DOGE/USDT (Unapproved)</option>
+                  <option value="BTC/USDT" className="bg-background-panel text-text-primary">BTC/USDT</option>
+                  <option value="ETH/USDT" className="bg-background-panel text-text-primary">ETH/USDT</option>
+                  <option value="DOGE/USDT" className="bg-background-panel text-text-primary">DOGE/USDT (Unapproved)</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Side</label>
+                <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Side</label>
                 <select 
-                  className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
+                  className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
                   value={form.side} 
                   onChange={(e) => setForm({...form, side: e.target.value})}
                 >
-                  <option value="BUY" className="bg-background-panel-2 text-text-primary">BUY</option>
-                  <option value="SELL" className="bg-background-panel-2 text-text-primary">SELL</option>
+                  <option value="BUY" className="bg-background-panel text-text-primary">BUY</option>
+                  <option value="SELL" className="bg-background-panel text-text-primary">SELL</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Quantity</label>
+              <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Quantity</label>
               <input 
                 type="number" 
                 step="0.1" 
                 placeholder="0.00"
-                className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
                 value={form.size} 
                 onChange={(e) => {
                   const val = e.target.value;
@@ -132,12 +132,12 @@ export default function ExecutionTerminal() {
             </div>
 
             <div>
-              <label className="block text-xs font-mono font-bold text-text-muted uppercase tracking-wider mb-1.5">Stop Loss Price</label>
+              <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Stop Loss Price</label>
               <input
                 type="number"
                 step="0.01"
                 placeholder="e.g. 64000.00"
-                className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
                 value={form.stop_loss}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -149,9 +149,8 @@ export default function ExecutionTerminal() {
             <button 
               onClick={handleExecute}
               disabled={loading || !form.size}
-              className={`w-full mt-2 py-3 rounded text-sm font-mono font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                form.side === 'BUY' ? 'bg-primary-teal/20 text-primary-teal hover:bg-primary-teal/30 border border-primary-teal/30' 
-                : 'bg-danger/20 text-danger hover:bg-danger/30 border border-danger/30'
+              className={`btn btn-full mt-4 ${
+                form.side === 'BUY' ? 'teal' : 'red'
               }`}
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -160,22 +159,22 @@ export default function ExecutionTerminal() {
           </div>
 
           {feedback && (
-            <div className={`mt-6 p-4 rounded flex items-start gap-3 border ${
-              feedback.type === 'error' ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-primary-teal/10 border-primary-teal/20 text-primary-teal'
+            <div className={`mt-6 p-4 rounded-[3px] flex items-start gap-3 border ${
+              feedback.type === 'error' ? 'bg-system-rBg border-system-rBd text-danger' : 'bg-system-tBg border-system-tBd text-success'
             }`}>
               {feedback.type === 'error' ? <ShieldAlert className="w-5 h-5 shrink-0" /> : <CheckCircle className="w-5 h-5 shrink-0" />}
-              <span className="text-sm font-mono leading-relaxed">{feedback.msg}</span>
+              <span className="font-sans text-[13px] leading-relaxed">{feedback.msg}</span>
             </div>
           )}
         </div>
 
         <div className="space-y-4">
-          <h2 className="font-mono text-base font-bold text-text-primary">PORTFOLIO STATUS</h2>
+          <h2 className="sec-head">Portfolio Status</h2>
           {allPortfolios.length > 1 && (
-            <div className="bg-background-panel-1 border border-border-secondary rounded p-4">
-              <label className="block text-xs font-mono text-text-muted mb-1.5">SELECT PORTFOLIO</label>
+            <div className="card">
+              <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-2">SELECT PORTFOLIO</label>
               <select
-                className="w-full bg-background-panel-2 border border-border-primary rounded px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-gold"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
                 value={portfolio?.id || ''}
                 onChange={(e) => {
                   const selected = allPortfolios.find(p => p.id === e.target.value);
@@ -186,17 +185,25 @@ export default function ExecutionTerminal() {
               </select>
             </div>
           )}
-          <div className="bg-background-panel-1 border border-border-secondary rounded p-4 space-y-1">
-            <p className="text-xs font-mono text-text-muted">TOTAL EQUITY</p>
-            <p className="text-2xl font-serif text-primary-gold font-semibold">${portfolio ? portfolio.total_equity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
+          <div className="card space-y-1 shadow-lg">
+            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Total Equity</p>
+            <p className="font-serif text-[26px] font-bold text-primary-gold">${portfolio ? portfolio.total_equity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
           </div>
-          <div className="bg-background-panel-1 border border-border-secondary rounded p-4 space-y-1">
-            <p className="text-xs font-mono text-text-muted">AVAILABLE MARGIN</p>
-            <p className="text-2xl font-serif text-text-primary font-semibold">${portfolio ? portfolio.available_margin.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
+          <div className="card space-y-1 shadow-lg">
+            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Available Margin</p>
+            <p className="font-serif text-[26px] font-bold text-text-primary">${portfolio ? portfolio.available_margin.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
           </div>
-          <div className="bg-background-panel-1 border border-border-secondary rounded p-4 space-y-1">
-            <p className="text-xs font-mono text-text-muted">ACTIVE MANDATE</p>
-            <p className="text-lg font-mono text-primary-blue font-bold">{portfolio ? portfolio.mandate_id : 'N/A'}</p>
+          <div className="card space-y-1 shadow-lg">
+            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Capital At Risk</p>
+            <p className="font-serif text-[26px] font-bold text-danger">${portfolio?.risk_context?.capital_at_risk?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</p>
+          </div>
+          <div className="card space-y-1 shadow-lg">
+            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Current Drawdown</p>
+            <p className="font-serif text-[26px] font-bold text-danger">{portfolio?.current_drawdown_pct?.toFixed(2) || '0.00'}%</p>
+          </div>
+          <div className="card space-y-1 shadow-lg">
+            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Active Mandate</p>
+            <p className="font-mono text-[12px] text-primary-blue font-bold mt-1">{portfolio ? portfolio.mandate_id : 'N/A'}</p>
           </div>
         </div>
       </div>

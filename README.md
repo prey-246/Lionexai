@@ -21,11 +21,13 @@ A production-grade quantitative trading intelligence and portfolio orchestration
 - **Risk Mandates**: Pre-defined risk profiles (e.g., max drawdown, daily loss limits) that can be assigned to portfolios.
 - **Pre-Trade Risk Validation**: The risk engine validates every trade against the portfolio's mandate before execution.
 - **Kill Switch**: A mechanism to halt trading on a mandate if critical risk thresholds are breached.
+- **Global Controls & AI Integration**: System-wide configuration for max leverage, slippage/commissions, global emergency halt, and automated trade blocking when AI detects extreme bearish market sentiment.
 - **Audit Trail**: Immutable logging of all critical system events, including trade executions and risk rejections.
 
 ### Analytics & Reporting
 - **Portfolio Dashboards**: Detailed views of individual portfolio performance, including equity curves, P&L, and trade history.
 - **System-Wide Summary**: A main dashboard summarizing the performance of all portfolios.
+- **NEXA Intelligence**: Real-time market sentiment analysis using Natural Language Processing (NLP) on live scraped crypto news to determine market sensitivity scores.
 - **On-Demand Reporting**: Generate historical performance reports for any portfolio on a weekly or monthly basis.
 - **PDF Export**: Download beautifully formatted PDF versions of generated performance reports for offline analysis and sharing.
 
@@ -245,6 +247,10 @@ docker-compose -f docker-compose.prod.yml up --build -d
 - `GET /api/strategies` - List strategies
 - `PUT /api/strategies/{id}` - Update strategy
 
+**NEXA Intelligence**
+- `GET /api/intelligence/news` - Get latest market news
+- `GET /api/intelligence/sentiment/{symbol}` - Get AI sentiment score
+
 ### WebSocket Streams
 - `/ws/market` - Live market data
 - `/ws/portfolio` - Portfolio updates
@@ -260,6 +266,7 @@ docker-compose -f docker-compose.prod.yml up --build -d
 - `portfolios` - Trading portfolios
 - `trades` - Trade history
 - `strategies` - Strategy definitions
+- `global_settings` - System-wide configuration
 - `backtest_results` - Backtest results
 
 ### Monitoring Tables
@@ -267,6 +274,10 @@ docker-compose -f docker-compose.prod.yml up --build -d
 - `equity_curves` - Portfolio equity snapshots
 - `risk_events` - Risk trigger events
 - `reports` - Performance reports
+- `market_news_articles` - Scraped alt-data
+- `economic_events` - Macro event calendar
+- `nlp_sentiments` - Processed NLP text scores
+- `market_sensitivity_scores` - Aggregated AI asset sentiment
 
 ### Migrations
 ```bash

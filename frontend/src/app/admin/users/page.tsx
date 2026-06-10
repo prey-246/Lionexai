@@ -48,33 +48,33 @@ export default function UserManagementPage() {
     <div className="space-y-8">
       <PageHeader title="User Management" subtitle="View, create, and manage user roles and permissions." />
       
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg overflow-hidden">
+      <div className="card shadow-lg p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-background-panel-2">
+          <table className="nexa-table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 font-medium text-text-muted">User ID</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Email</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Status</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Role</th>
+                <th>User ID</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Role</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-secondary">
+            <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 font-mono text-xs text-text-muted">{user.id}</td>
-                  <td className="px-6 py-4 font-medium text-text-primary">{user.email}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-[10px] font-semibold rounded-full uppercase tracking-wider ${user.is_active ? 'bg-success/20 text-success border border-success/30' : 'bg-danger/20 text-danger border border-danger/30'}`}>
+                <tr key={user.id}>
+                  <td className="font-mono">{user.id}</td>
+                  <td className="font-sans font-semibold text-text-primary">{user.email}</td>
+                  <td>
+                    <span className={`tag ${user.is_active ? 'teal' : 'red'}`}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td>
                     <select
                       value={user.role_tier}
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
                       disabled={user.role_tier === 'admin'} // Protect admin role from self-demotion
-                      className="bg-background-panel-2 border border-border-secondary rounded-md px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-primary-blue transition-colors disabled:opacity-50"
+                      className="w-full border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px] focus:outline-none focus:border-primary-blue transition-colors disabled:opacity-50"
                     >
                       <option value="client">Client</option>
                       <option value="operator">Operator</option>

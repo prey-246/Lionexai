@@ -81,6 +81,16 @@ class Portfolio(Base):
     def risk_context(self) -> Dict[str, Any]:
         if not self.mandate:
             return {}
+            
+        exposure = 0.0
+        try:
+            open_trades = [t for t in self.trades if t.status == "OPEN"]
+            exposure = sum(t.quantity * t.entry_price for t in open_trades)
+        except Exception:
+            pass
+            
+        exposure_pct = (exposure / self.total_equity * 100) if self.total_equity > 0 else 0.0
+
         return {
             "mandate_name": self.mandate.name,
             "mandate_id": self.mandate.id,
@@ -92,9 +102,9 @@ class Portfolio(Base):
             "current_drawdown": self.current_drawdown_pct,
             "current_drawdown_pct": self.current_drawdown_pct,
             "capital_at_risk": self.total_equity * (self.mandate.max_drawdown_pct / 100.0),
-            "exposure_used": 0, # Computed dynamically by the risk engine
-            "exposure_utilization_pct": 0,
-            "leverage_used": 0, # Computed dynamically by the risk engine
+            "exposure_used": exposure,
+            "exposure_utilization_pct": exposure_pct,
+            "leverage_used": exposure / self.total_equity if self.total_equity > 0 else 0.0,
             "kill_switch_status": self.mandate.kill_switch_active
         }
 

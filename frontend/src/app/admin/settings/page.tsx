@@ -57,102 +57,102 @@ export default function AdminSettingsPage() {
     <div className="space-y-8">
       <PageHeader title="System Settings" subtitle="Configure global platform parameters and AI thresholds." />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="g21">
         {/* AI & Risk Engine */}
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-6 border-b border-border-secondary pb-4">
-            <Settings className="w-5 h-5 text-primary-gold" />
-            <h3 className="text-lg font-semibold text-text-primary">AI & Risk Engine Configuration</h3>
+        <div className="card gold shadow-lg p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-border-default pb-4">
+            <Settings className="w-4 h-4 text-primary-gold" />
+            <h3 className="sec-head mb-0">AI & Risk Engine Configuration</h3>
           </div>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">Operating Environment</label>
+              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Operating Environment</label>
               <select 
                 value={form.environment_state}
                 onChange={(e) => setForm({ ...form, environment_state: e.target.value as any })}
-                className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
               >
                 <option value="PAPER">PAPER (Simulated Trading)</option>
                 <option value="BACKTEST">BACKTEST (Historical Engine)</option>
                 <option value="DEMO">DEMO (Client Showcase)</option>
                 <option value="LIVE_DISABLED">LIVE (Disabled for MVP)</option>
               </select>
-              <p className="text-xs text-text-muted mt-1">Changes the UI state and environment banner across the entire platform.</p>
+              <p className="font-sans text-[11px] text-text-muted mt-2">Changes the UI state and environment banner across the entire platform.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">Extreme Bearish Threshold (AI Score)</label>
+              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Extreme Bearish Threshold (AI Score)</label>
               <input 
                 type="number" 
                 value={form.extreme_bearish_threshold} 
                 onChange={(e) => setForm({ ...form, extreme_bearish_threshold: parseFloat(e.target.value) })}
                 step="0.1"
-                className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
               />
-              <p className="text-xs text-text-muted mt-1">If the NLP engine scores an asset below this threshold, all BUY orders will be blocked by the Risk Engine.</p>
+              <p className="font-sans text-[11px] text-text-muted mt-2">If the NLP engine scores an asset below this threshold, all BUY orders will be blocked by the Risk Engine.</p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">Global Maximum Leverage (x)</label>
+              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Global Maximum Leverage (x)</label>
               <input 
                 type="number" 
                 value={form.global_max_leverage} 
                 onChange={(e) => setForm({ ...form, global_max_leverage: parseFloat(e.target.value) })}
                 step="0.5"
-                className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
               />
-              <p className="text-xs text-text-muted mt-1">Absolute ceiling for leverage across all mandates. Individual mandates cannot exceed this value.</p>
+              <p className="font-sans text-[11px] text-text-muted mt-2">Absolute ceiling for leverage across all mandates. Individual mandates cannot exceed this value.</p>
             </div>
           </div>
         </div>
 
         {/* Trading Defaults */}
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6">
-          <div className="flex items-center gap-3 mb-6 border-b border-border-secondary pb-4">
-            <SlidersHorizontal className="w-5 h-5 text-primary-teal" />
-            <h3 className="text-lg font-semibold text-text-primary">Trading & Backtest Defaults</h3>
+        <div className="card teal shadow-lg p-6">
+          <div className="flex items-center gap-2 mb-6 border-b border-border-default pb-4">
+            <SlidersHorizontal className="w-4 h-4 text-primary-emerald" />
+            <h3 className="sec-head mb-0">Trading & Backtest Defaults</h3>
           </div>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">Default Commission Rate (%)</label>
+              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Default Commission Rate (%)</label>
               <input 
                 type="number" 
                 value={form.default_commission_pct} 
                 onChange={(e) => setForm({ ...form, default_commission_pct: parseFloat(e.target.value) })}
                 step="0.01"
-                className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-emerald"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-text-muted mb-1.5">Default Slippage Impact (%)</label>
+              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Default Slippage Impact (%)</label>
               <input 
                 type="number" 
                 value={form.default_slippage_pct} 
                 onChange={(e) => setForm({ ...form, default_slippage_pct: parseFloat(e.target.value) })}
                 step="0.01"
-                className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-primary-blue"
+                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-emerald"
               />
             </div>
           </div>
         </div>
 
         {/* Emergency Controls */}
-        <div className={`${form.global_kill_switch_active ? 'bg-danger/20 border-danger/50' : 'bg-danger/5 border-danger/20'} border rounded-lg p-6 lg:col-span-2 transition-colors`}>
-          <div className={`flex items-center gap-3 mb-6 border-b ${form.global_kill_switch_active ? 'border-danger/50' : 'border-danger/20'} pb-4`}>
-            <ShieldAlert className={`w-5 h-5 ${form.global_kill_switch_active ? 'text-danger' : 'text-danger/70'}`} />
-            <h3 className={`text-lg font-semibold ${form.global_kill_switch_active ? 'text-danger' : 'text-danger/80'}`}>Emergency Controls</h3>
+        <div className={`card ${form.global_kill_switch_active ? 'red' : 'grey'} shadow-lg lg:col-span-2 transition-colors`}>
+          <div className={`flex items-center gap-2 mb-6 border-b border-border-default pb-4`}>
+            <ShieldAlert className={`w-4 h-4 ${form.global_kill_switch_active ? 'text-danger' : 'text-text-muted'}`} />
+            <h3 className="sec-head mb-0">Emergency Controls</h3>
           </div>
           
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-text-primary">Global Trading Halt (System-wide Kill Switch)</p>
-              <p className="text-xs text-text-muted mt-1">Instantly suspends all trade execution across every portfolio and mandate.</p>
+              <p className="font-sans text-[14px] font-medium text-text-primary">Global Trading Halt (System-wide Kill Switch)</p>
+              <p className="font-sans text-[12px] text-text-muted mt-1">Instantly suspends all trade execution across every portfolio and mandate.</p>
             </div>
             <button 
               onClick={handleKillSwitch}
-              className={`${form.global_kill_switch_active ? 'bg-background-panel-1 text-danger border-danger' : 'bg-danger hover:bg-danger/80 text-white'} border px-6 py-2.5 rounded-md text-sm font-bold transition-colors shadow-lg`}
+              className={`btn ${form.global_kill_switch_active ? 'grey' : 'red'}`}
             >
               {form.global_kill_switch_active ? 'DISENGAGE HALT' : 'ENGAGE HALT'}
             </button>
@@ -161,11 +161,11 @@ export default function AdminSettingsPage() {
       </div>
       
       {/* Save Button */}
-      <div className="flex justify-end pt-4 border-t border-border-secondary">
+      <div className="flex justify-end pt-6 mt-6 border-t border-border-default">
         <button 
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 bg-primary-blue hover:bg-primary-blue/90 text-white px-6 py-2.5 rounded-md text-sm font-semibold transition-colors shadow-lg disabled:opacity-50"
+          className="btn blue flex items-center gap-2 shadow-lg"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving ? 'Saving...' : 'Save All Configurations'}

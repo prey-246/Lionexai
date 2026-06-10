@@ -30,7 +30,11 @@ GET /health
 ```json
 {
   "status": "online",
-  "database": "connected"
+  "database": "connected",
+  "active_mandates": 3,
+  "trades_today": 142,
+  "active_users": 8,
+  "timestamp": "2024-06-01T12:00:00Z"
 }
 ```
 

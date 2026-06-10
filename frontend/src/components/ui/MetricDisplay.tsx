@@ -26,21 +26,19 @@ export function MetricDisplay({
     : trendValue;
 
   return (
-    <div className="flex flex-col gap-1.5 p-5">
+    <div className="card flex flex-col gap-1.5" style={{ padding: '14px 16px' }}>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold tracking-widest text-gray-400 uppercase font-sans">
+        <span className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted">
           {label}
         </span>
-        {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+        {Icon && <Icon className="w-4 h-4 text-text-muted" />}
       </div>
       <div className="flex items-baseline gap-3">
-        <span className="text-3xl font-bold tracking-tight text-white font-mono">
+        <span className="font-serif text-[26px] font-bold text-text-primary">
           {value}
         </span>
         {displayTrend && displayTrendValue && (
-          <span className={`text-sm font-medium ${
-            displayTrend === 'up' ? 'text-[#10B981]' : displayTrend === 'down' ? 'text-[#EF4444]' : 'text-gray-500'
-          }`}>
+          <span className={`tag ${displayTrend === 'up' ? 'teal' : displayTrend === 'down' ? 'red' : 'grey'}`}>
             {displayTrend === 'up' ? '↗' : displayTrend === 'down' ? '↘' : '→'} {displayTrendValue}
           </span>
         )}

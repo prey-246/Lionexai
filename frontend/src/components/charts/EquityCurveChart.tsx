@@ -35,9 +35,9 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
     });
 
     const areaSeries = chart.addAreaSeries({
-      lineColor: '#22D3EE',
-      topColor: 'rgba(34, 211, 238, 0.4)',
-      bottomColor: 'rgba(34, 211, 238, 0.0)',
+      lineColor: '#00C896',
+      topColor: 'rgba(0, 200, 150, 0.4)',
+      bottomColor: 'rgba(0, 200, 150, 0.0)',
       lineWidth: 2,
     });
 
@@ -84,8 +84,8 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
   }, [data]);
 
   if (!data || data.length === 0) {
-    return <div className="flex justify-center items-center h-[300px] w-full bg-background-panel-1 border border-border-secondary/30 rounded-lg text-text-muted text-sm italic">No equity data available for this portfolio yet.</div>;
+    return <div className="flex justify-center items-center h-[300px] w-full border border-border-default rounded-[3px] text-text-muted text-[13px] font-sans italic">No equity data available for this portfolio yet.</div>;
   }
 
-  return <div ref={chartContainerRef} className="w-full h-[300px]" />;
+  return <div ref={chartContainerRef} className="w-full h-[300px] card gold p-4" />;
 }

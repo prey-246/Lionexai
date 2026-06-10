@@ -12,6 +12,7 @@ from app.api.routes import auth, system, audit, portfolios, reports, trading, ba
 from app.core.sockets import manager as ws_manager
 from app.services.market_data import market_data_streamer, periodic_price_updater
 from scripts.scrape_news import scrape_crypto_news
+from scripts.scrape_economic_events import fetch_and_store_events
 from app.services.nlp_service import run_nlp_analysis
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,16 @@ async def periodic_nlp_analyzer():
             logger.error(f"Error in periodic NLP analyzer: {e}")
         await asyncio.sleep(600)  # Run every 10 minutes to process incoming news
 
+async def periodic_economic_scraper():
+    """Runs the economic events scraper in the background."""
+    logger.info("Starting background periodic economic events scraper...")
+    while True:
+        try:
+            await asyncio.to_thread(fetch_and_store_events)
+        except Exception as e:
+            logger.error(f"Error in periodic economic scraper: {e}")
+        await asyncio.sleep(21600)  # Run every 6 hours (21600 seconds)
+
 @app.on_event("startup")
 def on_startup():
     # Seeding the database on every application startup is not recommended for production.
@@ -56,6 +67,8 @@ def on_startup():
     asyncio.create_task(periodic_news_scraper())
     # Start the NLP Analyzer
     asyncio.create_task(periodic_nlp_analyzer())
+    # Start the Economic Events Scraper
+    asyncio.create_task(periodic_economic_scraper())
     # Start the periodic price updater for the trading terminal
     asyncio.create_task(periodic_price_updater())
 

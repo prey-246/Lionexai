@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import random
 import uuid
 from datetime import datetime
@@ -26,10 +27,11 @@ def execute_trade(
     Execute a simulated trade after passing through a simplified risk check.
     """
     # 1. Find the portfolio and verify ownership
-    portfolio = db.query(domain.Portfolio).filter(
-        domain.Portfolio.id == portfolio_id,
-        domain.Portfolio.user_id == current_user.id
-    ).first()
+    query = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+        
+    portfolio = query.first()
 
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
@@ -130,6 +132,15 @@ def execute_trade(
         equity=portfolio.total_equity
     )
     db.add(equity_point)
+    db.flush()
+
+    # Calculate Portfolio High-Water Mark and Current Drawdown
+    max_eq = db.query(func.max(domain.EquityCurve.equity)).filter(domain.EquityCurve.portfolio_id == portfolio.pk_id).scalar()
+    if max_eq and portfolio.total_equity < max_eq:
+        portfolio.current_drawdown_pct = ((max_eq - portfolio.total_equity) / max_eq) * 100
+    else:
+        portfolio.current_drawdown_pct = 0.0
+        
     db.commit()
 
     audit_service.create_audit_log(

@@ -1,142 +1,92 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
-import { portfolioAPI, systemAPI, auditAPI, tradeAPI } from '@/lib/api';
-import type { Portfolio, RiskMandate, AuditLog } from '@/lib/types';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Loader2, AlertTriangle, ShieldAlert, Unlock, TrendingDown, Gauge, Ban, Wallet } from 'lucide-react';
-import MandateBadge from '@/components/ui/MandateBadge';
+import { MetricDisplay } from '@/components/ui/MetricDisplay';
+import { auditAPI, portfolioAPI } from '@/lib/api';
+import { ShieldAlert, Loader2, Activity } from 'lucide-react';
+import type { AuditLog, Portfolio } from '@/lib/types';
 
-export default function RiskMonitoring() {
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [lockedMandates, setLockedMandates] = useState<RiskMandate[]>([]);
-  const [rejections, setRejections] = useState<AuditLog[]>([]);
+export default function RiskCommandCenter() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [portfolioData, mandateData, rejectionData] = await Promise.all([
-        portfolioAPI.listPortfolios(),
-        systemAPI.getMandates(),
-        auditAPI.getRiskRejections(20),
-      ]);
-      setPortfolios(portfolioData || []);
-      setLockedMandates((mandateData || []).filter((m: RiskMandate) => m.kill_switch_active));
-      setRejections(rejectionData || []);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [rejections, setRejections] = useState<AuditLog[]>([]);
+  const [killSwitches, setKillSwitches] = useState<AuditLog[]>([]);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [ports, rejs, kills] = await Promise.all([
+          portfolioAPI.listPortfolios(),
+          auditAPI.getRiskRejections(10),
+          auditAPI.getKillSwitchEvents(5)
+        ]);
+        setPortfolios(ports);
+        setRejections(rejs);
+        setKillSwitches(kills);
+      } catch (err) {
+        console.error("Failed to load risk data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
   }, []);
 
-  const handleUnlock = async (mandateId: string) => {
-    if (confirm(`Are you sure you want to reset the kill switch for mandate "${mandateId}"?`)) {
-      try {
-        await tradeAPI.resetKillSwitch(mandateId);
-        await fetchData(); // Re-fetch all data to update the UI
-      } catch (err: any) {
-        alert(`Failed to unlock mandate: ${err.message}`);
-      }
-    }
-  };
+  if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-gold" /></div>;
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-gold" /></div>;
-  }
-
-  if (error) {
-    return <div className="text-center text-danger">{error}</div>;
-  }
-
-  const RiskProgressBar = ({ value, limit, label }: { value: number, limit: number, label: string }) => {
-    const percentage = limit > 0 ? (value / limit) * 100 : 0;
-    let colorClass = 'bg-success';
-    if (percentage > 75) {
-      colorClass = 'bg-danger';
-    } else if (percentage > 50) {
-      colorClass = 'bg-warning';
-    }
-  
-    return (
-      <div>
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-text-muted">{label}</span>
-          <span className="font-mono text-text-primary">{value.toFixed(2)}% / {limit.toFixed(2)}%</span>
-        </div>
-        <div className="w-full bg-background-panel-2 rounded-full h-2">
-          <div className={`${colorClass} h-2 rounded-full`} style={{ width: `${Math.min(percentage, 100)}%` }}></div>
-        </div>
-      </div>
-    );
-  };
+  const activeExposure = portfolios.reduce((acc, p) => acc + ((p as any).risk_context?.exposure_used || 0), 0);
+  const maxDrawdown = portfolios.reduce((acc, p) => Math.max(acc, p.current_drawdown_pct || 0), 0);
+  const activeKills = portfolios.filter(p => (p as any).risk_context?.kill_switch_status).length;
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Risk Monitoring" subtitle="System-wide exposure, drawdown, and risk event overview." />
+      <PageHeader title="Risk Command Center" subtitle="Institutional-grade risk governance and system-wide visibility." />
 
-      {lockedMandates?.length > 0 && (
-        <div className="bg-danger/10 border border-danger/30 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-danger mb-4 flex items-center gap-2"><ShieldAlert /> System Halts Active</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {lockedMandates?.map(mandate => (
-              <div key={mandate.pk_id} className="bg-background-panel-2 p-4 rounded-md flex justify-between items-center">
-                <div>
-                  <p className="font-semibold text-text-primary">{mandate.name}</p>
-                  <p className="font-mono text-sm text-danger">{mandate.id}</p>
-                </div>
-                <button onClick={() => handleUnlock(mandate.id)} className="flex items-center gap-2 px-3 py-1.5 bg-danger/20 hover:bg-danger/40 text-danger border border-danger/30 rounded-md text-xs font-semibold transition-colors">
-                  <Unlock className="w-4 h-4" />
-                  Reset
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <h3 className="text-lg font-semibold text-text-primary mb-4">Live Portfolio Risk Exposure</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {portfolios?.map(p => (
-            <div key={p.id} className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 space-y-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-mono text-primary-gold">{p.id}</p>
-                  <MandateBadge mandateId={p.mandate_id} />
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-text-muted">Capital at Risk</p>
-                  <p className="font-mono text-text-primary">${(p.risk_context?.capital_at_risk || 0).toLocaleString()}</p>
-                </div>
-              </div>
-              <RiskProgressBar value={p.risk_context?.current_drawdown_pct || p.current_drawdown_pct || 0} limit={p.risk_context?.max_drawdown_pct || 100} label="Max Drawdown" />
-              <RiskProgressBar value={p.risk_context?.exposure_utilization_pct || 0} limit={100} label="Exposure" />
-            </div>
-          ))}
-          {portfolios?.length === 0 && <p className="text-sm text-text-muted text-center p-4 col-span-full">No active portfolios to monitor.</p>}
-        </div>
+      <div className="g4">
+        <MetricDisplay label="System Exposure" value={`$${activeExposure.toLocaleString(undefined, {minimumFractionDigits: 2})}`} icon={Activity} />
+        <MetricDisplay label="Max Drawdown" value={`${maxDrawdown.toFixed(2)}%`} trend={maxDrawdown > 0 ? 'down' : 'neutral'} />
+        <MetricDisplay label="Recent Rejections" value={rejections.length} trend={rejections.length > 0 ? 'down' : 'neutral'} />
+        <MetricDisplay label="Active Kill Switches" value={activeKills} trend={activeKills > 0 ? 'down' : 'neutral'} icon={ShieldAlert} />
       </div>
 
-      <div>
-        <h3 className="text-lg font-semibold text-text-primary mb-4">Recent Trade Rejections</h3>
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 space-y-3">
-          {rejections?.slice(0, 5).map(log => (
-            <div key={log.id} className="text-sm flex items-start gap-3 p-2 rounded-md hover:bg-background-panel-2">
-              <Ban className="w-4 h-4 text-danger mt-0.5 shrink-0" />
-              <div>
-                <p className="text-text-primary">{log.description}</p>
-                <p className="text-xs text-text-muted font-mono">{new Date(log.timestamp).toLocaleString()}</p>
-              </div>
-            </div>
-          ))}
-          {rejections?.length === 0 && <p className="text-sm text-text-muted text-center p-4">No rejections in the log.</p>}
+      <div className="g21">
+        <div className="card red shadow-lg p-0 overflow-hidden">
+          <div className="p-4 border-b border-border-default bg-background-base">
+            <h3 className="sec-head mb-0">Recent Trade Rejections</h3>
+          </div>
+          <table className="nexa-table">
+            <thead><tr><th>Time</th><th>Reason</th></tr></thead>
+            <tbody>
+              {rejections.length > 0 ? rejections.map(log => (
+                <tr key={log.id}>
+                  <td className="whitespace-nowrap font-mono">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                  <td className="text-danger">{log.description}</td>
+                </tr>
+              )) : (
+                <tr><td colSpan={2} className="text-center py-4 text-text-muted">No recent rejections.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="card gold shadow-lg p-0 overflow-hidden">
+          <div className="p-4 border-b border-border-default bg-background-base">
+            <h3 className="sec-head mb-0">Kill Switch Audit</h3>
+          </div>
+          <table className="nexa-table">
+            <thead><tr><th>Time</th><th>Event Detail</th></tr></thead>
+            <tbody>
+              {killSwitches.length > 0 ? killSwitches.map(log => (
+                <tr key={log.id}>
+                  <td className="whitespace-nowrap font-mono">{new Date(log.timestamp).toLocaleTimeString()}</td>
+                  <td className="text-primary-gold">{log.description}</td>
+                </tr>
+              )) : (
+                <tr><td colSpan={2} className="text-center py-4 text-text-muted">No kill switch events detected.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -92,5 +92,23 @@ It details the major features implemented, the architectural shifts, and the spe
 
 ---
 
+## Stage 5: Final Polish & Metric Fidelity
+**Objective:** Enhance UI professionalism, solidify metric accuracy, and expose historical audit features.
+
+### 🚀 Major Features Added
+- **Mandate Version History UI:** Exposed the backend versioning engine to the frontend. Added a `GET /api/mandates/{id}/history` route and a toggleable drawer in the Mandates UI to view active and archived risk limits.
+- **Dynamic High-Water Mark Drawdown:** Updated the `trading.py` execution engine to calculate the portfolio's all-time high equity and calculate `current_drawdown_pct` dynamically on every trade.
+- **Live Exposure Tracking:** Upgraded the `PortfolioRiskContext` in `domain.py` to calculate exact capital tied up in `OPEN` trades, future-proofing the system for multi-day position holding.
+
+### 🐛 Bugs & Triumphs
+- **The Pydantic Ghost Filter:**
+  - **Log Encountered:** The Operations Dashboard showed `0` for Trades Today and Active Users, even though the database had records.
+  - **Resolution:** FastAPI silently strips response data that isn't defined in the Pydantic `response_model`. Added `trades_today` and `active_users` to the local `EngineHealth` schema to allow the data through.
+- **Floating Point Precision:**
+  - **Issue:** Win rates displayed as `53.48837209302325%`, ruining the institutional feel.
+  - **Resolution:** Implemented explicit rounding at the API layer (`round(val, 2)`) and strict `.toFixed(2)` formatting in the React frontend.
+
+---
+
 ## Conclusion
 The platform has successfully transitioned from a conceptual MVP to a highly secure, data-rich ecosystem ready for live-market integration and advanced Machine Learning expansion.

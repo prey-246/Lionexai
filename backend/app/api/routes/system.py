@@ -10,6 +10,7 @@ from app.models import schemas
 from app.services.historical_data import HistoricalDataService
 from app.core.database import SessionLocal
 from app.api.deps import require_role, get_current_user
+from app.services.audit_service import create_audit_log
 import logging
 import ccxt as ccxt_sync
 
@@ -137,5 +138,13 @@ def update_global_settings(
         setattr(settings, key, value)
         
     db.commit()
+
+    create_audit_log(
+        db,
+        action_type="SETTINGS_UPDATE",
+        description=f"User '{current_user.email}' updated global platform settings.",
+        metadata_json={"user_id": current_user.id, "changes": update_data}
+    )
+    
     db.refresh(settings)
     return settings

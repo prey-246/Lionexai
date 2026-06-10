@@ -10,29 +10,36 @@ const config: Config = {
     extend: {
       colors: {
         background: {
-          root: "var(--background-root)",
-          panel: {
-            1: "var(--background-panel-1)",
-            2: "var(--background-panel-2)",
-          },
+          base: "var(--background-base)",
+          card: "var(--background-card)",
+          panel: "var(--background-panel)",
         },
         primary: {
           gold: "var(--primary-gold)",
-          "gold-light": "var(--primary-gold-light)",
-          teal: "var(--primary-teal)",
-          "teal-light": "var(--primary-teal-light)",
+          emerald: "var(--primary-emerald)",
           blue: "var(--primary-blue)",
         },
         danger: "var(--danger)",
+        success: "var(--success)",
         text: {
           primary: "var(--text-primary)",
           secondary: "var(--text-secondary)",
           muted: "var(--text-muted)",
         },
         border: {
-          primary: "var(--border-primary)",
-          secondary: "var(--border-secondary)",
+          subtle: "var(--border-subtle)",
+          default: "var(--border-default)",
         },
+        system: {
+          gBg: "var(--gBg)",
+          gBd: "var(--gBd)",
+          tBg: "var(--tBg)",
+          tBd: "var(--tBd)",
+          rBg: "var(--rBg)",
+          rBd: "var(--rBd)",
+          bBg: "var(--bBg)",
+          bBd: "var(--bBd)",
+        }
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

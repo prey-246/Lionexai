@@ -86,26 +86,32 @@ export default function ClientDashboard() {
     return <div>No summary data available.</div>;
   }
 
+  // Calculate Global Risk Visibility metrics from the portfolios list
+  const totalExposure = portfolios.reduce((acc, p) => acc + ((p as any).risk_context?.exposure_used || 0), 0);
+  const totalCapitalAtRisk = portfolios.reduce((acc, p) => acc + ((p as any).risk_context?.capital_at_risk || 0), 0);
+  const maxDrawdown = portfolios.reduce((acc, p) => Math.max(acc, p.current_drawdown_pct || 0), 0);
+  const killSwitches = portfolios.filter(p => (p as any).risk_context?.kill_switch_status).length;
+
   return (
     <div className="space-y-8">
       <PageHeader title="My Dashboard" subtitle="Aggregate performance overview of all your portfolios" />
 
-      <div className="flex gap-4 overflow-hidden py-1">
+      <div className="flex gap-4 overflow-x-auto py-2 scrollbar-hide">
         {Object.entries(livePrices || {}).length > 0 ? (
           Object.entries(livePrices || {}).map(([symbol, price]) => {
             const sentiment = sentiments[symbol];
-            let sentimentColor = "text-text-muted bg-white/5 border-white/10";
-            let sentimentLabel = "Neutral";
+            let tagClass = "grey";
+            let sentimentLabel = "NEUTRAL";
             if (sentiment) {
-              if (sentiment.score > 0.2) { sentimentColor = "text-success bg-success/10 border-success/20"; sentimentLabel = "Bullish"; }
-              else if (sentiment.score < -0.2) { sentimentColor = "text-danger bg-danger/10 border-danger/20"; sentimentLabel = "Bearish"; }
+              if (sentiment.score > 0.2) { tagClass = "teal"; sentimentLabel = "BULLISH"; }
+              else if (sentiment.score < -0.2) { tagClass = "red"; sentimentLabel = "BEARISH"; }
             }
             return (
-              <div key={symbol} className="flex items-center gap-2 text-sm font-mono bg-background-panel-2 px-3 py-1.5 rounded-md border border-border-secondary/50 shadow-sm">
-                <span className="text-text-muted">{symbol}</span>
-                <span className="text-primary-teal font-bold">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <div key={symbol} className="card py-2 px-3 flex items-center gap-3 text-[11px] font-mono shadow-sm">
+                <span className="text-text-secondary">{symbol}</span>
+                <span className="text-primary-emerald font-bold text-[12px]">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 {sentiment && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded border uppercase tracking-wider font-sans font-bold ${sentimentColor}`} title={`AI Score: ${sentiment.score}`}>
+                  <span className={`tag ${tagClass}`} title={`AI Score: ${sentiment.score}`}>
                     {sentimentLabel}
                   </span>
                 )}
@@ -113,41 +119,51 @@ export default function ClientDashboard() {
             );
           })
         ) : (
-          <div className="text-sm text-text-muted font-mono animate-pulse flex items-center gap-2">
-             <div className="w-2 h-2 bg-text-muted rounded-full animate-ping"></div>
+          <div className="text-base text-text-secondary font-mono animate-pulse flex items-center gap-2">
+             <div className="w-2 h-2 bg-text-secondary rounded-full animate-ping"></div>
              Connecting to live market feed...
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="g4">
         <MetricDisplay label="Total Equity" value={`$${summary.total_equity.toLocaleString()}`} icon={Wallet} />
         <MetricDisplay label="Total P&L" value={`$${summary.total_pnl.toLocaleString()}`} trend={summary.total_pnl > 0 ? 'up' : 'down'} icon={Activity} />
-        <MetricDisplay label="Overall Win Rate" value={`${summary.overall_win_rate_pct}%`} icon={TrendingUp} />
+        <MetricDisplay label="Overall Win Rate" value={`${summary.overall_win_rate_pct.toFixed(2)}%`} icon={TrendingUp} />
         <MetricDisplay label="Active Portfolios" value={summary.portfolio_count} icon={ShieldAlert} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Top Performers</h3>
+      <div>
+        <h3 className="sec-head">Global Risk Visibility</h3>
+        <div className="g4">
+          <MetricDisplay label="Capital at Risk" value={`$${totalCapitalAtRisk.toLocaleString(undefined, {minimumFractionDigits: 2})}`} trend="down" />
+          <MetricDisplay label="Active Exposure" value={`$${totalExposure.toLocaleString(undefined, {minimumFractionDigits: 2})}`} />
+          <MetricDisplay label="Max System Drawdown" value={`${maxDrawdown.toFixed(2)}%`} trend={maxDrawdown > 0 ? 'down' : 'neutral'} />
+          <MetricDisplay label="Mandates Halted" value={killSwitches} trend={killSwitches > 0 ? 'down' : 'neutral'} />
+        </div>
+      </div>
+
+      <div className="g21">
+        <div className="card gold shadow-lg">
+          <h3 className="sec-head">Top Performers</h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-muted flex items-center gap-2"><Star className="w-4 h-4 text-primary-gold"/>Best Portfolio</span>
-              <span className="font-mono text-primary-gold">{summary.best_performing_id || 'N/A'}</span>
+              <span className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted flex items-center gap-2"><Star className="w-4 h-4 text-primary-gold"/>BEST PORTFOLIO</span>
+              <span className="font-mono text-[12px] font-bold text-primary-gold">{summary.best_performing_id || 'N/A'}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-muted flex items-center gap-2"><TrendingUp className="w-4 h-4 text-danger transform scale-y-[-1]"/>Worst Portfolio</span>
-              <span className="font-mono text-danger">{summary.worst_performing_id || 'N/A'}</span>
+              <span className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted flex items-center gap-2"><TrendingUp className="w-4 h-4 text-danger transform scale-y-[-1]"/>WORST PORTFOLIO</span>
+              <span className="font-mono text-[12px] font-bold text-danger">{summary.worst_performing_id || 'N/A'}</span>
             </div>
           </div>
         </div>
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Quick Actions</h3>
+        <div className="card blue shadow-lg">
+          <h3 className="sec-head">Quick Actions</h3>
            <div className="flex gap-4">
-              <Link href="/portfolios" className="flex-1 text-center bg-primary-blue/10 text-primary-blue border border-primary-blue/20 hover:bg-primary-blue/20 rounded-md p-3 text-sm font-semibold transition-colors">
+              <Link href="/portfolios" className="flex-1 text-center btn gold btn-full">
                 Manage Portfolios
               </Link>
-              <Link href="/trade" className="flex-1 text-center bg-primary-teal/10 text-primary-teal border border-primary-teal/20 hover:bg-primary-teal/20 rounded-md p-3 text-sm font-semibold transition-colors">
+              <Link href="/trade" className="flex-1 text-center btn teal btn-full">
                 Go to Terminal
               </Link>
            </div>
@@ -155,50 +171,48 @@ export default function ClientDashboard() {
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold text-text-primary mb-4">Portfolio List</h3>
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
-          <ul className="divide-y divide-border-secondary">
-            {portfolios?.length > 0 ? portfolios.map(p => (
-              <li key={p.id}>
-                <Link href={`/portfolios/${p.id}`} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors group">
-                  <div>
-                    <p className="font-mono text-primary-gold group-hover:text-primary-teal">{p.id}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <MandateBadge mandateId={p.mandate_id} />
-                      <span className="text-xs text-text-muted">|</span>
-                      <p className="text-xs text-text-muted">Equity: ${p.total_equity.toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-text-muted group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </li>
-            )) : (
-              <li className="p-4 text-center text-text-muted">No portfolios found. Create one in the 'Portfolios' section to get started.</li>
-            )}
-          </ul>
+        <h3 className="sec-head">Portfolio List</h3>
+        <div className="card shadow-lg p-0 overflow-hidden">
+          <table className="nexa-table">
+            <thead>
+              <tr><th>ID</th><th>Mandate</th><th>Equity</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              {portfolios?.length > 0 ? portfolios.map(p => (
+                <tr key={p.id}>
+                  <td className="font-mono font-bold text-primary-gold">{p.id}</td>
+                  <td><MandateBadge mandateId={p.mandate_id} /></td>
+                  <td className="font-mono">${p.total_equity.toLocaleString()}</td>
+                  <td><Link href={`/portfolios/${p.id}`} className="btn grey">View</Link></td>
+                </tr>
+              )) : (
+                <tr><td colSpan={4} className="text-center py-4 text-text-muted">No portfolios found.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
-          <Newspaper className="w-5 h-5 text-primary-blue" />
+        <h3 className="sec-head flex items-center gap-2">
+          <Newspaper className="w-5 h-5 text-primary-emerald" />
           Live Market Intelligence
         </h3>
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
-          <ul className="divide-y divide-border-secondary">
+        <div className="card shadow-lg p-0 overflow-hidden">
+          <ul className="divide-y divide-border-default">
             {news?.length > 0 ? news.map(article => (
-              <li key={article.id} className="p-4 hover:bg-white/5 transition-colors">
+              <li key={article.id} className="p-6 hover:bg-white/5 transition-colors">
                 <a href={article.url} target="_blank" rel="noopener noreferrer" className="block">
-                  <p className="font-semibold text-text-primary hover:text-primary-blue transition-colors mb-1">{article.title}</p>
-                  <div className="flex items-center gap-2 text-xs text-text-muted">
-                    <span className="bg-background-panel-2 px-2 py-0.5 rounded font-medium text-primary-teal border border-primary-teal/20">{article.source}</span>
+                  <p className="font-sans text-[13px] font-semibold text-text-primary hover:text-primary-emerald transition-colors mb-2">{article.title}</p>
+                  <div className="flex items-center gap-3 font-sans text-[12px] text-text-secondary">
+                    <span className="tag teal">{article.source}</span>
                     <span>•</span>
                     <span>{new Date(article.published_at).toLocaleString()}</span>
                   </div>
                 </a>
               </li>
             )) : (
-              <li className="p-4 text-center text-text-muted">No recent news available.</li>
+              <li className="p-8 text-center font-sans text-[13px] text-text-secondary">No recent news available.</li>
             )}
           </ul>
         </div>

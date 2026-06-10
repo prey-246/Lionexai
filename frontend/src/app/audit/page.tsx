@@ -7,14 +7,13 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Loader2 } from 'lucide-react';
 
 const ActionBadge = ({ type }: { type: string }) => {
-  let color = 'bg-gray-700 text-gray-300';
-  if (type.includes('CREATE')) color = 'bg-green-500/20 text-green-400';
-  if (type.includes('UPDATE')) color = 'bg-blue-500/20 text-blue-400';
-  if (type.includes('LOGIN')) color = 'bg-cyan-500/20 text-cyan-400';
-  if (type.includes('REJECTION') || type.includes('KILL')) color = 'bg-red-500/20 text-red-400';
-  if (type.includes('REPORT')) color = 'bg-purple-500/20 text-purple-400';
+  let color = 'blue';
+  if (type.includes('CREATE')) color = 'teal';
+  if (type.includes('UPDATE')) color = 'gold';
+  if (type.includes('LOGIN')) color = 'teal';
+  if (type.includes('REJECTION') || type.includes('KILL')) color = 'red';
 
-  return <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${color}`}>{type}</span>;
+  return <span className={`tag ${color}`}>{type}</span>;
 };
 
 export default function AuditTrailPage() {
@@ -59,12 +58,12 @@ export default function AuditTrailPage() {
       
       <div className="flex justify-between items-center">
         <div>
-          <label htmlFor="action-type-filter" className="text-sm font-medium text-text-muted mr-2">Filter by Action:</label>
+          <label htmlFor="action-type-filter" className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted mr-2">Filter by Action:</label>
           <select
             id="action-type-filter"
             value={filterType}
             onChange={handleFilterChange}
-            className="bg-background-panel-2 border border-border-secondary rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+            className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px] focus:outline-none focus:border-primary-blue transition-colors"
           >
             <option value="">All Actions</option>
             <option value="USER_LOGIN">User Login</option>
@@ -74,6 +73,9 @@ export default function AuditTrailPage() {
             <option value="RISK_REJECTION">Risk Rejection</option>
             <option value="KILL_SWITCH_TRIGGERED">Kill Switch Triggered</option>
             <option value="KILL_SWITCH_RESET">Kill Switch Reset</option>
+            <option value="SETTINGS_UPDATE">Settings Update</option>
+            <option value="STRATEGY_CREATE">Strategy Create</option>
+            <option value="STRATEGY_UPDATE">Strategy Update</option>
           </select>
         </div>
         <div className="flex items-center gap-4">
@@ -84,14 +86,14 @@ export default function AuditTrailPage() {
             <button
               onClick={() => setCurrentPage(p => p - 1)}
               disabled={currentPage === 1}
-              className="px-3 py-1.5 bg-background-panel-2 border border-border-secondary rounded-md text-sm font-semibold hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn grey"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage(p => p + 1)}
               disabled={currentPage === totalPages || totalPages === 0}
-              className="px-3 py-1.5 bg-background-panel-2 border border-border-secondary rounded-md text-sm font-semibold hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn grey"
             >
               Next
             </button>
@@ -99,23 +101,23 @@ export default function AuditTrailPage() {
         </div>
       </div>
 
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
+      <div className="card shadow-lg p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-background-panel-2">
+          <table className="nexa-table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 font-medium text-text-muted">Timestamp</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Action Type</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Description</th>
+                <th>Timestamp</th>
+                <th>Action Type</th>
+                <th>Description</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-secondary">
+            <tbody>
               {logs?.length > 0 ? (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-background-panel-2/50">
-                    <td className="px-6 py-4 whitespace-nowrap text-text-muted font-mono">{new Date(log.timestamp).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap"><ActionBadge type={log.action_type} /></td>
-                    <td className="px-6 py-4 text-text-primary">{log.description}</td>
+                  <tr key={log.id}>
+                    <td className="whitespace-nowrap font-mono">{new Date(log.timestamp).toLocaleString()}</td>
+                    <td className="whitespace-nowrap"><ActionBadge type={log.action_type} /></td>
+                    <td>{log.description}</td>
                   </tr>
                 ))
               ) : (

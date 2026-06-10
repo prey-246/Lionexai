@@ -65,9 +65,11 @@ def list_portfolios(
     """
     List all portfolios for the current user, including their full risk context.
     """
-    portfolios = db.query(domain.Portfolio).filter(
-        domain.Portfolio.user_id == current_user.id
-    ).options(
+    query = db.query(domain.Portfolio)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+        
+    portfolios = query.options(
         # Eager load relationships to prevent N+1 query problem
         joinedload(domain.Portfolio.mandate),
         joinedload(domain.Portfolio.trades)
@@ -82,7 +84,11 @@ def get_portfolio_summary(
     """
     Get a summary of all portfolios for the current user.
     """
-    portfolios = db.query(domain.Portfolio).filter(domain.Portfolio.user_id == current_user.id).all()
+    query = db.query(domain.Portfolio)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+        
+    portfolios = query.all()
     
     if not portfolios:
         return schemas.PortfolioSummary(
@@ -104,7 +110,7 @@ def get_portfolio_summary(
         domain.Trade.portfolio_id.in_(portfolio_pk_ids), domain.Trade.status == 'CLOSED', domain.Trade.pnl > 0
     ).scalar() or 0
 
-    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+    win_rate = round((winning_trades / total_trades * 100), 2) if total_trades > 0 else 0.0
     
     # Calculate Best and Worst Portfolios by PNL
     portfolio_pnls = {p.pk_id: 0.0 for p in portfolios}
@@ -141,10 +147,11 @@ def get_portfolio(
     """
     Get a single portfolio by ID, including its full risk context.
     """
-    portfolio = db.query(domain.Portfolio).filter(
-        domain.Portfolio.id == portfolio_id,
-        domain.Portfolio.user_id == current_user.id
-    ).options(
+    query = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+        
+    portfolio = query.options(
         # Eager load relationships to prevent N+1 query problem
         joinedload(domain.Portfolio.mandate),
         joinedload(domain.Portfolio.trades)
@@ -164,10 +171,11 @@ def delete_portfolio(
     """
     Delete a portfolio.
     """
-    portfolio = db.query(domain.Portfolio).filter(
-        domain.Portfolio.id == portfolio_id,
-        domain.Portfolio.user_id == current_user.id
-    ).first()
+    query = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+        
+    portfolio = query.first()
 
     if not portfolio:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Portfolio not found")
@@ -185,7 +193,10 @@ def delete_portfolio(
 
 @router.get("/{portfolio_id}/stats", response_model=schemas.PortfolioStats)
 def get_portfolio_stats(portfolio_id: str, db: Session = Depends(get_db), current_user: domain.User = Depends(get_current_user)):
-    portfolio = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id, domain.Portfolio.user_id == current_user.id).first()
+    query = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+    portfolio = query.first()
     if not portfolio: raise HTTPException(status_code=404, detail="Portfolio not found")
 
     trades = db.query(domain.Trade).filter(domain.Trade.portfolio_id == portfolio.pk_id, domain.Trade.status == 'CLOSED').all()
@@ -195,8 +206,8 @@ def get_portfolio_stats(portfolio_id: str, db: Session = Depends(get_db), curren
     losing_trades = len([t for t in trades if t.pnl and t.pnl < 0])
     total_pnl = sum([t.pnl for t in trades if t.pnl])
     
-    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
-    avg_pnl = (total_pnl / total_trades) if total_trades > 0 else 0
+    win_rate = round((winning_trades / total_trades * 100), 2) if total_trades > 0 else 0.0
+    avg_pnl = round((total_pnl / total_trades), 2) if total_trades > 0 else 0.0
     best_trade = max([t.pnl for t in trades if t.pnl], default=0)
     worst_trade = min([t.pnl for t in trades if t.pnl], default=0)
 
@@ -208,7 +219,10 @@ def get_portfolio_stats(portfolio_id: str, db: Session = Depends(get_db), curren
 
 @router.get("/{portfolio_id}/trades", response_model=List[schemas.Trade])
 def get_portfolio_trades(portfolio_id: str, status: str = None, db: Session = Depends(get_db), current_user: domain.User = Depends(get_current_user)):
-    portfolio = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id, domain.Portfolio.user_id == current_user.id).first()
+    query = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+    portfolio = query.first()
     if not portfolio: raise HTTPException(status_code=404, detail="Portfolio not found")
 
     query = db.query(domain.Trade).filter(domain.Trade.portfolio_id == portfolio.pk_id)
@@ -217,14 +231,20 @@ def get_portfolio_trades(portfolio_id: str, status: str = None, db: Session = De
 
 @router.get("/{portfolio_id}/risk-events", response_model=List[schemas.RiskEvent])
 def get_portfolio_risk_events(portfolio_id: str, limit: int = 50, db: Session = Depends(get_db), current_user: domain.User = Depends(get_current_user)):
-    portfolio = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id, domain.Portfolio.user_id == current_user.id).first()
+    query = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+    portfolio = query.first()
     if not portfolio: raise HTTPException(status_code=404, detail="Portfolio not found")
     
     return db.query(domain.RiskEvent).filter(domain.RiskEvent.portfolio_id == portfolio.pk_id).order_by(domain.RiskEvent.triggered_at.desc()).limit(limit).all()
 
 @router.get("/{portfolio_id}/equity-curve")
 def get_portfolio_equity_curve(portfolio_id: str, limit: int = 100, db: Session = Depends(get_db), current_user: domain.User = Depends(get_current_user)):
-    portfolio = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id, domain.Portfolio.user_id == current_user.id).first()
+    query = db.query(domain.Portfolio).filter(domain.Portfolio.id == portfolio_id)
+    if current_user.role_tier == "client":
+        query = query.filter(domain.Portfolio.user_id == current_user.id)
+    portfolio = query.first()
     if not portfolio: raise HTTPException(status_code=404, detail="Portfolio not found")
 
     curves = db.query(domain.EquityCurve).filter(domain.EquityCurve.portfolio_id == portfolio.pk_id).order_by(domain.EquityCurve.timestamp.asc()).limit(limit).all()

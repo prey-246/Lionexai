@@ -85,6 +85,10 @@ export const systemAPI = {
     return apiFetch(`${API_BASE_URL}/api/mandates/${id}`, { cache: 'no-store' });
   },
 
+  getMandateHistory: (id: string): Promise<RiskMandate[]> => {
+    return apiFetch(`${API_BASE_URL}/api/mandates/${id}/history`, { cache: 'no-store' });
+  },
+
   updateMandate: (pkId: number, payload: Partial<RiskMandate>): Promise<RiskMandate> => {
     return apiFetch(`${API_BASE_URL}/api/mandates/${pkId}`, {
       method: 'PUT',
@@ -324,6 +328,9 @@ export const intelligenceAPI = {
   },
   getSentiment: (symbol: string): Promise<MarketSensitivityScore> => {
     return apiFetch(`${API_BASE_URL}/api/intelligence/sentiment/${encodeURIComponent(symbol)}`, { cache: 'no-store' });
+  },
+  getEconomicEvents: (limit: number = 10): Promise<any[]> => {
+    return apiFetch(`${API_BASE_URL}/api/intelligence/events?limit=${limit}`, { cache: 'no-store' });
   }
 };
 

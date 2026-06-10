@@ -127,6 +127,16 @@ def get_mandate(mandate_id: str, db: Session = Depends(get_db), current_user: do
         raise HTTPException(status_code=404, detail="Mandate not found")
     return mandate
 
+@router.get("/{mandate_id}/history", response_model=List[MandateResponse])
+def get_mandate_history(mandate_id: str, db: Session = Depends(get_db), current_user: domain.User = Depends(get_current_user)):
+    """
+    Retrieve the full version history (active and archived) of a specific mandate by its ID.
+    """
+    history = db.query(domain.Mandate).filter(domain.Mandate.id == mandate_id).order_by(domain.Mandate.version.desc()).all()
+    if not history:
+        raise HTTPException(status_code=404, detail="Mandate not found")
+    return history
+
 @router.put("/{pk_id}", response_model=MandateResponse, dependencies=[Depends(require_role(["admin", "risk_manager"]))])
 def update_mandate(pk_id: int, mandate_update: MandateUpdate, db: Session = Depends(get_db), current_user: domain.User = Depends(get_current_user)):
     db_mandate = db.query(domain.Mandate).filter(domain.Mandate.pk_id == pk_id).first()
@@ -147,6 +157,10 @@ def update_mandate(pk_id: int, mandate_update: MandateUpdate, db: Session = Depe
     # Apply updates from the request
     for key, value in update_data.items():
         new_version_data[key] = value
+
+    # Ensure protected fields are completely stripped before unpacking
+    for k in ["pk_id", "created_at", "updated_at", "version", "previous_version_pk_id", "created_by_id"]:
+        new_version_data.pop(k, None)
 
     new_mandate = domain.Mandate(
         **new_version_data,

@@ -53,7 +53,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader title="System Operations" subtitle="Live status of all platform infrastructure and services." />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="g4">
         <MetricDisplay label="API Engine" value={health?.status || 'Offline'} icon={Zap} trend={health?.status === 'online' ? 'up' : 'down'} />
         <MetricDisplay label="Database" value={health?.database || 'Offline'} icon={Database} trend={health?.database === 'connected' ? 'up' : 'down'} />
         <MetricDisplay label="Cache (Redis)" value="Connected" icon={Layers} trend="up" />
@@ -61,40 +61,40 @@ export default function DashboardPage() {
         <MetricDisplay label="Background Jobs" value="Idle" icon={Server} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="g21">
         <div>
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Recent System Activity</h3>
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 space-y-3">
+          <h3 className="sec-head">Recent System Activity</h3>
+          <div className="card shadow-lg p-6 space-y-4">
             {activity?.length > 0 ? activity.map(log => (
-              <div key={log.id} className="text-sm flex items-start gap-3">
+              <div key={log.id} className="flex items-start gap-3 pb-3 border-b border-border-default last:border-0 last:pb-0">
                 <Clock className="w-4 h-4 text-text-muted mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-text-primary">{log.description}</p>
-                  <p className="text-xs text-text-muted font-mono">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                  <p className="font-sans text-[13px] text-text-primary">{log.description}</p>
+                  <p className="font-mono text-[9px] text-text-muted mt-1">{new Date(log.timestamp).toLocaleTimeString()}</p>
                 </div>
               </div>
-            )) : <p className="text-sm text-text-muted text-center p-4">No recent activity.</p>}
+            )) : <p className="font-sans text-[13px] text-text-muted text-center p-4">No recent activity.</p>}
           </div>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Recent Trade Rejections</h3>
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 space-y-3">
+          <h3 className="sec-head">Recent Trade Rejections</h3>
+          <div className="card red shadow-lg p-6 space-y-4">
             {rejections?.length > 0 ? rejections.map(log => (
-              <div key={log.id} className="text-sm flex items-start gap-3">
+              <div key={log.id} className="flex items-start gap-3 pb-3 border-b border-border-default last:border-0 last:pb-0">
                 <Ban className="w-4 h-4 text-danger mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-text-primary">{log.description}</p>
-                  <p className="text-xs text-text-muted font-mono">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                  <p className="font-sans text-[13px] text-danger">{log.description}</p>
+                  <p className="font-mono text-[9px] text-text-muted mt-1">{new Date(log.timestamp).toLocaleTimeString()}</p>
                 </div>
               </div>
-            )) : <p className="text-sm text-text-muted text-center p-4">No rejections today.</p>}
+            )) : <p className="font-sans text-[13px] text-text-muted text-center p-4">No rejections today.</p>}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6 text-center"><Server className="w-8 h-8 mx-auto text-primary-blue mb-2" /><h4 className="font-semibold text-text-primary">Trades Today</h4><p className="text-2xl font-mono">{health?.trades_today || 0}</p><p className="text-xs text-text-muted">Live Executions</p></div>
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6 text-center"><Users className="w-8 h-8 mx-auto text-primary-teal mb-2" /><h4 className="font-semibold text-text-primary">Registered Users</h4><p className="text-2xl font-mono">{health?.active_users || 0}</p><p className="text-xs text-text-muted">System Accounts</p></div>
+      <div className="g21">
+        <div className="card blue p-6 text-center shadow-lg"><Server className="w-8 h-8 mx-auto text-primary-blue mb-3" /><h4 className="font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Trades Today</h4><p className="font-serif text-[26px] font-bold text-text-primary">{health?.trades_today || 0}</p></div>
+        <div className="card teal p-6 text-center shadow-lg"><Users className="w-8 h-8 mx-auto text-primary-emerald mb-3" /><h4 className="font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Registered Users</h4><p className="font-serif text-[26px] font-bold text-text-primary">{health?.active_users || 0}</p></div>
       </div>
     </div>
   );
