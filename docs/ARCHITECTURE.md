@@ -27,8 +27,13 @@ The platform utilizes SQLAlchemy 2.0. The schema is highly relational, relying o
 - **Portfolio**: Represents an isolated trading account. Tracks `total_equity` and `available_margin`.
 - **Trade**: Represents individual paper trades. Tracks entry/exit prices, sizing, and realized `pnl`.
 - **EquityCurve**: Time-series snapshots of portfolio equity, used for charting.
+- **Strategy**: JSON-parameterized algorithmic models (e.g., MA Crossover, RSI) saved to the registry.
 
-### 3. NEXA Intelligence (Alt-Data Layer)
+### 3. Macro-Financials (Treasury & Yield)
+- **TreasuryPool**: Macro-capital accounts (Reserve, Yield, Growth) dictating overall platform health.
+- **TreasuryTransaction**: Immutable ledger logging all capital transfers and yield sweeps.
+
+### 4. NEXA Intelligence (Alt-Data Layer)
 - **MarketNewsArticle**: Scraped news articles from external sources (e.g., CoinDesk).
 - **NLPSentiment**: The result of text analysis on a news article. Tracks `sentiment_score` (-1.0 to 1.0) and `sentiment_label` (Bullish/Bearish).
 - **MarketSensitivityScore**: Aggregated AI score for a specific asset (e.g., `BTC/USDT`), heavily utilized by the Risk Gatekeeper.
@@ -58,12 +63,17 @@ The backtesting engine operates via a highly optimized vectorized approach:
 2. Calculates entry/exit signals across the entire timeframe instantly using array mathematics.
 3. Accurately deducts simulated `commission_pct` and `slippage_pct` costs (fetching defaults from `GlobalSettings` if not provided) on every position change to generate realistic `net_return_pct` metrics.
 
-### 4. Background Scheduled Tasks
+### 4. Autonomous Paper Trading
+The `algo_executor.py` background task awakens every 60 seconds. It scans the `Strategy Registry` for algorithms assigned to active `Portfolios`. It executes the mathematical models against the live market state. If a signal triggers, it routes the trade directly through the **Risk Engine**. If the Risk Engine approves, the paper trade executes entirely autonomously without human intervention.
+
+### 5. Background Scheduled Tasks
 FastAPI's `asyncio` loop manages continuous background services:
 - **Market Data Streamer**: Replays historical database ticks to the frontend WebSockets, injecting micro-volatility to simulate live markets.
 - **Price Updater**: Fetches live hourly closing prices from CCXT to ensure the execution terminal prices are accurate.
 - **News Scraper**: Pulls RSS feeds from crypto news outlets every hour.
 - **NLP Analyzer**: Scans unprocessed news articles every 10 minutes, generates sentiment scores, and updates the global `MarketSensitivityScore`.nexa_backend_prod   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- **Yield Sweeper**: Automatically calculates total platform realized PnL and executes a 10% ledger sweep to the Treasury Yield Pool.
+- **Algo Executor**: Evaluates assigned quantitative strategies and executes autonomous paper trades.
 nexa_backend_prod   |   File "/usr/local/lib/python3.12/site-packages/fastapi/applications.py", line 1159, in __call__
 nexa_backend_prod   |     await super().__call__(scope, receive, send)
 nexa_backend_prod   |   File "/usr/local/lib/python3.12/site-packages/starlette/applications.py", line 90, in __call__

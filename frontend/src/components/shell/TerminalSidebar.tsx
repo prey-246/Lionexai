@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit } from 'lucide-react';
+import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database } from 'lucide-react';
 import clsx from 'clsx';
 import Cookies from 'js-cookie';
 import { useUser } from '@/contexts/UserContext';
@@ -23,22 +23,29 @@ export function TerminalSidebar() {
   const clientNav = [
     { href: '/dashboard', label: 'My Dashboard', icon: BarChart },
     { href: '/portfolios', label: 'Portfolios', icon: Wallet },
+    { href: '/funds', label: 'Lionex Funds', icon: Briefcase },
     { href: '/trade', label: 'Execution Terminal', icon: Terminal },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
+    { href: '/lnx', label: 'LNX Ecosystem', icon: Coins },
   ];
 
   const operatorNav = [
     { href: '/', label: 'System Operations', icon: Activity },
     { href: '/audit', label: 'Audit Trail', icon: History },
     { href: '/backtest', label: 'Strategy Engine', icon: FlaskConical },
+    { href: '/strategies', label: 'Strategy Registry', icon: Database },
+    { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
   ];
 
   const riskNav = [
     { href: '/risk', label: 'Command Center', icon: ShieldAlert },
     { href: '/mandates', label: 'Mandate Contracts', icon: Shield },
+    { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
   ];
 
   const adminNav = [
+    { href: '/executive', label: 'Executive Summary', icon: BarChart },
+    { href: '/treasury', label: 'Treasury NAV', icon: Landmark },
     { href: '/admin/users', label: 'User Management', icon: Users },
     { href: '/admin/settings', label: 'Global Settings', icon: Settings },
   ];
@@ -56,7 +63,8 @@ export function TerminalSidebar() {
     navItems = [...riskNav, { href: '/portfolios', label: 'Global Portfolios', icon: Wallet }];
     workspaceName = "Risk Management";
   } else if (role === 'admin') {
-    navItems = [...operatorNav, ...riskNav, ...clientNav, ...adminNav];
+    const combined = [...operatorNav, ...riskNav, ...clientNav, ...adminNav];
+    navItems = Array.from(new Map(combined.map(item => [item.href, item])).values());
     workspaceName = "Admin Control";
   }
 
@@ -69,7 +77,7 @@ export function TerminalSidebar() {
             src="/logo.png" 
             id="toplogo"
             alt="UnifyX NEXA" 
-            className="h-[80px] w-auto mb-2 border-none bg-transparent"
+            className="h-[100px] w-auto mb-2 border-none bg-transparent"
             onError={(e) => { e.currentTarget.style.display = 'none'; }} 
           />
         </div>

@@ -15,6 +15,7 @@ A production-grade quantitative trading intelligence and portfolio orchestration
 ### Portfolio & Paper Trading
 - **Portfolio Management**: Create, view, and delete trading portfolios with customizable IDs and initial capital.
 - **Paper Trading**: Simulated trade execution (`BUY`/`SELL`) against a portfolio.
+- **Autonomous Execution**: A background engine that automatically runs assigned algorithms and executes paper trades securely routed through the Risk Gatekeeper.
 - **Real-time Updates**: Portfolio statistics, equity, and trade lists update in real-time across all connected clients using WebSockets.
 
 ### Risk Management
@@ -24,6 +25,11 @@ A production-grade quantitative trading intelligence and portfolio orchestration
 - **Global Controls & AI Integration**: System-wide configuration for max leverage, slippage/commissions, global emergency halt, and automated trade blocking when AI detects extreme bearish market sentiment.
 - **Audit Trail**: Immutable logging of all critical system events, including trade executions and risk rejections.
 
+### Treasury & Yield Distribution
+- **Ecosystem Treasury**: Macro-capital pools (Reserve, Yield, Growth) managing platform health.
+- **LNX Digital Asset**: An internal accounting token whose NAV is deterministically backed by the Treasury Reserve Pool, preparing for Web3 tokenization.
+- **Automated Yield Sweeper**: Background algorithmic sweep of winning trade PnL into the central Yield pool.
+
 ### Analytics & Reporting
 - **Portfolio Dashboards**: Detailed views of individual portfolio performance, including equity curves, P&L, and trade history.
 - **System-Wide Summary**: A main dashboard summarizing the performance of all portfolios.
@@ -32,8 +38,9 @@ A production-grade quantitative trading intelligence and portfolio orchestration
 - **PDF Export**: Download beautifully formatted PDF versions of generated performance reports for offline analysis and sharing.
 
 ### Strategy & Backtesting
-- **Backtesting Engine**: A foundational engine to simulate strategy performance against historical market data.
-- **Strategy Management**: API endpoints to create, list, and update trading strategies.
+- **Vectorized Backtesting Engine**: Simulate MA Crossovers and RSI Mean Reversion algorithms against historical TimescaleDB OHLCV data.
+- **Interactive Visualization**: Equity curves rendered via TradingView Lightweight charts with chronological trade logs.
+- **Strategy Registry**: A central repository where quantitative operators save, review, and assign highly profitable algorithmic models to live portfolios.
 
 ## Tech Stack
 
@@ -246,6 +253,13 @@ docker-compose -f docker-compose.prod.yml up --build -d
 - `POST /api/strategies` - Create strategy
 - `GET /api/strategies` - List strategies
 - `PUT /api/strategies/{id}` - Update strategy
+
+**Treasury Ecosystem**
+- `POST /api/treasury/seed` - Initialize Treasury pools
+- `GET /api/treasury/pools` - List active capital pools
+- `GET /api/treasury/transactions` - View immutable capital ledger
+- `POST /api/treasury/transfer` - Transfer capital between pools
+- `POST /api/treasury/sweep` - Trigger manual yield sweep
 
 **NEXA Intelligence**
 - `GET /api/intelligence/news` - Get latest market news

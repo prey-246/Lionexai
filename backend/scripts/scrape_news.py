@@ -39,8 +39,8 @@ def scrape_crypto_news():
             # Parse standard RSS RFC-822 date formats
             pub_date = datetime(*email.utils.parsedate(pub_date_str)[:6])
             
-            # Check if we already have this article based on URL
-            exists = db.query(MarketNewsArticle).filter(MarketNewsArticle.url == link).first()
+            # Check if we already have this article based on exact title to prevent duplicates
+            exists = db.query(MarketNewsArticle).filter(MarketNewsArticle.title == title).first()
             if not exists:
                 article = MarketNewsArticle(
                     title=title,

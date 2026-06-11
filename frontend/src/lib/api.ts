@@ -345,3 +345,24 @@ export const usersAPI = {
     });
   }
 };
+
+export const treasuryAPI = {
+  getPools: (): Promise<any[]> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/pools`, { cache: 'no-store' });
+  },
+  getTransactions: (limit: number = 50): Promise<any[]> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/transactions?limit=${limit}`, { cache: 'no-store' });
+  },
+  seedTreasury: (): Promise<any[]> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/seed`, { method: 'POST' });
+  },
+  transferFunds: (payload: { source_pool_id: string, target_pool_id: string, amount: number, description: string }): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/transfer`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+  sweepYield: (): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/sweep`, { method: 'POST' });
+  }
+};

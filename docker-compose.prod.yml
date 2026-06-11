@@ -32,8 +32,8 @@ services:
       context: ./backend
     container_name: nexa_backend_prod
     restart: always
-    # Use Gunicorn for a production-grade WSGI server
-    command: /bin/sh -c "alembic upgrade head && gunicorn -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:8000 app.main:app"
+    # Use Uvicorn with auto-reload for seamless local development
+    command: /bin/sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ./backend:/code
     ports:

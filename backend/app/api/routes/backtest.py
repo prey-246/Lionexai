@@ -14,7 +14,7 @@ from app.strategies import get_strategy
 
 router = APIRouter()
 
-@router.post("/run", response_model=schemas.BacktestResponse)
+@router.post("/run")
 def run_backtest(
     backtest_in: schemas.BacktestRequest,
     db: Session = Depends(get_db),
@@ -151,9 +151,30 @@ def run_backtest(
         total_trades_simulated=total_trades_simulated
     )
 
-    return schemas.BacktestResponse(
-        status="success",
-        symbol=backtest_in.symbol,
-        metrics=metrics,
-        equity_curve=equity_curve_data
-    )
+    # Generate detailed trade history for the UI
+    trade_history = []
+    last_buy = None
+    for idx, row in trades.iterrows():
+        side = "BUY" if row['position'] > 0 else "SELL"
+        price = float(row['close'])
+        pnl = None
+        if side == "BUY":
+            last_buy = price
+        elif side == "SELL" and last_buy is not None:
+            pnl = price - last_buy
+            last_buy = None
+            
+        trade_history.append({
+            "timestamp": row['timestamp'].isoformat(),
+            "side": side,
+            "price": price,
+            "pnl": pnl
+        })
+
+    return {
+        "status": "success",
+        "symbol": backtest_in.symbol,
+        "metrics": metrics.dict() if hasattr(metrics, 'dict') else metrics,
+        "equity_curve": [dp.dict() if hasattr(dp, 'dict') else dp for dp in equity_curve_data],
+        "trades": trade_history[::-1]  # Reverse to show newest trades at the top
+    }

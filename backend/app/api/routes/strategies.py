@@ -13,6 +13,7 @@ router = APIRouter()
 
 # Pydantic Schemas for Strategy Management
 class StrategyCreate(BaseModel):
+    id: str
     name: str
     description: Optional[str] = None
     strategy_type: str  # moving_average, rsi, atr, custom
@@ -24,13 +25,17 @@ class StrategyUpdate(BaseModel):
     parameters: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
 
-@router.post("/", summary="Create a new strategy", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["admin"]))])
+@router.post("/", summary="Create a new strategy", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
 def create_strategy(request: StrategyCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Inject strategy_type into the JSON parameters to avoid needing a DB migration
+    params = request.parameters.copy()
+    params['strategy_type'] = request.strategy_type
+
     strategy = Strategy(
+        id=request.id,
         name=request.name,
         description=request.description,
-        strategy_type=request.strategy_type,
-        parameters=request.parameters,
+        parameters=params,
         is_active=False # Strategies are inactive by default
     )
     db.add(strategy)

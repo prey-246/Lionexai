@@ -8,12 +8,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.routes import auth, system, audit, portfolios, reports, trading, backtest, stream, mandates, users, intelligence
+from app.api.routes import auth, system, audit, portfolios, reports, trading, backtest, stream, mandates, users, intelligence, treasury, strategies
 from app.core.sockets import manager as ws_manager
 from app.services.market_data import market_data_streamer, periodic_price_updater
 from scripts.scrape_news import scrape_crypto_news
 from scripts.scrape_economic_events import fetch_and_store_events
+from scripts.yield_sweep import perform_yield_sweep
 from app.services.nlp_service import run_nlp_analysis
+from scripts.algo_executor import run_autonomous_execution
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,26 @@ async def periodic_economic_scraper():
             logger.error(f"Error in periodic economic scraper: {e}")
         await asyncio.sleep(21600)  # Run every 6 hours (21600 seconds)
 
+async def periodic_yield_sweeper():
+    """Runs the automated yield sweep in the background."""
+    logger.info("Starting background periodic yield sweeper...")
+    while True:
+        try:
+            await asyncio.to_thread(perform_yield_sweep)
+        except Exception as e:
+            logger.error(f"Error in periodic yield sweeper: {e}")
+        await asyncio.sleep(3600)  # Run every hour (3600 seconds)
+
+async def periodic_algo_executor():
+    """Runs the autonomous trading engine in the background."""
+    logger.info("Starting background autonomous strategy executor...")
+    while True:
+        try:
+            await asyncio.to_thread(run_autonomous_execution)
+        except Exception as e:
+            logger.error(f"Error in autonomous executor: {e}")
+        await asyncio.sleep(60)  # Run every 60 seconds
+
 @app.on_event("startup")
 def on_startup():
     # Seeding the database on every application startup is not recommended for production.
@@ -71,6 +93,10 @@ def on_startup():
     asyncio.create_task(periodic_economic_scraper())
     # Start the periodic price updater for the trading terminal
     asyncio.create_task(periodic_price_updater())
+    # Start the automated yield generation sweep
+    asyncio.create_task(periodic_yield_sweeper())
+    # Start the autonomous trading engine
+    asyncio.create_task(periodic_algo_executor())
 
 # IMPORTANT: For production, restrict this to your frontend's domain.
 # Using a wildcard ("*") is a security risk.
@@ -99,3 +125,5 @@ app.include_router(trading.router, prefix="/api/trading", tags=["Trading"])
 app.include_router(backtest.router, prefix="/api/backtest", tags=["Backtesting"])
 app.include_router(stream.router, prefix="/api", tags=["Streaming"])
 app.include_router(intelligence.router, prefix="/api/intelligence", tags=["NEXA Intelligence"])
+app.include_router(treasury.router, prefix="/api/treasury", tags=["Treasury Foundation"])
+app.include_router(strategies.router, prefix="/api/strategies", tags=["Strategies"])

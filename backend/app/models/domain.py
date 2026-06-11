@@ -249,6 +249,29 @@ class MarketSensitivityScore(Base):
     contributing_factors: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)
 
+# --- Sprint 5: Treasury Foundation ---
+
+class TreasuryPool(Base):
+    __tablename__ = "treasury_pools"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(String, unique=True, index=True) # e.g., 'RESERVE', 'YIELD', 'GROWTH', 'OPERATIONS', 'INSURANCE'
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    balance: Mapped[float] = mapped_column(Float, default=0.0)
+    target_allocation_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+
+class TreasuryTransaction(Base):
+    __tablename__ = "treasury_transactions"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[str] = mapped_column(String(30), unique=True, index=True, default=lambda: f"trx_{uuid.uuid4().hex[:12]}")
+    pool_pk_id: Mapped[int] = mapped_column(ForeignKey("treasury_pools.pk_id"), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False) # Positive for deposit, negative for withdrawal
+    transaction_type: Mapped[str] = mapped_column(String, nullable=False) # e.g., 'YIELD_COLLECTION', 'INSURANCE_PAYOUT', 'REBALANCING'
+    reference_id: Mapped[str] = mapped_column(String, nullable=True) # e.g., portfolio_id or trade_id
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now(), index=True)
+
 class GlobalSettings(Base):
     __tablename__ = "global_settings"
     id: Mapped[str] = mapped_column(String, primary_key=True, default="default")

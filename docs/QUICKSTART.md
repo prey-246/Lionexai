@@ -81,8 +81,12 @@ docker-compose up -d
 1. **Explore the Dashboards**
    - Operations Dashboard: http://localhost:3000
    - Client Dashboard: http://localhost:3000/dashboard
+   - Fund Marketplace: http://localhost:3000/funds
    - Backtest Engine: http://localhost:3000/backtest
+   - Strategy Registry: http://localhost:3000/strategies
    - Execution Terminal: http://localhost:3000/trade
+   - Ecosystem Treasury: http://localhost:3000/treasury
+   - LNX Ecosystem: http://localhost:3000/lnx
 
 2. **Try the API**
    ```bash
