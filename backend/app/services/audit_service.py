@@ -27,5 +27,7 @@ def create_audit_log(
             user_id=user_id
         )
         db.add(audit_log_entry)
+        return audit_log_entry
     except Exception as e:
         logger.error(f"Failed to create audit log: {e}")
+        return None

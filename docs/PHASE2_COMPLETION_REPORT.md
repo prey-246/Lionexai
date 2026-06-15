@@ -13,7 +13,7 @@ We successfully bridged the gap between quantitative algorithmic research and st
 ### 1. Ecosystem Treasury & LNX Digital Asset
 - **Treasury Foundation:** Created immutable macro-capital pools (Reserve, Yield, Growth, Operations, Insurance). 
 - **Automated Yield Sweeper:** A stateless algorithm that calculates total platform historical profit and automatically sweeps 10% into the Yield Pool.
-- **LNX Ecosystem Asset:** A platform-native internal index token whose NAV (Net Asset Value) is deterministically backed by the Treasury Reserve Pool, preparing the system for ERC-20 tokenization.
+- **LNX Ecosystem Asset:** An internal ecosystem index whose NAV is derived from platform treasury accounting metrics, representing platform performance without implying guaranteed external backing.
 
 ### 2. Fund Product Marketplace
 - **Institutional Branding:** Abstracted raw backend Risk Mandates (PRESERVE, BALANCE, ALPHA) into a client-facing marketplace of branded investment vehicles (Lion Preserve Fund, Lion Balance Fund, Lion Alpha Fund).
@@ -67,4 +67,4 @@ We successfully bridged the gap between quantitative algorithmic research and st
 ## Conclusion & Next Steps
 The platform is now operationally ready for internal demonstration and capital simulation. 
 
-**Phase 3 Objective:** Transition the internal accounting LNX asset into a fully decentralized Web3 Smart Contract (Solidity/ERC-20). The backend will bridge directly to the blockchain, automatically utilizing Treasury Yield to buy and burn LNX tokens on-chain, proving programmatic ecosystem backing.
+**Phase 3 Objective:** Validate institutional multi-exchange paper trading, formalize the adapter architecture for testnet execution (Binance, Bybit), build comprehensive growth simulators, and sanitize all compliance terminology to reflect an internal ecosystem index rather than a backed asset.

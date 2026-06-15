@@ -1,15 +1,15 @@
 # UnifyX / NEXA MVP
 
-A production-grade quantitative trading intelligence and portfolio orchestration platform. It provides a full suite of tools for backtesting strategies, managing paper-trading portfolios with institutional-grade risk controls, and analyzing performance through comprehensive dashboards and exportable reports.
+A production-grade quantitative wealth management platform. It provides a full suite of tools for backtesting strategies, managing paper-trading portfolios with institutional-grade risk controls, connecting to live exchange testnets (Binance, Bybit), and analyzing performance through comprehensive dashboards and exportable reports.
 
-**Status**: MVP Complete
+**Status**: Institutional Validation & Live Paper Trading Complete
 
 ## Features
 
 ### Core Platform
 - **Secure Authentication**: User registration and login system using JWT tokens stored in secure cookies.
 - **Multi-Container Architecture**: Fully containerized using Docker for consistent development and production environments.
-- **Production-Grade Local Setup**: Utilizes `gunicorn` and a dedicated production Docker Compose file for a stable and performant local environment.
+- **Production-Grade Local Setup**: Utilizes `uvicorn` and a dedicated production Docker Compose file for a stable and performant local environment.
 - **CI/CD Pipeline**: Automated testing, linting, security scanning, and build pipeline using GitHub Actions.
 
 ### Portfolio & Paper Trading
@@ -27,7 +27,7 @@ A production-grade quantitative trading intelligence and portfolio orchestration
 
 ### Treasury & Yield Distribution
 - **Ecosystem Treasury**: Macro-capital pools (Reserve, Yield, Growth) managing platform health.
-- **LNX Digital Asset**: An internal accounting token whose NAV is deterministically backed by the Treasury Reserve Pool, preparing for Web3 tokenization.
+- **LNX Digital Asset**: An internal ecosystem index whose NAV is derived from platform treasury accounting metrics.
 - **Automated Yield Sweeper**: Background algorithmic sweep of winning trade PnL into the central Yield pool.
 
 ### Analytics & Reporting

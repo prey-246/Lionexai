@@ -77,6 +77,10 @@ export const systemAPI = {
     return res.json();
   },
 
+  getBackgroundTaskStatuses: (): Promise<any[]> => {
+    return apiFetch(`${API_BASE_URL}/api/system/background-tasks`, { cache: 'no-store' });
+  },
+
   getMandates: (): Promise<RiskMandate[]> => {
     return apiFetch(`${API_BASE_URL}/api/mandates/`, { cache: 'no-store' });
   },
@@ -332,6 +336,56 @@ export const intelligenceAPI = {
   getEconomicEvents: (limit: number = 10): Promise<any[]> => {
     return apiFetch(`${API_BASE_URL}/api/intelligence/events?limit=${limit}`, { cache: 'no-store' });
   }
+};
+
+export const exchangeAPI = {
+  getStatus: (exchangeId: string): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/exchange/${exchangeId}/status`, { cache: 'no-store' });
+  },
+  getHeartbeat: (exchangeId: string): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/exchange/${exchangeId}/heartbeat`, { cache: 'no-store' });
+  },
+  cancelOrder: (exchangeId: string, orderId: string, symbol: string): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/exchange/${exchangeId}/orders/${orderId}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ symbol }), // CCXT cancel_order often requires the symbol
+    });
+  }
+};
+
+export const executionHealthAPI = {
+  getStats: (): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/execution/health-stats`, { cache: 'no-store' });
+  },
+};
+
+export const validationAPI = {
+  getSummary: (): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/validation/summary`, { cache: 'no-store' });
+  },
+  downloadReport: async (): Promise<void> => {
+    const headers: HeadersInit = {};
+    if (typeof window !== 'undefined') {
+      const Cookies = (await import('js-cookie')).default;
+      const token = Cookies.get('auth_token');
+      if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE_URL}/api/validation/report/pdf`, { headers });
+    if (!res.ok) throw new Error('Failed to download validation report');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'nexa_validation_report.pdf';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+};
+
+export const stressTestAPI = {
+  runScenario: (scenarioId: string): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/stress-test/${scenarioId}/run`, { method: 'POST' });
+  },
 };
 
 export const usersAPI = {

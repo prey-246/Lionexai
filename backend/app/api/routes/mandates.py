@@ -148,15 +148,12 @@ def update_mandate(pk_id: int, mandate_update: MandateUpdate, db: Session = Depe
     update_data = mandate_update.dict(exclude_unset=True)
         
     # Build the new version by carrying over all old attributes
-    new_version_data = {
-        c.name: getattr(db_mandate, c.name) 
-        for c in db_mandate.__table__.columns 
-    }
-    
+    new_version_data = {c.name: getattr(db_mandate, c.name) for c in db_mandate.__table__.columns}
+
     # Apply updates from the request
     for key, value in update_data.items():
         new_version_data[key] = value
-
+    
     # Ensure protected fields are completely stripped AFTER updates to prevent injection
     for k in ["pk_id", "created_at", "updated_at", "version", "previous_version_pk_id", "created_by_id"]:
         new_version_data.pop(k, None)

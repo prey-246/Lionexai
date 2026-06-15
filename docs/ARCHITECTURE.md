@@ -7,7 +7,7 @@ This document provides an overview of the system architecture, database relation
 NEXA operates on a decoupled client-server architecture utilizing **FastAPI** (Python) for the backend and **Next.js** (TypeScript/React) for the frontend, communicating via REST and WebSockets.
 
 ### Container Layout
-1. **nexa_backend_prod**: Gunicorn ASGI server running FastAPI. Handles all execution, risk logic, and AI scheduled tasks.
+1. **nexa_backend_prod**: Uvicorn ASGI server running FastAPI. Handles all execution, risk logic, and AI scheduled tasks.
 2. **nexa_frontend_prod**: Next.js production server. Handles SSR and client-side rendering.
 3. **nexa_db_prod**: PostgreSQL + TimescaleDB. Handles relational data and time-series tick data.
 4. **nexa_redis_prod**: Redis 7. Handles cache and high-speed pub/sub for WebSocket broadcasting.

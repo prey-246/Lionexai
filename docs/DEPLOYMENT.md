@@ -1,599 +1,204 @@
-# Deployment Guide
+# NEXA Platform: Production Deployment Guide
 
-## Pre-Deployment Checklist
-
-- [ ] Environment variables configured in `.env`
-- [ ] Database credentials secured
-- [ ] SSL certificates obtained (production)
-- [ ] Backup strategy in place
-- [ ] Monitoring/alerting configured
-- [ ] Documentation reviewed
-- [ ] Tests passing locally
-- [ ] Docker images built successfully
-
-## Local Development Deployment
-
-### Using Docker Compose
-
-```bash
-# Clone repository
-git clone <repo-url>
-cd Lionexai
-
-# Verify .env file exists
-ls -la .env
-
-# Build and start services
-docker-compose up -d
-
-# Verify all services running
-docker-compose ps
-
-# Check logs
-docker-compose logs -f
-
-# Access services
-# Frontend: http://localhost:3000
-# Backend: http://localhost:8000
-# API Docs: http://localhost:8000/docs
-```
-
-### Troubleshooting Local Deployment
-
-```bash
-# View service logs
-docker-compose logs backend
-docker-compose logs frontend
-docker-compose logs db
-docker-compose logs redis
-
-# Restart specific service
-docker-compose restart backend
-
-# Recreate all services
-docker-compose down
-docker-compose up -d
-
-# Check database connection
-docker exec nexa_db psql -U nexa_admin -d nexa_mvp -c "SELECT version();"
-
-# Check Redis connection
-docker exec nexa_redis redis-cli ping
-```
-
-## Production Deployment
-
-### VPS Prerequisites
-
-- Ubuntu 20.04+ or equivalent
-- 4GB+ RAM
-- 20GB+ SSD storage
-- Open ports: 80, 443, 5432 (internal), 6379 (internal)
-- SSH access configured
-
-### Step 1: Server Setup
-
-```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install Docker and Docker Compose
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
-
-# Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Verify installation
-docker --version
-docker-compose --version
-```
-
-### Step 2: Clone Repository
-
-```bash
-cd /opt
-sudo git clone <repo-url> nexa
-cd nexa
-sudo chown -R $USER:$USER .
-```
-
-### Step 3: Configure Environment
-
-```bash
-# Create production .env
-cat > .env << EOF
-ENVIRONMENT=production
-PROJECT_NAME="UnifyX NEXA"
-
-# Database
-POSTGRES_USER=nexa_prod
-POSTGRES_PASSWORD=$(openssl rand -base64 32)
-POSTGRES_DB=nexa_prod
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-
-# Redis
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-# Security
-SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-
-# Frontend (API calls are relative, so this can be the main domain or empty)
-NEXT_PUBLIC_API_URL=https://yourdomain.com
-EOF
-
-# Secure .env file
-chmod 600 .env
-```
-
-### Step 4: Setup Reverse Proxy (Nginx)
-
-```bash
-# Install Nginx
-sudo apt install -y nginx
-
-# Create Nginx configuration
-sudo tee /etc/nginx/sites-available/nexa > /dev/null << 'EOF'
-upstream backend {
-    server backend:8000;
-}
-
-upstream frontend {
-    server frontend:3000;
-}
-
-server {
-    listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-    
-    # Redirect to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name yourdomain.com www.yourdomain.com;
-
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-
-    # Security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Frame-Options "DENY" always;
-    add_header X-Content-Type-Options "nosniff" always;
-
-    # Frontend
-    location / {
-        proxy_pass http://frontend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # Backend API
-    location /api/ {
-        proxy_pass http://backend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    # WebSocket support
-    location /api/ws/ {
-        proxy_pass http://backend/api/ws/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 86400; # Keep connection open
-    }
-
-    # Health check
-    location /api/health {
-        proxy_pass http://backend;
-        access_log off;
-    }
-}
-EOF
-
-# Enable site
-sudo ln -sf /etc/nginx/sites-available/nexa /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-
-# Test Nginx config
-sudo nginx -t
-
-# Start Nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
-```
-
-### Step 5: Obtain SSL Certificate
-
-```bash
-# Install Certbot
-sudo apt install -y certbot python3-certbot-nginx
-
-# Get certificate (requires email)
-sudo certbot certonly --standalone \
-    -d yourdomain.com \
-    -d www.yourdomain.com \
-    --email admin@yourdomain.com \
-    --agree-tos
-
-# Auto-renewal
-sudo systemctl enable certbot.timer
-sudo systemctl start certbot.timer
-```
-
-### Step 6: Deploy Services
-
-```bash
-cd /opt/nexa
-
-# Start services
-docker-compose -f docker-compose.yml up -d
-
-# Wait for services to start (30-60 seconds)
-sleep 30
-
-# Verify services
-docker-compose ps
-
-# Check logs for errors
-docker-compose logs --tail=50
-```
-
-### Step 7: Verification
-
-```bash
-# Test frontend
-curl -I https://yourdomain.com
-# Should return 200 OK
-
-# Test API
-curl -I https://yourdomain.com/api/health
-# Should return 200 OK
-
-# Check database
-docker exec nexa_db psql -U nexa_prod -d nexa_prod -c "SELECT COUNT(*) FROM mandates;"
-
-# Check WebSocket
-curl -I -N -H "Connection: Upgrade" -H "Upgrade: websocket" https://yourdomain.com/ws/market
-```
-
-## Backup & Recovery
-
-### Database Backup
-
-```bash
-# Manual backup
-docker exec nexa_db pg_dump \
-    -U nexa_prod \
-    nexa_prod > backup_$(date +%Y%m%d).sql
-
-# Compressed backup
-docker exec nexa_db pg_dump \
-    -U nexa_prod \
-    nexa_prod | gzip > backup_$(date +%Y%m%d).sql.gz
-
-# S3 backup (requires AWS CLI)
-docker exec nexa_db pg_dump -U nexa_prod nexa_prod | \
-    gzip | \
-    aws s3 cp - s3://your-bucket/backups/nexa_$(date +%Y%m%d).sql.gz
-```
-
-### Automated Daily Backup
-
-```bash
-# Create backup script
-cat > /opt/nexa/backup.sh << 'EOF'
-#!/bin/bash
-BACKUP_DIR="/opt/nexa/backups"
-mkdir -p $BACKUP_DIR
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-docker exec nexa_db pg_dump -U nexa_prod nexa_prod | \
-    gzip > $BACKUP_DIR/backup_$TIMESTAMP.sql.gz
-
-# Keep only last 30 days
-find $BACKUP_DIR -name "backup_*.sql.gz" -mtime +30 -delete
-
-echo "Backup completed: backup_$TIMESTAMP.sql.gz"
-EOF
-
-chmod +x /opt/nexa/backup.sh
-
-# Add to crontab (daily at 2 AM)
-(crontab -l 2>/dev/null; echo "0 2 * * * /opt/nexa/backup.sh") | crontab -
-```
-
-### Database Recovery
-
-```bash
-# From local backup
-gzip -dc backup_20240601.sql.gz | \
-    docker exec -i nexa_db psql -U nexa_prod nexa_prod
-
-# Verify recovery
-docker exec nexa_db psql -U nexa_prod -d nexa_prod -c "SELECT COUNT(*) FROM trades;"
-```
-
-## Monitoring
-
-### Log Aggregation
-
-```bash
-# View backend logs
-docker-compose logs backend -f --tail=100
-
-# View frontend logs
-docker-compose logs frontend -f --tail=100
-
-# View database logs
-docker-compose logs db -f --tail=50
-
-# Save logs to file
-docker-compose logs > logs_$(date +%Y%m%d).txt
-```
-
-### System Monitoring
-
-```bash
-# Check container resource usage
-docker stats
-
-# Check disk usage
-df -h
-
-# Check memory usage
-free -h
-
-# Check network connectivity
-docker exec nexa_backend curl -I http://db:5432
-docker exec nexa_backend curl -I http://redis:6379
-```
-
-### Alerts Setup (Optional)
-
-```bash
-# Monitor critical events (requires additional setup)
-# - Database connection failures
-# - Kill switch triggers
-# - Error rate spikes
-# - Disk space warnings
-```
-
-## Scaling
-
-### Horizontal Scaling
-
-For multiple servers:
-
-1. **Separate Database Server**
-   ```bash
-   # Run database on dedicated server
-   # Update POSTGRES_HOST in .env pointing to separate server
-   ```
-
-2. **Load Balancer**
-   ```
-   Load Balancer (HAProxy/Nginx)
-       │
-       ├─► Backend 1
-       ├─► Backend 2
-       └─► Backend 3
-   
-   All connecting to shared:
-   - PostgreSQL
-   - Redis
-   ```
-
-3. **Redis Cluster** (for high availability)
-   ```bash
-   # Replace single Redis with Redis Sentinel/Cluster setup
-   ```
-
-### Vertical Scaling
-
-```bash
-# Increase container resource limits in docker-compose.yml
-
-services:
-  backend:
-    ...
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '1'
-          memory: 512M
-```
-
-## Maintenance
-
-### Regular Tasks
-
-**Daily:**
-- Monitor disk space
-- Check error logs
-- Verify backups completed
-
-**Weekly:**
-- Review performance metrics
-- Check for security updates
-- Test backup recovery
-
-**Monthly:**
-- Update dependencies
-- Security audit
-- Capacity planning
-
-### Update Procedure
-
-```bash
-cd /opt/nexa
-
-# Stop services
-docker-compose down
-
-# Backup database
-./backup.sh
-
-# Update code
-git pull origin main
-
-# Rebuild images
-docker-compose build
-
-# Start services
-docker-compose up -d
-
-# Verify
-docker-compose logs --tail=20
-```
-
-## Security Hardening
-
-### Firewall Configuration
-
-```bash
-# UFW firewall
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw allow 22/tcp      # SSH
-sudo ufw allow 80/tcp      # HTTP
-sudo ufw allow 443/tcp     # HTTPS
-sudo ufw allow 5432/tcp    # PostgreSQL (internal only)
-sudo ufw allow 6379/tcp    # Redis (internal only)
-sudo ufw enable
-```
-
-### SSH Key-Only Access
-
-```bash
-# Disable password authentication
-sudo sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-sudo systemctl restart sshd
-```
-
-### Environment Variable Security
-
-```bash
-# Keep secrets out of version control
-echo ".env" >> /opt/nexa/.gitignore
-echo ".env.local" >> /opt/nexa/.gitignore
-
-# Use strong, unique passwords
-# Change default credentials before production
-```
-
-## Troubleshooting
-
-### Container Won't Start
-
-```bash
-# Check logs
-docker-compose logs backend
-
-# Common issues:
-# - Port already in use: Change port in docker-compose.yml
-# - Database not ready: Wait 30 seconds, then retry
-# - Out of disk space: Free up space or expand volume
-```
-
-### Database Connection Issues
-
-```bash
-# Test connection
-docker exec nexa_backend psql -h db -U nexa_prod -d nexa_prod -c "\dt"
-
-# Check environment variables
-docker exec nexa_backend env | grep POSTGRES
-
-# Verify network connectivity
-docker network ls
-docker network inspect nexa_default
-```
-
-### Performance Issues
-
-```bash
-# Check container resource usage
-docker stats nexa_backend
-
-# Increase resources if needed:
-# Edit docker-compose.yml resource limits
-# Restart: docker-compose restart backend
-
-# Check database query performance
-docker exec nexa_db psql -U nexa_prod nexa_prod -c "EXPLAIN ANALYZE SELECT * FROM trades LIMIT 10;"
-```
-
-### WebSocket Connection Issues
-
-```bash
-# Check WebSocket endpoint
-curl -v -N -H "Connection: Upgrade" \
-  -H "Upgrade: websocket" \
-  https://yourdomain.com/ws/market
-
-# Verify Nginx WebSocket configuration
-grep -A 5 "location /ws/" /etc/nginx/sites-enabled/nexa
-```
-
-## Health Checks
-
-### Automated Health Monitoring
-
-```bash
-# Create health check script
-cat > /opt/nexa/health_check.sh << 'EOF'
-#!/bin/bash
-
-echo "=== NEXA Health Check ==="
-echo "Timestamp: $(date)"
-
-# Check services running
-echo -n "Docker services: "
-docker-compose ps | grep -c "Up" | xargs echo "running"
-
-# Check API health
-echo -n "API status: "
-curl -s http://localhost:8000/health | jq .status
-
-# Check database
-echo -n "Database: "
-docker exec nexa_db psql -U nexa_prod -d nexa_prod -c "SELECT 'OK'" 2>/dev/null | grep OK || echo "FAIL"
-
-# Check Redis
-echo -n "Redis: "
-docker exec nexa_redis redis-cli ping
-
-# Check disk space
-echo -n "Disk space: "
-df /opt/nexa | tail -1 | awk '{print $5}'
-
-echo "=== End Health Check ==="
-EOF
-
-chmod +x /opt/nexa/health_check.sh
-
-# Run periodically
-(crontab -l 2>/dev/null; echo "*/5 * * * * /opt/nexa/health_check.sh >> /opt/nexa/health.log") | crontab -
-```
+This document provides a comprehensive, step-by-step guide for deploying the UnifyX NEXA platform to a production Linux server using Docker, Nginx, and Let's Encrypt.
 
 ---
 
-For additional support or deployment issues, refer to the main README and architecture documentation.
+## 1. Prerequisites
+
+Before you begin, ensure you have the following:
+
+*   **A Linux Server:** A fresh instance of Ubuntu 22.04 LTS is recommended.
+*   **A Domain Name:** A registered domain (e.g., `nexa-quant.com`) with DNS records pointing to your server's IP address. You will need at least two A records:
+    *   `nexa-quant.com` -> `YOUR_SERVER_IP`
+    *   `api.nexa-quant.com` -> `YOUR_SERVER_IP`
+*   **Root or Sudo Access:** Administrative privileges on the server.
+*   **Software Installed:**
+    *   `git`
+    *   `docker`
+    *   `docker-compose`
+
+---
+
+## 2. Initial Server Setup
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone <your-repository-url>
+    cd Lionexai
+    ```
+
+2.  **Create Production Environment File:**
+    Copy the example environment file to create your production configuration. **Never commit `.env` to version control.**
+    ```bash
+    cp .env.example .env
+    ```
+
+3.  **Configure `.env`:**
+    Open the `.env` file with a text editor (e.g., `nano .env`) and update it with your production secrets.
+
+    *   **`POSTGRES_PASSWORD`**: Change this to a long, secure, randomly generated password.
+    *   **`SECRET_KEY`**: Generate a new secret key for JWT signing. You can use `openssl rand -hex 32` to create one.
+    *   **`NEXT_PUBLIC_API_URL`**: Set this to your public API domain (e.g., `https://api.nexa-quant.com`).
+    *   **`BINANCE_API_KEY`, `BINANCE_SECRET_KEY`**: Enter your **production** Binance API keys.
+    *   **`BYBIT_API_KEY`, `BYBIT_SECRET_KEY`**: Enter your **production** Bybit API keys.
+
+---
+
+## 3. Running the Application
+
+Use the production Docker Compose file to build and start all services.
+
+```bash
+# Build the images and start all services in detached mode
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+*   `--build`: Forces a rebuild of the Docker images to include your latest code.
+*   `-d`: Runs the containers in the background (detached mode).
+
+**Verify Services:** Check that all containers are running and healthy.
+```bash
+docker-compose -f docker-compose.prod.yml ps
+```
+You should see `nexa_backend_prod`, `nexa_frontend_prod`, `nexa_db_prod`, and `nexa_redis_prod` with a status of `Up`.
+
+---
+
+## 4. Nginx Reverse Proxy Setup
+
+Nginx will act as a reverse proxy to route traffic to your frontend and backend containers and handle SSL termination.
+
+1.  **Install Nginx:**
+    ```bash
+    sudo apt update
+    sudo apt install nginx
+    ```
+
+2.  **Create Nginx Configuration File:**
+    Create a new configuration file for your site.
+    ```bash
+    sudo nano /etc/nginx/sites-available/nexa
+    ```
+
+3.  **Paste the following configuration.** Replace `nexa-quant.com` and `api.nexa-quant.com` with your actual domain names.
+
+    ```nginx
+    # Redirect HTTP to HTTPS
+    server {
+        listen 80;
+        server_name nexa-quant.com api.nexa-quant.com;
+        return 301 https://$host$request_uri;
+    }
+
+    # Frontend Service (Next.js)
+    server {
+        listen 443 ssl;
+        server_name nexa-quant.com;
+
+        # SSL settings will be added by Certbot
+
+        location / {
+            proxy_pass http://localhost:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+    }
+
+    # Backend Service (FastAPI)
+    server {
+        listen 443 ssl;
+        server_name api.nexa-quant.com;
+
+        # SSL settings will be added by Certbot
+
+        location / {
+            proxy_pass http://localhost:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+    ```
+
+4.  **Enable the Site and Restart Nginx:**
+    ```bash
+    sudo ln -s /etc/nginx/sites-available/nexa /etc/nginx/sites-enabled/
+    sudo nginx -t # Test configuration
+    sudo systemctl restart nginx
+    ```
+
+---
+
+## 5. Securing with SSL/TLS (Let's Encrypt)
+
+Use Certbot to automatically obtain and install free SSL certificates.
+
+1.  **Install Certbot:**
+    ```bash
+    sudo apt install certbot python3-certbot-nginx
+    ```
+
+2.  **Run Certbot:**
+    This command will automatically detect your domains from the Nginx config, obtain certificates, and configure Nginx for SSL.
+    ```bash
+    sudo certbot --nginx -d nexa-quant.com -d api.nexa-quant.com
+    ```
+    Follow the on-screen prompts. Certbot will also set up a cron job for automatic renewal.
+
+---
+
+## 6. Automated Database Backups
+
+It is critical to back up your PostgreSQL database regularly.
+
+1.  **Create a Backup Script:**
+    ```bash
+    mkdir -p /opt/nexa_backups
+    nano /opt/nexa_backups/backup.sh
+    ```
+
+2.  **Paste the following script.** This script uses `docker exec` to run `pg_dump` inside the database container.
+
+    ```bash
+    #!/bin/bash
+    BACKUP_DIR="/opt/nexa_backups"
+    DATE=$(date +%Y-%m-%d_%H-%M-%S)
+    CONTAINER_NAME="nexa_db_prod"
+    DB_NAME="nexa_mvp"
+    DB_USER="nexa_admin"
+
+    # Dump the database
+    docker exec $CONTAINER_NAME pg_dump -U $DB_USER -d $DB_NAME | gzip > $BACKUP_DIR/nexa_backup_$DATE.sql.gz
+
+    # Optional: Clean up old backups (older than 7 days)
+    find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +7 -delete
+    ```
+
+3.  **Make the script executable:**
+    ```bash
+    chmod +x /opt/nexa_backups/backup.sh
+    ```
+
+4.  **Create a Cron Job:**
+    Run `crontab -e` and add the following line to run the backup script every day at 3:00 AM.
+    ```cron
+    0 3 * * * /opt/nexa_backups/backup.sh > /dev/null 2>&1
+    ```
+
+---
+
+## 7. Maintenance & Updates
+
+*   **Viewing Logs:** `docker-compose -f docker-compose.prod.yml logs -f <service_name>` (e.g., `nexa_backend_prod`)
+*   **Updating the Application:**
+    ```bash
+    git pull origin main
+    docker-compose -f docker-compose.prod.yml up --build -d
+    ```

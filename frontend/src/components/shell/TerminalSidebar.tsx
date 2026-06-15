@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database } from 'lucide-react';
+import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database, TrendingUp, ShieldCheck, Server, HeartPulse } from 'lucide-react';
 import clsx from 'clsx';
 import Cookies from 'js-cookie';
 import { useUser } from '@/contexts/UserContext';
@@ -27,6 +27,7 @@ export function TerminalSidebar() {
     { href: '/trade', label: 'Execution Terminal', icon: Terminal },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
     { href: '/lnx', label: 'LNX Ecosystem', icon: Coins },
+    { href: '/simulator', label: 'Growth Simulator', icon: TrendingUp },
   ];
 
   const operatorNav = [
@@ -34,6 +35,9 @@ export function TerminalSidebar() {
     { href: '/audit', label: 'Audit Trail', icon: History },
     { href: '/backtest', label: 'Strategy Engine', icon: FlaskConical },
     { href: '/strategies', label: 'Strategy Registry', icon: Database },
+    { href: '/execution-monitor', label: 'Execution Monitor', icon: Server },
+    { href: '/execution-health', label: 'Execution Health', icon: HeartPulse },
+    { href: '/validation', label: 'Validation Framework', icon: ShieldCheck },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
   ];
 
@@ -41,6 +45,8 @@ export function TerminalSidebar() {
     { href: '/risk', label: 'Command Center', icon: ShieldAlert },
     { href: '/mandates', label: 'Mandate Contracts', icon: Shield },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
+    { href: '/stress-test', label: 'Risk Stress Tests', icon: ShieldCheck },
+    { href: '/validation', label: 'Validation Framework', icon: ShieldCheck },
   ];
 
   const adminNav = [

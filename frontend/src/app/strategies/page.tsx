@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { strategiesAPI, portfolioAPI } from '@/lib/api';
-import { Loader2, FlaskConical, Play, Settings2, Database, Wallet } from 'lucide-react';
+import { Loader2, FlaskConical, Play, Database, Wallet, Server } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StrategyRegistryPage() {
@@ -12,7 +12,11 @@ export default function StrategyRegistryPage() {
   const [loading, setLoading] = useState(true);
   
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-  const [assignForm, setAssignForm] = useState({ strategyId: '', portfolioId: '' });
+  const [assignForm, setAssignForm] = useState({
+    strategyId: '',
+    portfolioId: '',
+    executionExchange: 'binance'
+  });
   const [assigning, setAssigning] = useState(false);
 
   useEffect(() => {
@@ -33,14 +37,18 @@ export default function StrategyRegistryPage() {
     setAssigning(true);
     try {
       const strat = strategies.find(s => s.id === assignForm.strategyId);
-      const updatedParams = { ...strat.parameters, assigned_portfolio_id: assignForm.portfolioId };
+      // Deep copy to avoid state mutation issues
+      const updatedParams = JSON.parse(JSON.stringify(strat.parameters || {}));
+      
+      updatedParams.assigned_portfolio_id = assignForm.portfolioId;
+      updatedParams.execution_exchange = assignForm.executionExchange;
       
       await strategiesAPI.updateStrategy(strat.id, {
         parameters: updatedParams,
         is_active: true
       });
       
-      alert(`Strategy ${strat.name} assigned and activated!`);
+      alert(`Strategy ${strat.name} assigned to ${assignForm.executionExchange.toUpperCase()} and activated!`);
       setIsAssignModalOpen(false);
       const updatedStrats = await strategiesAPI.listStrategies();
       setStrategies(updatedStrats || []);
@@ -95,10 +103,16 @@ export default function StrategyRegistryPage() {
                     {strategy.is_active ? <span className="tag teal">Active</span> : <span className="tag grey">Pending Review</span>}
                   </div>
                   {strategy.parameters?.assigned_portfolio_id && (
-                    <div className="flex justify-between items-center border-b border-border-subtle pb-2">
-                      <span className="font-mono text-[10px] text-text-muted uppercase tracking-wider">Assigned To</span>
-                      <span className="font-mono font-bold text-primary-gold flex items-center gap-1"><Wallet className="w-3 h-3"/> {strategy.parameters.assigned_portfolio_id}</span>
-                    </div>
+                    <>
+                      <div className="flex justify-between items-center border-b border-border-subtle pb-2">
+                        <span className="font-mono text-[10px] text-text-muted uppercase tracking-wider flex items-center gap-1.5"><Wallet className="w-3 h-3"/> Assigned To</span>
+                        <span className="font-mono font-bold text-primary-gold">{strategy.parameters.assigned_portfolio_id}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-b border-border-subtle pb-2">
+                        <span className="font-mono text-[10px] text-text-muted uppercase tracking-wider flex items-center gap-1.5"><Server className="w-3 h-3"/> Executing On</span>
+                        <span className="tag gold">{strategy.parameters.execution_exchange || 'binance'}</span>
+                      </div>
+                    </>
                   )}
                 </div>
                 
@@ -106,14 +120,14 @@ export default function StrategyRegistryPage() {
                    <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-2">Key Parameters</span>
                    <div className="bg-background-base border border-border-subtle rounded-[3px] p-3 overflow-x-auto">
                      <pre className="font-mono text-[10px] text-text-secondary whitespace-pre-wrap">
-                       {JSON.stringify(Object.keys(strategy.parameters || {}).filter(k => !['strategy_type', 'assigned_portfolio_id'].includes(k)).reduce((obj, key) => { obj[key] = strategy.parameters[key]; return obj; }, {} as any), null, 2)}
+                       {JSON.stringify(Object.keys(strategy.parameters || {}).filter(k => !['strategy_type', 'assigned_portfolio_id', 'execution_exchange'].includes(k)).reduce((obj, key) => { obj[key] = strategy.parameters[key]; return obj; }, {} as any), null, 2)}
                      </pre>
                    </div>
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-border-default">
-                <button onClick={() => { setAssignForm({ strategyId: strategy.id, portfolioId: '' }); setIsAssignModalOpen(true); }} className="btn teal btn-full flex items-center justify-center gap-2 shadow-lg">
+                <button onClick={() => { setAssignForm({ strategyId: strategy.id, portfolioId: '', executionExchange: 'binance' }); setIsAssignModalOpen(true); }} className="btn teal btn-full flex items-center justify-center gap-2 shadow-lg">
                    <Play className="w-3 h-3" /> Assign to Portfolio
                 </button>
               </div>
@@ -129,6 +143,17 @@ export default function StrategyRegistryPage() {
               <h3 className="font-serif text-[24px] text-text-primary mb-6">Assign Strategy to Portfolio</h3>
               <p className="font-sans text-[13px] text-text-secondary mb-6">Link this quantitative strategy to an active paper trading portfolio to begin simulated autonomous execution.</p>
               <div className="space-y-4">
+                <div>
+                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Execution Exchange</label>
+                  <select 
+                    className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" 
+                    value={assignForm.executionExchange} 
+                    onChange={e => setAssignForm({...assignForm, executionExchange: e.target.value})}
+                  >
+                    <option value="binance">Binance Testnet</option>
+                    <option value="bybit">Bybit Testnet</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Select Target Portfolio</label>
                   <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={assignForm.portfolioId} onChange={e => setAssignForm({...assignForm, portfolioId: e.target.value})}>

@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.routes import auth, system, audit, portfolios, reports, trading, backtest, stream, mandates, users, intelligence, treasury, strategies
+from app.api.routes import auth, system, audit, portfolios, reports, trading, backtest, stream, mandates, users, intelligence, treasury, strategies, execution_health, validation, stress_test
 from app.core.sockets import manager as ws_manager
 from app.services.market_data import market_data_streamer, periodic_price_updater
 from scripts.scrape_news import scrape_crypto_news
@@ -16,6 +16,8 @@ from scripts.scrape_economic_events import fetch_and_store_events
 from scripts.yield_sweep import perform_yield_sweep
 from app.services.nlp_service import run_nlp_analysis
 from scripts.algo_executor import run_autonomous_execution
+from app.api.routes import exchange as exchange_router
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ async def periodic_algo_executor():
     logger.info("Starting background autonomous strategy executor...")
     while True:
         try:
-            await asyncio.to_thread(run_autonomous_execution)
+            await run_autonomous_execution()
         except Exception as e:
             logger.error(f"Error in autonomous executor: {e}")
         await asyncio.sleep(60)  # Run every 60 seconds
@@ -127,3 +129,7 @@ app.include_router(stream.router, prefix="/api", tags=["Streaming"])
 app.include_router(intelligence.router, prefix="/api/intelligence", tags=["NEXA Intelligence"])
 app.include_router(treasury.router, prefix="/api/treasury", tags=["Treasury Foundation"])
 app.include_router(strategies.router, prefix="/api/strategies", tags=["Strategies"])
+app.include_router(exchange_router.router, prefix="/api/exchange", tags=["Exchange"])
+app.include_router(execution_health.router, prefix="/api/execution", tags=["Execution Health"])
+app.include_router(validation.router, prefix="/api/validation", tags=["Validation"])
+app.include_router(stress_test.router, prefix="/api/stress-test", tags=["Stress Test"])
