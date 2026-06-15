@@ -553,4 +553,4 @@ See `docs/ARCHITECTURE.md` for detailed system design.
 
 ---
 
-**Built with ❤️ by the UnifyX team**
+**Built with ❤️ by Preyash Shah**
