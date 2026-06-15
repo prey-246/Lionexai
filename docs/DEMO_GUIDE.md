@@ -1,93 +1,92 @@
-# NEXA Institutional Demo Guide
+# NEXA Platform: Formal Demo Scripts
 
-**Target Audience:** Founders, VCs, Chief Risk Officers (CROs), LPs.
-**Objective:** Demonstrate the complete lifecycle of capital flow—from client deposit to quantitative research, autonomous trading, AI risk protection, and macro-treasury yield generation.
-
----
-
-## The Setup (Pre-Demo)
-1. Ensure Docker is running via `docker-compose -f docker-compose.prod.yml up -d`.
-2. Log into the platform as an **Admin** (to ensure access to all workspaces).
-3. Ensure you have no currently assigned strategies running to keep the demo clean.
+This document provides three distinct, persona-driven demonstration scripts designed to showcase the platform's core value propositions to different stakeholders.
 
 ---
 
-## Step 1: The Product Marketplace & Capital Onboarding
-*   **Navigate to:** `Lionex Funds` (`/funds`)
-*   **The Pitch:** *"NEXA abstracts complex quantitative mathematics into branded, digestible institutional products. Clients don't buy algorithms; they buy outcomes."*
-*   **Action:** 
-    1. Highlight the **Lion Alpha Fund** and its 40%+ APY target.
-    2. Click **Allocate Capital**.
-    3. In the modal, input `$100,000` and click Confirm.
-    4. Take note of the dynamically generated Portfolio ID (e.g., `PORT-9921`).
-*   **The Transition:** *"We now have $100k of live paper capital bound by strict Alpha Mandate constraints. Let's build the quantitative engine to trade it."*
+## Demo Script A: The Client Experience
+
+*   **Objective:** Demonstrate a seamless, intuitive, and transparent client onboarding and portfolio tracking experience.
+*   **Persona:** Logged in as a **Client**.
+
+### Click-Path & Pitch Points
+
+1.  **Navigate to `/funds` (Lionex Funds):**
+    *   **Pitch:** *"Our platform abstracts complex algorithms into simple, branded investment products. As a client, I can easily see the risk/return profile of each fund without needing to understand the underlying code."*
+
+2.  **Click "Allocate Capital" on the Lion Alpha Fund:**
+    *   **Pitch:** *"I'm looking for aggressive growth, so I'll allocate $100,000 to the high-yield Alpha fund. The process is as simple as a few clicks."*
+
+3.  **Confirm Allocation in the Modal:**
+    *   **Pitch:** *"The system instantly creates and funds a new, segregated portfolio for me, `PORT-XYZ`, which is now ready for the firm's autonomous strategies to manage."*
+
+4.  **Navigate to `/portfolios`:**
+    *   **Pitch:** *"I can see my new portfolio here, with its capital ready to be deployed. I have a transparent, real-time view of my equity and performance at all times."*
+
+5.  **Navigate to `/simulator` (Growth Simulator):**
+    *   **Pitch:** *"To understand the potential of my investment, I can use the simulator. Based on the Alpha fund's historical algorithmic performance, I can project the potential growth of my $100k deposit over the next 12 months."*
+
+6.  **Navigate to `/lnx` (LNX Ecosystem):**
+    *   **Pitch:** *"Finally, I can track the LNX Index. This isn't a speculative token; it's an internal accounting metric that reflects the overall health and performance of the entire platform's treasury, giving me confidence in the ecosystem I've invested in."*
 
 ---
 
-## Step 2: Quantitative Research (Backtesting)
-*   **Navigate to:** `Strategy Engine` (`/backtest`)
-*   **The Pitch:** *"Our Operators need to validate market theories before risking client capital. This vectorized engine simulates trades against historical TimescaleDB tick data, instantly calculating institutional metrics."*
-*   **Action:**
-    1. Select `BTC/USDT`, Timeframe `1d`, Strategy `Mean Reversion (RSI)`.
-    2. Enter Fast RSI `14`, Overbought `70`, Oversold `30`.
-    3. Click **Execute Simulation**.
-    4. Show the investor the **Sharpe Ratio**, the **Net Return**, the **Interactive Equity Curve**, and the **Trade History** log at the bottom.
-*   **The Transition:** *"This algorithm is highly profitable. We want to deploy it to production."*
+## Demo Script B: The Quant & Operator Workflow
+
+*   **Objective:** Prove the end-to-end quantitative research, deployment, and autonomous execution pipeline.
+*   **Persona:** Logged in as an **Operator** or **Admin**.
+
+### Click-Path & Pitch Points
+
+1.  **Navigate to `/backtest` (Strategy Engine):**
+    *   **Pitch:** *"Our quants don't guess; they validate. Here, we can test a Mean Reversion (RSI) strategy on historical BTC/USDT data from our own TimescaleDB instance."*
+
+2.  **Run Simulation & Review Results:**
+    *   **Pitch:** *"The engine provides instant feedback: a Sharpe Ratio of 1.82, a positive net return, and a full trade-by-trade ledger. This strategy meets our criteria for deployment."*
+
+3.  **Click "Save Strategy":**
+    *   **Pitch:** *"We'll save this validated model as `BTC_RSI_ALPHA` to our central registry, turning a successful backtest into a deployable asset."*
+
+4.  **Navigate to `/strategies` (Strategy Registry):**
+    *   **Pitch:** *"Here is our new strategy, pending review. As a manager, I can now assign it to a live portfolio for autonomous execution."*
+
+5.  **Click "Assign to Portfolio":**
+    *   **Action:** Select the client's portfolio (`PORT-XYZ`) and choose the `Binance` exchange from the dropdown.
+    *   **Pitch:** *"The strategy is now active and assigned to execute on the Binance Testnet. The 'Ghost Operator' has taken over."*
+
+6.  **Navigate to `/execution-monitor`:**
+    *   **Pitch:** *"We can see the live, operational connection to the Binance Testnet, with real-time latency data. In a few moments, we'll see our autonomous trades appear here."*
+
+7.  **Wait 60-120 seconds.**
+
+8.  **Navigate to `/audit` (Audit Trail):**
+    *   **Pitch:** *"And here is the proof. The audit log shows an `AUTONOMOUS_TRADE_EXECUTED_VIA_BINANCE` event, logged by the system with a corresponding exchange order ID. The machine is trading, and every action is immutably recorded for compliance."*
 
 ---
 
-## Step 3: The Strategy Registry & Assignment
-*   **Action (Still on Backtest Page):** Click **Save Strategy**. Name it `BTC_RSI_OPTIMAL`.
-*   **Navigate to:** `Strategy Registry` (`/strategies`)
-*   **The Pitch:** *"Instead of chaotic scripts, strategies are saved as JSON-parameterized models in our secure registry for Risk Management review."*
-*   **Action:**
-    1. Find `BTC_RSI_OPTIMAL`. Note its status is currently `Pending Review`.
-    2. Click **Assign to Portfolio**.
-    3. Select the Portfolio ID you created in Step 1 (`PORT-9921`).
-    4. Point out that the status flips to **Active** and is officially assigned to the portfolio.
-*   **The Transition:** *"The 'Ghost Operator' background engine is now running. While we wait for it to trade, let me show you how we protect that capital from market crashes."*
+## Demo Script C: The Risk Manager & Governance Audit
 
----
+*   **Objective:** Demonstrate the platform's robust, non-negotiable risk controls and its ability to survive adverse market events.
+*   **Persona:** Logged in as a **Risk Manager** or **Admin**.
 
-## Step 4: AI Sentiment & The Risk Gatekeeper
-*   **Navigate to:** `Intelligence Hub` (`/intelligence`)
-*   **The Pitch:** *"Algorithms are blind to the real world. If the SEC sues a major exchange, an RSI indicator doesn't care—it will still trigger a Buy signal. We solve this with Alternative Data."*
-*   **Action:**
-    1. Show the Live News Feed and the AI Sentiment Classifications.
-    2. Explain the **Market Sensitivity Score**.
-    3. Explain the **NEXA Risk Engine**: *"If the Ghost Operator attempts to execute a trade for our new portfolio, the Risk Engine intercepts it. If the Market Sensitivity Score is Extremely Bearish, the AI overrides the quantitative math and blocks the trade to protect capital."*
+### Click-Path & Pitch Points
 
----
+1.  **Navigate to `/stress-test` (Risk Validation Suite):**
+    *   **Pitch:** *"The most important feature of an institutional platform isn't how much it makes, but how much it *doesn't lose*. This is our validation suite where we prove our safety mechanisms."*
 
-## Step 5: Proving Autonomous Execution
-*   **Navigate to:** `Audit Trail` (`/audit`)
-*   **The Pitch:** *"Let's see what our Ghost Operator has been doing."*
-*   **Action:**
-    1. Filter the logs (or just look at the top rows).
-    2. You will see `AUTONOMOUS_TRADE_EXECUTED` entries logged by the system while you were doing the rest of the demo. 
-    3. Navigate to **Portfolios** (`/portfolios`), click on `PORT-9921`, and show the live trades sitting in the ledger.
-*   **The Transition:** *"The capital is trading itself safely. Now, how does the platform make money?"*
+2.  **Run "Leverage Ceiling Violation" Scenario:**
+    *   **Pitch:** *"First, let's simulate a rogue algorithm trying to use 13x leverage on a 3x mandate. We run the scenario..."*
+    *   **Show Result:** *"...and the Risk Engine instantly intercepts and blocks the trade, logging the exact leverage breach. Capital is protected."*
 
----
+3.  **Run "AI Extreme News Gatekeeper" Scenario:**
+    *   **Pitch:** *"Now, let's simulate a market crash. A quant signal says 'BUY', but our AI has detected extreme fear in the news cycle."*
+    *   **Show Result:** *"...the AI Gatekeeper overrides the algorithm and blocks the trade. We prevent the system from buying into a crash, demonstrating intelligent risk aversion."*
 
-## Step 6: Macro-Economics & Corporate Treasury
-*   **Navigate to:** `Ecosystem Treasury` (`/treasury`)
-*   **The Pitch:** *"As client portfolios generate profit, our automated yield-sweeper script skims a 10% performance fee entirely statelessly, dropping it into our corporate Treasury."*
-*   **Action:**
-    1. Point out the `YIELD` pool.
-    2. Click **Sweep Yield**.
-    3. Show the alert confirming profits were successfully transferred.
-    4. Show the immutable **Treasury Ledger** logging the transfer.
+4.  **Navigate to `/mandates` (Mandate Contracts):**
+    *   **Pitch:** *"Our risk rules aren't suggestions; they are immutable contracts. Let's say we need to de-risk the entire Alpha fund. We'll edit the mandate to reduce max leverage from 3x to 2x."*
 
----
+5.  **Update Mandate & Show History:**
+    *   **Pitch:** *"The system automatically archives the old version and migrates all assigned portfolios to the new, safer parameters. The entire version history is preserved for compliance audits."*
 
-## Step 7: The God-Mode View (The Closer)
-*   **Navigate to:** `Executive Summary` (`/executive`)
-*   **The Pitch:** *"As a Founder, you don't need to look at individual trades. You need to see the entire macro-platform in one glance."*
-*   **Action:**
-    1. Show **Platform AUM** (Client Capital).
-    2. Show **Corporate Treasury NAV** (Your Foundation).
-    3. Show **Trades Executed Today** and **Risk Rejections** (Proving the engines are alive).
-    4. Finally, point to **LNX Index NAV**. *"LNX is an internal ecosystem index whose NAV is derived from our platform treasury accounting metrics. It reflects the pure performance and growth of our institutional framework."*
-
-**[End of Demo]**
+6.  **Navigate to `/execution-health`:**
+    *   **Pitch:** *"Finally, we can monitor the real-time health of the entire execution stack. We track order throughput, success rates, and risk rejections per hour, giving us a complete, data-driven governance overview."*
