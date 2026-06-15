@@ -35,9 +35,9 @@
   --bBd: rgba(74, 146, 255, 0.32);
 
   /* Fonts */
-  --font-serif: Georgia, serif;
-  --font-mono: 'Courier New', monospace;
-  --font-sans: system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Merriweather', serif;
+  --font-mono: 'Roboto Mono', monospace;
 
   /* Radius */
   --radius: 8px;

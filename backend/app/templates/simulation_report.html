@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEXA Growth Simulation Report</title>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        h1, h2 { color: #D4AF37; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .summary { background-color: #f9f9f9; padding: 15px; border-left: 5px solid #D4AF37; }
+    </style>
+</head>
+<body>
+    <h1>NEXA Growth Simulation Report</h1>
+    <p>Generated on: {{ report_date }}</p>
+
+    <h2>Simulation Parameters</h2>
+    <ul>
+        <li><strong>Fund Profile:</strong> {{ params.fund_type }} ({{ params.scenario }} Scenario)</li>
+        <li><strong>Initial Deposit:</strong> ${{ deposit }}</li>
+        <li><strong>Monthly Contribution:</strong> ${{ monthly_contribution }}</li>
+        <li><strong>Time Horizon:</strong> {{ params.months }} months</li>
+    </ul>
+
+    <div class="summary">
+        <h2>Projected Outcome</h2>
+        <p><strong>Projected Final Capital:</strong> ${{ final_capital }}</p>
+        <p><strong>Total Contributions:</strong> ${{ total_contributions }}</p>
+        <p><strong>Total Projected Yield:</strong> ${{ total_yield }}</p>
+    </div>
+
+    <h2>Monthly Growth Table</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Month</th>
+                <th>Projected Capital</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in growth_table %}
+            <tr>
+                <td>{{ row.month }}</td>
+                <td>${{ row.capital }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p style="font-size: 10px; color: #777;">Disclaimer: This is an illustrative projection based on historical algorithmic performance and does not guarantee future returns.</p>
+</body>
+</html>

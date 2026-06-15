@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NEXA Validation Report</title>
+    <style>
+        body { font-family: sans-serif; color: #333; }
+        h1, h2 { color: #D4AF37; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>NEXA Platform 3-Day Validation Report</h1>
+    <p>Generated on: {{ report_date }}</p>
+
+    <h2>Aggregated Results (Last 3 Days)</h2>
+    <ul>
+        <li><strong>Total Orders Submitted:</strong> {{ summary.aggregated.total_orders }}</li>
+        <li><strong>Orders Filled:</strong> {{ summary.aggregated.filled_orders }}</li>
+        <li><strong>Orders Rejected by Risk Engine:</strong> {{ summary.aggregated.rejected_orders }}</li>
+        <li><strong>Average Execution Latency:</strong> {{ summary.aggregated.average_latency }} ms</li>
+        <li><strong>Best Performing Portfolio:</strong> {{ summary.aggregated.best_portfolio or 'N/A' }}</li>
+        <li><strong>Worst Performing Portfolio:</strong> {{ summary.aggregated.worst_portfolio or 'N/A' }}</li>
+    </ul>
+
+    <h2>Daily Performance Breakdown</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Day</th>
+                <th>Trades Executed</th>
+                <th>Risk Rejections</th>
+                <th>Success Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in summary.daily_stats %}
+            <tr>
+                <td>{{ stat.day }}</td>
+                <td>{{ stat.trades_executed }}</td>
+                <td>{{ stat.risk_rejections }}</td>
+                <td>{{ stat.success_rate }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

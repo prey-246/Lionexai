@@ -380,6 +380,29 @@ export const validationAPI = {
     a.click();
     window.URL.revokeObjectURL(url);
   },
+  downloadSimulationReport: async (params: any): Promise<void> => {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (typeof window !== 'undefined') {
+      const Cookies = (await import('js-cookie')).default;
+      const token = Cookies.get('auth_token');
+      if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${API_BASE_URL}/api/validation/reports/generate-simulation`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) throw new Error('Failed to download simulation report');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'growth_simulation_report.pdf';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
 };
 
 export const stressTestAPI = {

@@ -68,7 +68,7 @@ export default function ExecutiveDashboard() {
           yieldGenerated,
           autonomousAUM,
           autonomousStrategiesCount: autonomousStrategies.length,
-          strategySuccessRate: execHealth.success_rate_pct,
+          executionFillRate: execHealth.execution_fill_rate_pct,
           avgExecutionLatency: execHealth.avg_placement_latency_ms,
           primaryExchangeStatus: exchangeStatus.status,
         });
@@ -108,7 +108,7 @@ export default function ExecutiveDashboard() {
           <MetricDisplay label="Autonomous AUM" value={`$${metrics.autonomousAUM.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={Bot} />
           <MetricDisplay label="Active Auto-Strategies" value={metrics.autonomousStrategiesCount} icon={Cpu} />
           <MetricDisplay label="Autonomous Trades Today" value={metrics.autonomousTradesToday} icon={Activity} />
-          <MetricDisplay label="Target Success Rate" value={`${metrics.strategySuccessRate}%`} icon={Target} trend="up" />
+          <MetricDisplay label="Target Success Rate" value={`~${metrics.strategySuccessRate}%`} icon={Target} trend="up" />
         </div>
       </div>
 
@@ -116,7 +116,7 @@ export default function ExecutiveDashboard() {
       <div>
         <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3 pl-1">Execution & Exchange Health</h3>
         <div className="g4">
-          <MetricDisplay label="Trade Success Rate (1H)" value={`${metrics.strategySuccessRate}%`} icon={HeartPulse} trend="up" />
+          <MetricDisplay label="Execution Fill Rate (1H)" value={`${metrics.executionFillRate}%`} icon={HeartPulse} trend="up" />
           <MetricDisplay label="Avg. Execution Latency" value={`${metrics.avgExecutionLatency} ms`} icon={Cpu} />
           <MetricDisplay label="Primary Exchange Status" value={metrics.primaryExchangeStatus} icon={Server} trend={metrics.primaryExchangeStatus === 'OPERATIONAL' ? 'up' : 'down'} />
         </div>

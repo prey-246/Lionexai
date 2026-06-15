@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import { createChart, ColorType, Time } from 'lightweight-charts';
-import { Calculator, TrendingUp, AlertTriangle, Target, Zap, Activity, BarChart3, Percent, Plus, Minus } from 'lucide-react';
+import { Calculator, TrendingUp, AlertTriangle, Target, Zap, Activity, BarChart3, Percent, Plus, Minus, Download, Loader2 } from 'lucide-react';
+import { validationAPI } from '@/lib/api'; // Assuming the new endpoint is in validationAPI
 
 export default function SimulatorPage() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -26,6 +27,7 @@ export default function SimulatorPage() {
 
   const [withdrawalSchedule, setWithdrawalSchedule] = useState<Record<number, number>>({});
   const [withdrawalMonth, setWithdrawalMonth] = useState(1);
+  const [downloading, setDownloading] = useState(false);
 
   const depositPresets = [1000, 5000, 10000, 50000, 100000];
 
@@ -150,6 +152,24 @@ export default function SimulatorPage() {
       ...prev,
       [monthIndex]: percentage * 100,
     }));
+  };
+
+  const handleDownloadReport = async () => {
+    setDownloading(true);
+    try {
+      // This assumes you add a new function to your api lib
+      await validationAPI.downloadSimulationReport({
+        deposit,
+        monthly_contribution: monthlyContribution,
+        months,
+        scenario,
+        fund_type: fundType,
+      });
+    } catch (err: any) {
+      alert(`Failed to download report: ${err.message}`);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -277,6 +297,12 @@ export default function SimulatorPage() {
 
         {/* Right Column: Visualization */}
         <div className="col-span-1 lg:col-span-2 space-y-6">
+          <div className="flex justify-end">
+            <button onClick={handleDownloadReport} className="btn gold flex items-center gap-2" disabled={downloading}>
+              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Download PDF Report
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
              <MetricDisplay 
                 label="Projected Final Capital" 
