@@ -105,6 +105,7 @@ class Portfolio(Base):
             "exposure_used": exposure,
             "exposure_utilization_pct": exposure_pct,
             "leverage_used": exposure / self.total_equity if self.total_equity > 0 else 0.0,
+            "leverage_limit": self.mandate.max_leverage,
             "kill_switch_status": self.mandate.kill_switch_active
         }
 

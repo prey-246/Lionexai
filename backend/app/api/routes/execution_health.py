@@ -176,8 +176,6 @@ async def get_execution_health_stats(db: Session = Depends(get_db)):
             "ORDER_REJECTED",
             "ORDER_CANCELLED",
             "RISK_REJECTION",
-            "EXCHANGE_DISCONNECTED",
-            "EXCHANGE_RECONNECTED",
         ])
     ).order_by(domain.AuditLog.timestamp.desc()).limit(25).all()
 

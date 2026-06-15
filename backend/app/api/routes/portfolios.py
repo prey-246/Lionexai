@@ -204,12 +204,13 @@ def get_portfolio_stats(portfolio_id: str, db: Session = Depends(get_db), curren
     total_trades = len(trades)
     winning_trades = len([t for t in trades if t.pnl and t.pnl > 0])
     losing_trades = len([t for t in trades if t.pnl and t.pnl < 0])
-    total_pnl = sum([t.pnl for t in trades if t.pnl])
+    total_pnl = sum(t.pnl for t in trades if t.pnl is not None)
     
     win_rate = round((winning_trades / total_trades * 100), 2) if total_trades > 0 else 0.0
     avg_pnl = round((total_pnl / total_trades), 2) if total_trades > 0 else 0.0
-    best_trade = max([t.pnl for t in trades if t.pnl], default=0)
-    worst_trade = min([t.pnl for t in trades if t.pnl], default=0)
+    pnl_values = [t.pnl for t in trades if t.pnl is not None]
+    best_trade = max(pnl_values, default=0.0)
+    worst_trade = min(pnl_values, default=0.0)
 
     return schemas.PortfolioStats(
         total_trades=total_trades, winning_trades=winning_trades, losing_trades=losing_trades,
@@ -257,4 +258,4 @@ def get_portfolio_equity_curve(portfolio_id: str, limit: int = 100, db: Session 
         db.refresh(baseline)
         curves = [baseline]
         
-    return [{"timestamp": c.timestamp, "equity": c.equity, "drawdown_pct": 0} for c in curves]
+    return [{"timestamp": c.timestamp, "equity": float(c.equity or 0.0), "drawdown_pct": 0.0} for c in curves]

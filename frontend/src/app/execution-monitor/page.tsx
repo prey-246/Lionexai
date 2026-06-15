@@ -181,7 +181,7 @@ export default function ExecutionMonitorPage() {
               {balances.length > 0 ? balances.map((bal: any) => (
                 <div key={bal.asset} className="flex justify-between items-center text-sm border-b border-border-subtle pb-2">
                   <span className="font-mono text-text-primary">{bal.asset}</span>
-                  <span className="font-mono text-text-secondary">{bal.total.toFixed(6)}</span>
+                  <span className="font-mono text-text-secondary">{(Number(bal.total) || 0).toFixed(6)}</span>
                 </div>
               )) : (
                 <p className="text-sm text-text-muted text-center py-4">No balances found.</p>

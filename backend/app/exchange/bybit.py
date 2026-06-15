@@ -2,11 +2,13 @@ import ccxt.async_support as ccxt
 from typing import List, Dict, Literal
 from datetime import datetime
 import asyncio
+import os
 
 from .base import ExchangeAdapter, Balance, Order, Trade, Position
 
+
 class BybitAdapter(ExchangeAdapter):
-    """Adapter for Bybit Spot Testnet."""
+    """Adapter for Bybit testnet (paper trading via CCXT sandbox mode)."""
 
     def __init__(self, api_key: str, secret_key: str):
         super().__init__(api_key, secret_key)
@@ -15,10 +17,15 @@ class BybitAdapter(ExchangeAdapter):
             'secret': self.secret_key,
             'options': {
                 'defaultType': 'spot',
+                # Avoid CCXT loading option/coin metadata — those endpoints fail on testnet.
+                'fetchMarkets': False,
+                'fetchCurrencies': False,
             },
         })
-        # CRITICAL: This enables testnet mode for paper trading.
-        self.exchange.set_sandbox_mode(True)
+        if os.environ.get("BYBIT_USE_DEMO", "").lower() in ("1", "true", "yes"):
+            self.exchange.enable_demo_trading(True)
+        else:
+            self.exchange.set_sandbox_mode(True)
 
     async def connect(self) -> bool:
         return await self.heartbeat()
@@ -55,21 +62,26 @@ class BybitAdapter(ExchangeAdapter):
         )
 
     async def get_balance(self) -> Dict[str, Balance]:
-        """Fetches the account balance from Bybit Testnet."""
-        balance_data = await self.exchange.fetch_balance()
-        # Add a guard against a None response from the exchange
-        if balance_data is None:
-            return {}
+        """Fetches the account balance from Bybit testnet UNIFIED wallet."""
+        resp = await self.exchange.privateGetV5AccountWalletBalance({'accountType': 'UNIFIED'})
+        ret_code = resp.get('retCode')
+        if ret_code not in (0, '0'):
+            raise RuntimeError(resp.get('retMsg') or f"Bybit wallet balance failed (retCode={ret_code})")
+
         balances: Dict[str, Balance] = {}
-        if balance_data.get('total'): # More robust check for existence and not None
-            for asset, total_balance in balance_data['total'].items():
-                if total_balance > 0:
-                    balances[asset] = Balance(
-                        asset=asset,
-                        free=balance_data.get('free', {}).get(asset, 0.0),
-                        used=balance_data.get('used', {}).get(asset, 0.0),
-                        total=total_balance
-                    )
+        for account in (resp.get('result') or {}).get('list') or []:
+            for asset_info in account.get('coin') or []:
+                asset = asset_info.get('coin')
+                total = float(asset_info.get('walletBalance', 0.0) or 0.0)
+                free = float(
+                    asset_info.get('availableToWithdraw')
+                    or asset_info.get('availableBalance')
+                    or asset_info.get('free', 0.0)
+                    or 0.0
+                )
+                used = max(total - free, 0.0)
+                if asset and total > 0:
+                    balances[asset] = Balance(asset=asset, free=free, used=used, total=total)
         return balances
 
     async def place_market_order(self, symbol: str, side: Literal['buy', 'sell'], amount: float) -> Order:
@@ -127,9 +139,11 @@ class BybitAdapter(ExchangeAdapter):
         return []
 
     async def heartbeat(self) -> bool:
-        """Checks if the Bybit Testnet connection is alive."""
-        # fetch_time is a lightweight way to check for connectivity and authentication
-        await self.exchange.fetch_time()
+        """Checks if the Bybit testnet connection is alive."""
+        resp = await self.exchange.publicGetV5MarketTime()
+        ret_code = resp.get('retCode')
+        if ret_code not in (0, '0'):
+            raise RuntimeError(resp.get('retMsg') or f"Bybit heartbeat failed (retCode={ret_code})")
         return True
 
     async def close(self):

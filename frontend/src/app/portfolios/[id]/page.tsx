@@ -9,6 +9,7 @@ import { RiskContextDisplay } from '@/components/ui/RiskContextDisplay';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import { EquityCurveChart } from '@/components/charts/EquityCurveChart';
 import MandateBadge from '@/components/ui/MandateBadge';
+import { formatCurrency, formatFixed, toFiniteNumber } from '@/lib/format';
 
 export default function PortfolioDetailPage({ params }: { params: { id: string } }) {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
@@ -64,16 +65,16 @@ export default function PortfolioDetailPage({ params }: { params: { id: string }
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricDisplay label="Total Equity" value={`$${portfolio.total_equity.toLocaleString()}`} icon={Wallet} />
-        <MetricDisplay label="Total P&L" value={`$${stats.total_pnl.toLocaleString()}`} trend={stats.total_pnl >= 0 ? 'up' : 'down'} icon={Activity} />
-        <MetricDisplay label="Win Rate" value={`${stats.win_rate_pct.toFixed(1)}%`} icon={TrendingUp} />
-        <MetricDisplay label="Total Trades" value={stats.total_trades} icon={TrendingUp} />
+        <MetricDisplay label="Total Equity" value={formatCurrency(portfolio.total_equity)} icon={Wallet} />
+        <MetricDisplay label="Total P&L" value={formatCurrency(stats.total_pnl)} trend={toFiniteNumber(stats.total_pnl) >= 0 ? 'up' : 'down'} icon={Activity} />
+        <MetricDisplay label="Win Rate" value={`${formatFixed(stats.win_rate_pct, 1)}%`} icon={TrendingUp} />
+        <MetricDisplay label="Total Trades" value={String(toFiniteNumber(stats.total_trades, 0))} icon={TrendingUp} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Risk Context */}
         <div className="lg:col-span-1">
-          <RiskContextDisplay riskContext={portfolio.risk_context} />
+          <RiskContextDisplay riskContext={portfolio.risk_context ?? undefined} />
         </div>
 
         {/* Right Column: Equity Curve */}
@@ -99,16 +100,23 @@ export default function PortfolioDetailPage({ params }: { params: { id: string }
               </tr>
             </thead>
             <tbody className="divide-y divide-border-secondary">
-              {trades.slice(0, 10).map(trade => (
+              {trades.slice(0, 10).map(trade => {
+                const pnl = trade.pnl;
+                const hasPnl = pnl != null && Number.isFinite(Number(pnl));
+                return (
                 <tr key={trade.id}>
                   <td className="px-6 py-4 font-mono text-primary-teal">{trade.symbol}</td>
                   <td className={`px-6 py-4 font-semibold ${trade.side === 'BUY' ? 'text-success' : 'text-danger'}`}>{trade.side}</td>
-                  <td className="px-6 py-4 font-mono">{trade.size}</td>
-                  <td className="px-6 py-4 font-mono">${trade.entry_price.toLocaleString()}</td>
-                  <td className={`px-6 py-4 font-mono ${trade.pnl >= 0 ? 'text-success' : 'text-danger'}`}>{trade.pnl.toFixed(2)}</td>
+                  <td className="px-6 py-4 font-mono">{trade.size != null ? trade.size : '—'}</td>
+                  <td className="px-6 py-4 font-mono">
+                    {trade.entry_price != null ? formatCurrency(trade.entry_price) : '—'}
+                  </td>
+                  <td className={`px-6 py-4 font-mono ${!hasPnl ? 'text-text-secondary' : toFiniteNumber(pnl) >= 0 ? 'text-success' : 'text-danger'}`}>
+                    {hasPnl ? formatCurrency(pnl) : '—'}
+                  </td>
                   <td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-gray-700 text-gray-300">{trade.status}</span></td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>

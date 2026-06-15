@@ -48,16 +48,19 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
       data.forEach(point => {
         let timeKey: number;
         let val: number;
-        
-        if (point.timestamp !== undefined && point.equity !== undefined) {
+
+        if (point.timestamp != null && point.equity != null) {
           timeKey = Math.floor(new Date(point.timestamp).getTime() / 1000);
-          val = point.equity;
+          val = Number(point.equity);
+        } else if (point.time != null && point.value != null) {
+          timeKey = Math.floor(Number(point.time));
+          val = Number(point.value);
         } else {
-          timeKey = Math.floor(point.time);
-          val = point.value;
+          return;
         }
-        
-        // Map automatically deduplicates identical timestamps (keeping the latest)
+
+        if (!Number.isFinite(timeKey) || !Number.isFinite(val)) return;
+
         dataMap.set(timeKey, val);
       });
     }

@@ -2,9 +2,10 @@
 
 import type { PortfolioRiskContext } from '@/lib/types';
 import { TrendingUp, TrendingDown, ShieldAlert, Zap, Gauge, Wallet } from 'lucide-react';
+import { formatFixed, toFiniteNumber } from '@/lib/format';
 
 interface RiskContextDisplayProps {
-  riskContext: PortfolioRiskContext;
+  riskContext?: PortfolioRiskContext | null;
 }
 
 const RiskMetric = ({ label, value, icon: Icon, className = '' }: { label: string, value: string | number, icon: React.ElementType, className?: string }) => (
@@ -18,8 +19,26 @@ const RiskMetric = ({ label, value, icon: Icon, className = '' }: { label: strin
 );
 
 export const RiskContextDisplay = ({ riskContext }: RiskContextDisplayProps) => {
-  const currentDrawdown = riskContext.current_drawdown_pct || 0;
-  const maxDrawdown = riskContext.max_drawdown_pct || 0;
+  if (!riskContext || typeof riskContext !== 'object') {
+    return (
+      <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 text-sm text-text-muted">
+        Risk context unavailable for this portfolio.
+      </div>
+    );
+  }
+
+  const currentDrawdown = toFiniteNumber(
+    riskContext.current_drawdown_pct ?? riskContext.current_drawdown,
+  );
+  const maxDrawdown = toFiniteNumber(
+    riskContext.max_drawdown_pct ?? riskContext.max_drawdown,
+  );
+  const dailyLossLimit = toFiniteNumber(
+    riskContext.daily_loss_limit_pct ?? riskContext.daily_loss_limit,
+  );
+  const leverageLimit = toFiniteNumber(riskContext.leverage_limit ?? riskContext.leverage_used);
+  const capitalAtRisk = toFiniteNumber(riskContext.capital_at_risk);
+  const exposurePct = toFiniteNumber(riskContext.exposure_utilization_pct);
   
   const isDrawdownHigh = currentDrawdown > (maxDrawdown * 0.75);
   const drawdownColor = currentDrawdown > 0 ? (isDrawdownHigh ? 'text-danger' : 'text-warning') : 'text-success';
@@ -31,12 +50,12 @@ export const RiskContextDisplay = ({ riskContext }: RiskContextDisplayProps) => 
         Live Risk Context
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <RiskMetric label="Max Drawdown" value={`${maxDrawdown.toFixed(2)}%`} icon={TrendingDown} />
-        <RiskMetric label="Current Drawdown" value={`${currentDrawdown.toFixed(2)}%`} icon={TrendingDown} className={drawdownColor} />
-        <RiskMetric label="Daily Loss Limit" value={`${(riskContext.daily_loss_limit_pct || 0).toFixed(2)}%`} icon={TrendingDown} />
-        <RiskMetric label="Leverage Limit" value={`${(riskContext.leverage_limit || 0).toFixed(1)}x`} icon={TrendingUp} />
-        <RiskMetric label="Capital at Risk" value={`$${(riskContext.capital_at_risk || 0).toLocaleString()}`} icon={Wallet} />
-        <RiskMetric label="Exposure" value={`${(riskContext.exposure_utilization_pct || 0).toFixed(2)}%`} icon={Gauge} />
+        <RiskMetric label="Max Drawdown" value={`${formatFixed(maxDrawdown)}%`} icon={TrendingDown} />
+        <RiskMetric label="Current Drawdown" value={`${formatFixed(currentDrawdown)}%`} icon={TrendingDown} className={drawdownColor} />
+        <RiskMetric label="Daily Loss Limit" value={`${formatFixed(dailyLossLimit)}%`} icon={TrendingDown} />
+        <RiskMetric label="Leverage Limit" value={`${formatFixed(leverageLimit, 1)}x`} icon={TrendingUp} />
+        <RiskMetric label="Capital at Risk" value={`$${capitalAtRisk.toLocaleString()}`} icon={Wallet} />
+        <RiskMetric label="Exposure" value={`${formatFixed(exposurePct)}%`} icon={Gauge} />
         <RiskMetric label="Kill Switch" value={riskContext.kill_switch_status ? 'ACTIVE' : 'Inactive'} icon={Zap} className={riskContext.kill_switch_status ? 'text-danger' : 'text-success'} />
       </div>
     </div>
