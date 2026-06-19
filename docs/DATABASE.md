@@ -110,36 +110,48 @@ SELECT * FROM portfolios WHERE user_id = 'user_123';
 ```sql
 CREATE TABLE trades (
     id VARCHAR PRIMARY KEY,
-    portfolio_id VARCHAR NOT NULL,
+    portfolio_id INTEGER NOT NULL,
     symbol VARCHAR NOT NULL,
     side VARCHAR NOT NULL,  -- BUY, SELL
-    size FLOAT NOT NULL,
+    quantity FLOAT NOT NULL,
     entry_price FLOAT NOT NULL,
     exit_price FLOAT,
     status VARCHAR DEFAULT 'OPEN',  -- OPEN, CLOSED, REJECTED
-    pnl FLOAT DEFAULT 0.0,
+    pnl FLOAT,
+    exchange VARCHAR,              -- binance, bybit
+    execution_latency_ms FLOAT,
+    strategy_name VARCHAR,
+    rejection_reason TEXT,
+    trade_source VARCHAR DEFAULT 'MANUAL',  -- AUTONOMOUS, MANUAL, SEED
     created_at TIMESTAMP DEFAULT now(),
     closed_at TIMESTAMP,
-    FOREIGN KEY (portfolio_id) REFERENCES portfolios(id)
+    FOREIGN KEY (portfolio_id) REFERENCES portfolios(pk_id)
 );
 ```
 
-**Purpose**: Trade execution history and performance tracking
+**Purpose**: Trade execution history, validation analytics, and trade explorer
 
 **Columns**:
 - `id`: Trade UUID
-- `portfolio_id`: Portfolio reference
+- `portfolio_id`: Portfolio reference (integer FK)
 - `symbol`: Trading pair (BTC/USDT, etc.)
 - `side`: Direction (BUY or SELL)
-- `size`: Position quantity
+- `quantity`: Position quantity
 - `entry_price`: Execution price
 - `exit_price`: Closing price (nullable for open trades)
-- `status`: Trade lifecycle state
+- `status`: Trade lifecycle state (OPEN, CLOSED, REJECTED)
 - `pnl`: Profit/loss (computed on close)
+- `exchange`: Execution venue (binance/bybit) — populated by autonomous executor
+- `execution_latency_ms`: Round-trip order latency
+- `strategy_name`: Algorithm that generated the signal
+- `rejection_reason`: Human-readable reason when status = REJECTED
+- `trade_source`: Origin — `AUTONOMOUS` (validation scope), `MANUAL`, `SEED`
 - `created_at`: Entry timestamp
 - `closed_at`: Exit timestamp (nullable)
 
-**Indexes**: portfolio_id, symbol (compound), created_at
+**Indexes**: portfolio_id, symbol, exchange, trade_source, created_at
+
+**Validation scope**: Institutional metrics filter `trade_source = 'AUTONOMOUS'` only.
 
 **Queries**:
 ```sql
@@ -384,6 +396,79 @@ CREATE TABLE risk_events (
 
 ---
 
+### ValidationSnapshots Table
+
+```sql
+CREATE TABLE validation_snapshots (
+    pk_id SERIAL PRIMARY KEY,
+    snapshot_key VARCHAR UNIQUE NOT NULL,
+    snapshot_type VARCHAR NOT NULL,  -- GLOBAL, PORTFOLIO, STRATEGY
+    period VARCHAR NOT NULL,           -- TODAY, 7D, 14D, 30D, ALL
+    scope_id VARCHAR,
+    total_trades INTEGER DEFAULT 0,
+    winning_trades INTEGER DEFAULT 0,
+    losing_trades INTEGER DEFAULT 0,
+    win_rate_pct FLOAT DEFAULT 0.0,
+    total_pnl FLOAT DEFAULT 0.0,
+    profit_factor FLOAT,
+    sharpe_ratio FLOAT,
+    max_drawdown_pct FLOAT DEFAULT 0.0,
+    avg_return_pct FLOAT DEFAULT 0.0,
+    largest_win FLOAT DEFAULT 0.0,
+    largest_loss FLOAT DEFAULT 0.0,
+    avg_latency_ms FLOAT DEFAULT 0.0,
+    fill_rate_pct FLOAT DEFAULT 0.0,
+    chart_data JSON,
+    updated_at TIMESTAMP DEFAULT now()
+);
+```
+
+**Purpose**: Live rolling validation metrics cache, refreshed every 15 minutes
+
+**Snapshot keys**: `GLOBAL_30D`, `PORTFOLIO_{id}_7D`, `STRATEGY_{name}_ALL`, etc.
+
+**chart_data JSON** includes equity curves, daily PnL series, and `meta` object:
+```json
+{
+  "meta": {
+    "total_orders": 142,
+    "filled_orders": 128,
+    "rejected_orders": 14,
+    "best_portfolio": "PORT-1234",
+    "worst_portfolio": "PORT-5678",
+    "best_strategy": "BTC_RSI_ALPHA",
+    "worst_strategy": "ETH_MA_CROSS",
+    "exchange_distribution": {"binance": 62.5, "bybit": 37.5}
+  }
+}
+```
+
+---
+
+### ValidationSnapshotHistory Table
+
+```sql
+CREATE TABLE validation_snapshot_history (
+    pk_id SERIAL PRIMARY KEY,
+    archive_date DATE NOT NULL,
+    snapshot_key VARCHAR NOT NULL,
+    snapshot_type VARCHAR NOT NULL,
+    period VARCHAR NOT NULL,
+    scope_id VARCHAR,
+    -- same metric columns as validation_snapshots
+    chart_data JSON,
+    archived_at TIMESTAMP DEFAULT now()
+);
+```
+
+**Purpose**: Append-only daily archive for historical charts and compliance (730-day retention)
+
+**Unique constraint**: One row per `(archive_date, snapshot_key)` — upsert on re-archive same day.
+
+**Migration**: `c4d8e2f91a03_validation_snapshot_history.py`
+
+---
+
 ### Reports Table
 
 ```sql
@@ -441,6 +526,10 @@ users (1) ──────→ (many) portfolios
         reports
 
 strategies → backtest_results
+
+validation_snapshots (live cache)
+validation_snapshot_history (daily archive)
+    ↑ computed from trades WHERE trade_source = 'AUTONOMOUS'
 ```
 
 ## Indexing Strategy
@@ -552,6 +641,8 @@ SELECT add_retention_policy('trades', INTERVAL '5 years');
 | mandates | Risk rules | < 100 | Indefinite |
 | portfolios | Accounts | < 10K | Indefinite |
 | trades | History | Millions | 5 years |
+| validation_snapshots | Live validation cache | < 1K rows | Rolling |
+| validation_snapshot_history | Daily archive | ~730 × keys | 730 days |
 | strategies | Definitions | < 10K | Indefinite |
 | backtest_results | Results | Millions | 1 year |
 | audit_logs | Compliance | Millions | 7 years |
@@ -562,3 +653,10 @@ SELECT add_retention_policy('trades', INTERVAL '5 years');
 ---
 
 For migration details, see `backend/alembic/versions/`.
+
+### Validation Migrations
+
+| Revision | File | Description |
+|----------|------|-------------|
+| `b7c3e1a42f90` | `extend_trade_validation_fields.py` | Trade columns: exchange, latency, strategy, rejection, trade_source |
+| `c4d8e2f91a03` | `validation_snapshot_history.py` | Daily snapshot archive table |

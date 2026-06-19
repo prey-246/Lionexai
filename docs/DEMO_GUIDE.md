@@ -1,6 +1,8 @@
 # NEXA Platform: Formal Demo Scripts
 
-This document provides three distinct, persona-driven demonstration scripts designed to showcase the platform's core value propositions to different stakeholders.
+This document provides four distinct, persona-driven demonstration scripts designed to showcase the platform's core value propositions to different stakeholders.
+
+See also: [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) · [DEMO Script D](#demo-script-d-institutional-validation--analytics) for the validation roadmap demo.
 
 ---
 
@@ -90,3 +92,48 @@ This document provides three distinct, persona-driven demonstration scripts desi
 
 6.  **Navigate to `/execution-health`:**
     *   **Pitch:** *"Finally, we can monitor the real-time health of the entire execution stack. We track order throughput, success rates, and risk rejections per hour, giving us a complete, data-driven governance overview."*
+
+---
+
+## Demo Script D: Institutional Validation & Analytics
+
+*   **Objective:** Demonstrate the 5-stage institutional validation roadmap — rolling metrics, PDF reports, trade explorer, and comparison tools.
+*   **Persona:** Logged in as **Risk Manager**, **Operator**, or **Admin**.
+
+### Click-Path & Pitch Points
+
+1.  **Navigate to `/validation`:**
+    *   **Pitch:** *"This is our institutional validation dashboard. It tracks autonomous paper trades only — not seed data — across rolling periods: Today, 7D, 14D, 30D, and All Time."*
+    *   **Show:** Period tabs, KPI grid (orders, best/worst portfolio & strategy, exchange split), cumulative PnL chart.
+
+2.  **Switch to 30D tab and download PDF:**
+    *   **Action:** Click "Download 30-Day Report" or use weekly/monthly PDF buttons.
+    *   **Pitch:** *"Investors receive an 11-section institutional PDF with embedded charts — executive summary, capital curve, risk metrics, portfolio/strategy/exchange breakdown, latency analysis, and system health."*
+
+3.  **Scroll to Historical Metrics charts:**
+    *   **Pitch:** *"Our continuous validation engine archives snapshots daily. These charts show key metrics like win rate and drawdown trending over time — building a compliance-grade audit trail of performance."*
+
+4.  **Navigate to `/trade-explorer`:**
+    *   **Action:** Filter by `trade_source=AUTONOMOUS`, exchange, or strategy name.
+    *   **Pitch:** *"Every trade — filled, rejected, or manual — is searchable. Rejections include the exact reason from the risk engine or exchange."*
+
+5.  **Navigate to `/analytics/compare`:**
+    *   **Action:** Select 2–3 portfolios or strategies for side-by-side comparison.
+    *   **Pitch:** *"Portfolio and strategy comparison tools let risk teams identify outperformers and laggards without exporting to Excel."*
+
+6.  **Navigate to `/strategies`:**
+    *   **Pitch:** *"The strategy registry now shows live performance analytics — win rate and PnL per algorithm — updated from real execution data."*
+
+7.  **Navigate to `/audit`:**
+    *   **Action:** Search for "AUTONOMOUS" or filter by exchange.
+    *   **Pitch:** *"Privileged roles see the full system audit trail with search and date filters — every autonomous execution, risk rejection, and mandate change is immutably logged."*
+
+### Pre-Demo Setup (if metrics show zeros)
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+docker compose -f docker-compose.prod.yml exec backend python -c \
+  "from app.services.validation_service import update_validation_snapshots_job; update_validation_snapshots_job()"
+```
+
+Ensure `.env` has Binance/Bybit testnet keys and at least one active strategy assigned to a portfolio with `execution_exchange` set. Wait 60–120 seconds for the algo executor cycle.

@@ -4,11 +4,14 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api.routes import auth, system, audit, portfolios, reports, trading, backtest, stream, mandates, users, intelligence, treasury, strategies, execution_health, validation, stress_test
+from app.core.scheduler import scheduler
+from app.services.validation_service import update_validation_snapshots_job
+from app.api.routes import auth, system, audit, portfolios, reports, trading, backtest, stream, mandates, users, intelligence, treasury, strategies, execution_health, validation, stress_test, analytics, trades
 from app.core.sockets import manager as ws_manager
 from app.services.market_data import market_data_streamer, periodic_price_updater
 from scripts.scrape_news import scrape_crypto_news
@@ -21,7 +24,44 @@ from app.api.routes import exchange as exchange_router
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title=settings.PROJECT_NAME)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # On startup
+    logger.info("Starting background tasks...")
+    # Start the live market data background task
+    asyncio.create_task(market_data_streamer(ws_manager))
+    # Start the periodic news scraper
+    asyncio.create_task(periodic_news_scraper())
+    # Start the NLP Analyzer
+    asyncio.create_task(periodic_nlp_analyzer())
+    # Start the Economic Events Scraper
+    asyncio.create_task(periodic_economic_scraper())
+    # Start the periodic price updater for the trading terminal
+    asyncio.create_task(periodic_price_updater())
+    # Start the automated yield generation sweep
+    asyncio.create_task(periodic_yield_sweeper())
+    # Start the autonomous trading engine
+    asyncio.create_task(periodic_algo_executor())
+
+    # Validation snapshots: immediate run + every 15 min + daily archive at 00:05 UTC
+    scheduler.add_job(update_validation_snapshots_job, 'interval', minutes=15, id="update_validation_snapshots")
+    scheduler.add_job(update_validation_snapshots_job, 'cron', hour=0, minute=5, id="archive_validation_snapshots")
+    scheduler.start()
+    logger.info("Scheduler started. Validation snapshots will be updated periodically.")
+    # Run once immediately so the validation dashboard has data on first load
+    try:
+        update_validation_snapshots_job()
+        logger.info("Initial validation snapshots computed on startup.")
+    except Exception as e:
+        logger.error(f"Initial validation snapshot run failed: {e}", exc_info=True)
+    
+    yield
+    
+    # On shutdown
+    logger.info("Shutting down scheduler...")
+    scheduler.shutdown()
+
+app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
 async def periodic_news_scraper():
     """Runs the news scraper in the background every hour."""
@@ -75,31 +115,6 @@ async def periodic_algo_executor():
             logger.error(f"Error in autonomous executor: {e}")
         await asyncio.sleep(60)  # Run every 60 seconds
 
-@app.on_event("startup")
-def on_startup():
-    # Seeding the database on every application startup is not recommended for production.
-    # This can lead to errors or duplicate data on service restarts.
-    # This should be a one-time setup step or a separate "Job" in your deployment platform (see render.yaml).
-    # For local development, you might run this once.
-    # db = SessionLocal()
-    # seed_db(db)
-    # db.close()
-    # Start the live market data background task
-    logger.info("Starting background market data streamer...")
-    asyncio.create_task(market_data_streamer(ws_manager))
-    # Start the periodic news scraper
-    asyncio.create_task(periodic_news_scraper())
-    # Start the NLP Analyzer
-    asyncio.create_task(periodic_nlp_analyzer())
-    # Start the Economic Events Scraper
-    asyncio.create_task(periodic_economic_scraper())
-    # Start the periodic price updater for the trading terminal
-    asyncio.create_task(periodic_price_updater())
-    # Start the automated yield generation sweep
-    asyncio.create_task(periodic_yield_sweeper())
-    # Start the autonomous trading engine
-    asyncio.create_task(periodic_algo_executor())
-
 # IMPORTANT: For production, restrict this to your frontend's domain.
 # Using a wildcard ("*") is a security risk.
 origins = [
@@ -133,3 +148,5 @@ app.include_router(exchange_router.router, prefix="/api/exchange", tags=["Exchan
 app.include_router(execution_health.router, prefix="/api/execution", tags=["Execution Health"])
 app.include_router(validation.router, prefix="/api/validation", tags=["Validation"])
 app.include_router(stress_test.router, prefix="/api/stress-test", tags=["Stress Test"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(trades.router, prefix="/api/trades", tags=["Trade Explorer"])

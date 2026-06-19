@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import { createChart, ColorType, Time } from 'lightweight-charts';
 import { Calculator, TrendingUp, AlertTriangle, Target, Zap, Activity, BarChart3, Percent, Plus, Minus, Download, Loader2 } from 'lucide-react';
-import { validationAPI } from '@/lib/api'; // Assuming the new endpoint is in validationAPI
+import { validationAPI } from '@/lib/api/validation';
 
 export default function SimulatorPage() {
   const chartContainerRef = useRef<HTMLDivElement>(null);

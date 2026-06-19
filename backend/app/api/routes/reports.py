@@ -1,16 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from typing import List
 from datetime import datetime, timedelta
 import uuid
-import os
-from jinja2 import Environment, FileSystemLoader
 
 from app.core.database import get_db
 from app.models import schemas, domain
 from app.api.deps import get_current_user
 from app.services.audit_service import create_audit_log
+from app.services.pdf_service import generate_pdf_from_template
 
 router = APIRouter()
 
@@ -28,7 +26,6 @@ def generate_report(
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
-    # Determine date range
     end_date = report_in.end_date or datetime.utcnow()
     if report_in.report_type == 'WEEKLY':
         start_date = end_date - timedelta(days=7)
@@ -37,10 +34,8 @@ def generate_report(
     elif report_in.report_type == 'CUSTOM' and report_in.start_date:
         start_date = report_in.start_date
     else:
-        # Default to last 30 days if custom start is not provided
         start_date = end_date - timedelta(days=30)
 
-    # Fetch trades within the date range
     trades = db.query(domain.Trade).filter(
         domain.Trade.portfolio_id == portfolio.pk_id,
         domain.Trade.status == "CLOSED",
@@ -48,7 +43,6 @@ def generate_report(
         domain.Trade.closed_at <= end_date
     ).all()
 
-    # --- Calculate Metrics (Simplified) ---
     total_trades = len(trades)
     if total_trades == 0:
         performance_metrics = {"total_pnl": 0, "win_rate_pct": 0, "winning_trades": 0, "losing_trades": 0}
@@ -67,7 +61,6 @@ def generate_report(
             "worst_trade": round(min(pnls), 2) if pnls else 0,
         }
 
-    # Create and save the report
     new_report = domain.Report(
         id=f"report_{uuid.uuid4().hex[:12]}",
         portfolio_id=portfolio.pk_id,
@@ -108,45 +101,20 @@ def download_report(
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
-    try:
-        import weasyprint
-    except ImportError:
-        raise HTTPException(
-            status_code=501, 
-            detail="PDF generation relies on 'weasyprint' which is not installed in the current environment."
-        )
+    pdf_bytes = generate_pdf_from_template(
+        "report.html",
+        {
+            "report": report,
+            "portfolio": portfolio,
+            "user": current_user,
+            "date_generated": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        },
+    )
 
-    # Locate and render the Jinja2 Template
-    template_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
-    if not os.path.exists(template_dir):
-        os.makedirs(template_dir)
-
-    env = Environment(loader=FileSystemLoader(template_dir))
-    
-    try:
-        template = env.get_template("report.html")
-        html_out = template.render(
-            report=report,
-            portfolio=portfolio,
-            user=current_user,
-            date_generated=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-        )
-    except Exception as e:
-        # Fallback if the file hasn't been created yet
-        html_out = f"<h1>NEXA Report</h1><p>Portfolio: {portfolio.id}</p><p>Total P&L: ${report.performance_metrics.get('total_pnl', 0)}</p>"
-
-    # Generate PDF buffer
-    pdf_bytes = weasyprint.HTML(string=html_out).write_pdf()
-
-    # Return as an inline downloadable attachment
     headers = {
         'Content-Disposition': f'attachment; filename="NEXA_{portfolio.id}_{report.report_type}.pdf"'
     }
-    return Response(
-        content=pdf_bytes, 
-        media_type="application/pdf", 
-        headers=headers
-    )
+    return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
 
 @router.get("/{portfolio_id}", response_model=List[schemas.Report])
 def get_reports(
@@ -157,7 +125,6 @@ def get_reports(
     current_user: domain.User = Depends(get_current_user)
 ):
     """List generated reports for a portfolio."""
-    # Verify user has access to the portfolio
     portfolio = db.query(domain.Portfolio).filter(
         domain.Portfolio.id == portfolio_id,
         domain.Portfolio.user_id == current_user.id

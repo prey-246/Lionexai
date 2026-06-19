@@ -71,6 +71,7 @@ export default function ExecutiveDashboard() {
           executionFillRate: execHealth.execution_fill_rate_pct,
           avgExecutionLatency: execHealth.avg_placement_latency_ms,
           primaryExchangeStatus: exchangeStatus.status,
+          strategySuccessRate: Math.round(execHealth.execution_fill_rate_pct || 0),
         });
 
         setTaskStatuses(taskStatusesData || []);
@@ -108,7 +109,7 @@ export default function ExecutiveDashboard() {
           <MetricDisplay label="Autonomous AUM" value={`$${metrics.autonomousAUM.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={Bot} />
           <MetricDisplay label="Active Auto-Strategies" value={metrics.autonomousStrategiesCount} icon={Cpu} />
           <MetricDisplay label="Autonomous Trades Today" value={metrics.autonomousTradesToday} icon={Activity} />
-          <MetricDisplay label="Target Success Rate" value={`~${metrics.strategySuccessRate}%`} icon={Target} trend="up" />
+          <MetricDisplay label="Execution Success Rate" value={`${metrics.strategySuccessRate}%`} icon={Target} trend="up" />
         </div>
       </div>
 

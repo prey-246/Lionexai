@@ -28,9 +28,11 @@ The platform utilizes SQLAlchemy 2.0. The schema is highly relational, relying o
 
 ### 2.2. Capital & Trading
 -   **Portfolio**: Represents an isolated trading account. Tracks `total_equity` and `available_margin`.
--   **Trade**: Represents individual paper trades. Tracks entry/exit prices, sizing, and realized `pnl`.
+-   **Trade**: Individual paper trades with full execution metadata — `exchange`, `execution_latency_ms`, `strategy_name`, `rejection_reason`, `trade_source` (`AUTONOMOUS` / `MANUAL` / `SEED`).
 -   **EquityCurve**: Time-series snapshots of portfolio equity, used for charting.
 -   **Strategy**: JSON-parameterized algorithmic models (e.g., MA Crossover, RSI) saved to the registry.
+-   **ValidationSnapshot**: Pre-calculated rolling validation metrics (TODAY, 7D, 14D, 30D, ALL) for global, portfolio, and strategy scopes.
+-   **ValidationSnapshotHistory**: Append-only daily archive of snapshots (730-day retention) for historical charts and compliance.
 
 ### 2.3. Macro-Financials (Treasury & Yield)
 -   **TreasuryPool**: Macro-capital accounts (Reserve, Yield, Growth) dictating overall platform health.
@@ -66,6 +68,23 @@ FastAPI's `asyncio` loop manages continuous background services:
 -   **NLP Analyzer**: Scans unprocessed news articles every 10 minutes and updates the `MarketSensitivityScore`.
 -   **Yield Sweeper**: Automatically calculates total platform realized PnL and executes a 10% ledger sweep to the Treasury Yield Pool.
 -   **Algo Executor**: Evaluates assigned quantitative strategies and executes autonomous paper trades.
+-   **Validation Snapshot Job**: Recomputes all validation snapshots every 15 minutes, on startup, and archives daily at 00:05 UTC via `validation_service.update_validation_snapshots_job()`.
+
+### 3.4. Institutional Validation Pipeline
+
+```
+Autonomous Trades (trade_source=AUTONOMOUS)
+    ↓
+validation_service.compute_metrics()
+    ↓
+validation_snapshots (live rolling cache)
+    ↓
+validation_snapshot_history (daily append-only archive)
+    ↓
+Frontend /validation + PDF reports + history/metrics API
+```
+
+The validation engine filters to paper autonomous trades only. Seed and manual trades remain in the trade explorer but are excluded from institutional validation metrics.
 
 ---
 
@@ -111,11 +130,22 @@ An interactive Swagger/OpenAPI documentation is available at `http://localhost:8
 -   `POST /api/stress-test/{scenario_id}/run`: Execute a pre-defined risk validation scenario.
 
 **Reporting & Analytics**
--   `GET /api/audit`: Get a paginated list of all system audit logs.
--   `GET /api/execution/health-stats`: Get aggregated statistics for the Execution Health dashboard.
--   `GET /api/validation/summary`: Get aggregated statistics for the 3-Day Validation dashboard.
--   `GET /api/validation/report/pdf`: Download the 3-Day Validation report as a PDF.
--   `POST /api/validation/reports/generate-simulation`: Generate and download a PDF from the Growth Simulator.
+-   `GET /api/audit`: Paginated audit logs with search, exchange, and date filters (system-wide for privileged roles).
+-   `GET /api/execution/health-stats`: Execution Health dashboard aggregates.
+-   `GET /api/validation/summary`: Legacy 3-day validation summary.
+-   `GET /api/validation/snapshots`: Live rolling validation snapshots (TODAY / 7D / 14D / 30D / ALL).
+-   `GET /api/validation/snapshots/range`: Custom date-range validation query.
+-   `GET /api/validation/history`: Daily snapshot archive.
+-   `GET /api/validation/history/metrics`: Metric time-series from archive.
+-   `GET /api/validation/report/pdf`: Institutional validation PDF (parametric period).
+-   `GET /api/validation/report/pdf/weekly|monthly|30-day`: Preset PDF reports.
+-   `POST /api/validation/reports/generate-simulation`: Growth Simulator PDF.
+-   `GET /api/analytics/strategies`: Live strategy performance analytics.
+-   `GET /api/analytics/portfolios/compare`: Side-by-side portfolio comparison.
+-   `GET /api/analytics/strategies/compare`: Side-by-side strategy comparison.
+-   `GET /api/trades/`: Global trade explorer with filters and pagination.
+
+See [API_REFERENCE.md](./API_REFERENCE.md) for the full endpoint catalog.
 
 **NEXA Intelligence**
 -   `GET /api/intelligence/news`: Get the latest scraped market news.

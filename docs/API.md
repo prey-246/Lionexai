@@ -726,4 +726,136 @@ curl -X POST http://localhost:8000/api/backtest/run \
 
 ---
 
+## Institutional Validation API (Stages 1–5)
+
+See [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) and [API_REFERENCE.md](./API_REFERENCE.md) for full details.
+
+### Get Validation Snapshots
+```
+GET /api/validation/snapshots?period=30D
+```
+
+**Auth:** admin, operator, or risk_manager
+
+**Response 200 (excerpt):**
+```json
+[
+  {
+    "snapshot_key": "GLOBAL_30D",
+    "period": "30D",
+    "total_trades": 47,
+    "win_rate_pct": 68.09,
+    "total_pnl": 4250.50,
+    "sharpe_ratio": 1.42,
+    "max_drawdown_pct": 4.2,
+    "fill_rate_pct": 91.5,
+    "avg_latency_ms": 142.3,
+    "total_orders": 52,
+    "best_portfolio": "PORT-1234",
+    "exchange_distribution": {"binance": 62.5, "bybit": 37.5},
+    "chart_data": {
+      "cumulative_pnl": [...],
+      "daily_pnl": [...],
+      "meta": {...}
+    }
+  }
+]
+```
+
+### Get Metric Time-Series from Archive
+```
+GET /api/validation/history/metrics?snapshot_key=GLOBAL_30D&metric=win_rate_pct&start_date=2026-05-01&end_date=2026-06-15
+```
+
+**Response 200:**
+```json
+{
+  "snapshot_key": "GLOBAL_30D",
+  "metric": "win_rate_pct",
+  "points": [
+    {"date": "2026-06-01", "value": 65.2},
+    {"date": "2026-06-02", "value": 66.8}
+  ]
+}
+```
+
+### Download Validation PDF
+```
+GET /api/validation/report/pdf?period=30D
+```
+
+Returns `application/pdf` — 11-section institutional report with embedded charts.
+
+---
+
+## Analytics & Trade Explorer (Stage 5)
+
+### Strategy Analytics
+```
+GET /api/analytics/strategies?trade_source=AUTONOMOUS
+```
+
+**Response 200:**
+```json
+[
+  {
+    "strategy_name": "BTC_RSI_ALPHA",
+    "total_trades": 23,
+    "winning_trades": 16,
+    "losing_trades": 7,
+    "win_rate_pct": 69.57,
+    "total_pnl": 1850.00,
+    "avg_pnl": 80.43
+  }
+]
+```
+
+### Portfolio Comparison
+```
+GET /api/analytics/portfolios/compare?ids=PORT-A,PORT-B,PORT-C
+```
+
+Requires 2–6 portfolio IDs. Returns equity curves and comparative stats.
+
+### Trade Explorer
+```
+GET /api/trades/?trade_source=AUTONOMOUS&exchange=binance&limit=50&skip=0
+```
+
+**Query filters:** `portfolio_id`, `symbol`, `strategy_name`, `exchange`, `trade_source`, `status`, `side`, `start_date`, `end_date`, `search`
+
+**Response 200:**
+```json
+{
+  "trades": [
+    {
+      "id": "trd_abc123",
+      "portfolio_id": "PORT-1234",
+      "symbol": "BTC/USDT",
+      "side": "BUY",
+      "quantity": 0.01,
+      "status": "CLOSED",
+      "pnl": 125.50,
+      "exchange": "binance",
+      "execution_latency_ms": 138.2,
+      "strategy_name": "BTC_RSI_ALPHA",
+      "trade_source": "AUTONOMOUS",
+      "created_at": "2026-06-15T10:30:00Z"
+    }
+  ],
+  "total": 47,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+### Enhanced Audit Trail
+```
+GET /api/audit/?search=AUTONOMOUS&exchange=binance&start_date=2026-06-01T00:00:00Z&limit=100
+```
+
+Privileged roles see system-wide logs; clients see own actions only.
+
+---
+
 For interactive exploration, visit: **http://localhost:8000/docs**

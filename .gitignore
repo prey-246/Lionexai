@@ -24,6 +24,8 @@ build/
 .idea/
 .vscode/
 *.swp
+.github/ 
+.cursor/
 
 # Docker / DB Data
 infra/data/

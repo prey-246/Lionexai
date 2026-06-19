@@ -66,6 +66,8 @@ def execute_trade(
             quantity=trade_in.size,
             entry_price=current_price,
             status="REJECTED",
+            rejection_reason=str(e),
+            trade_source="MANUAL",
             created_at=datetime.utcnow(),
             closed_at=datetime.utcnow(),
             pnl=0.0
@@ -102,6 +104,7 @@ def execute_trade(
         quantity=trade_in.size,
         entry_price=current_price,
         status="OPEN",
+        trade_source="MANUAL",
         created_at=datetime.utcnow()
     )
     

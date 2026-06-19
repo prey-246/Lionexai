@@ -126,6 +126,97 @@ The MVP execution environment utilizes a hybrid historical-replay approach to pr
 ### 6.2. Immutable Audit Trail
 - The `audit_logs` table acts as a permanent ledger for the platform.
 - **Data Capture**: Every `action_type` (e.g., `MANDATE_UPDATE`, `KILL_SWITCH_TRIGGERED`) captures a human-readable description alongside a raw `metadata_json` payload containing exact parameters (e.g., Old Leverage vs. New Leverage).
+- **Enhanced Filtering (Stage 5)**: Privileged roles (`admin`, `operator`, `risk_manager`) query system-wide logs via `GET /api/audit/` with `search`, `exchange`, `start_date`, and `end_date` filters. Clients see only their own actions.
+
+---
+
+## 7. Institutional Validation Engine (Stages 1–4)
+
+### 7.1. Trade Capture & Scope
+- **Service**: `backend/app/services/validation_service.py`
+- **Constants**: `backend/app/services/validation_constants.py` — period definitions, metric keys
+- **Scope gate**: Only trades with `trade_source = 'AUTONOMOUS'` enter validation metrics. Manual and seed trades remain visible in the trade explorer.
+- **Extended fields** on every autonomous execution: `exchange`, `execution_latency_ms`, `strategy_name`, `rejection_reason`, `trade_source`.
+
+### 7.2. Rolling Snapshots
+- Pre-calculated rows in `validation_snapshots` for periods TODAY, 7D, 14D, 30D, ALL.
+- Scoped keys: `GLOBAL_*`, `PORTFOLIO_{id}_*`, `STRATEGY_{name}_*`.
+- Scheduler refreshes every 15 minutes and on application startup.
+- Extended KPIs (total orders, best/worst portfolio/strategy, exchange distribution) stored in `chart_data.meta` JSON.
+
+### 7.3. Metrics Computed
+Win rate, total PnL, average return, Sharpe ratio, max drawdown, profit factor, fill rate, average latency, largest win/loss, daily/weekly/monthly PnL series, rolling 7-day win rate and drawdown.
+
+### 7.4. Daily Archive (Stage 4)
+- `validation_snapshot_history` — append-only, one row per snapshot key per calendar day.
+- 730-day retention with automatic purge.
+- APIs: `GET /api/validation/history`, `GET /api/validation/history/metrics`, `GET /api/validation/snapshots/range`.
+
+---
+
+## 8. Institutional PDF Reports (Stage 3)
+
+### 8.1. Report Generation Pipeline
+```
+ValidationSnapshot → validation_report_service.build_context()
+    → chart_image_service (matplotlib PNG → base64)
+    → validation_report.html (Jinja2, 11 sections)
+    → pdf_service.render_pdf()
+    → application/pdf response
+```
+
+### 8.2. Endpoints
+- Parametric: `GET /api/validation/report/pdf?period=30D`
+- Presets: `/weekly`, `/monthly`, `/30-day`
+- Legacy fallback to 3-day summary when no snapshot exists.
+
+---
+
+## 9. Platform Analytics & Explorer (Stage 5)
+
+### 9.1. Strategy Analytics
+- **API**: `GET /api/analytics/strategies?trade_source=AUTONOMOUS`
+- **Service**: `backend/app/services/analytics_service.py`
+- **UI**: Live performance table on `/strategies` page.
+
+### 9.2. Comparison Tools
+- **Portfolios**: `GET /api/analytics/portfolios/compare?ids=PORT-A,PORT-B` (2–6 portfolios, equity curves included).
+- **Strategies**: `GET /api/analytics/strategies/compare?names=StratA,StratB` (privileged roles).
+- **UI**: `/analytics/compare`
+
+### 9.3. Trade Explorer
+- **API**: `GET /api/trades/` with filters: portfolio, symbol, strategy, exchange, trade_source, status, side, date range, free-text search.
+- **Pagination**: `skip` + `limit` (max 200).
+- **RBAC**: Clients scoped to own portfolios; privileged roles see all trades.
+- **UI**: `/trade-explorer`
+
+---
+
+## 10. Frontend Surfaces (Validation & Analytics)
+
+| Route | Features |
+|-------|----------|
+| `/validation` | Period tabs, KPI grid, 8+ charts, PDF downloads, 3-day legacy panel, historical metrics |
+| `/trade-explorer` | Filterable paginated trade table |
+| `/analytics/compare` | Portfolio & strategy side-by-side |
+| `/execution-health` | Order throughput, rejections, latency |
+| `/execution-monitor` | Per-exchange CCXT status |
+| `/executive` | Admin summary with strategy success rate |
+| `/reports` | Portfolio weekly/monthly PDFs |
+
+Sidebar navigation updated in `TerminalSidebar.tsx`.
+
+---
+
+## 11. Known Gaps (~8% Roadmap Remaining)
+
+- Global unified search across all entities (single search bar)
+- Backtest results not wired to strategies page UI
+- Risk events not shown on portfolio detail page
+- CUSTOM date-range report generation in `/reports` UI
+- Dedicated DB columns for meta fields (currently in `chart_data.meta` JSON)
+
+See [VALIDATION_ROADMAP_STATUS.md](./VALIDATION_ROADMAP_STATUS.md) for detailed completion percentages.
 
 ---
 

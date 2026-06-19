@@ -110,5 +110,28 @@ It details the major features implemented, the architectural shifts, and the spe
 
 ---
 
+## Stage 5 & Beyond: Institutional Validation & Analytics
+**Objective:** Provide undeniable proof of platform performance through deep analytics, historical archiving, and professional reporting.
+
+### 🚀 Major Features Added
+- **Continuous Validation Engine:** An `APScheduler` job runs every 15 minutes to pre-calculate performance snapshots for `TODAY`, `7D`, `14D`, `30D`, and `ALL` time periods. This includes global, per-portfolio, and per-strategy scopes.
+- **Institutional Validation Dashboard (`/validation`):** A new, data-rich dashboard with period filters, a full KPI grid, and over 10 `Recharts` graphs visualizing everything from cumulative P&L to rolling 7-day drawdown.
+- **Daily Performance Archive:** A `ValidationSnapshotHistory` table creates an append-only daily log of all key metrics, enabling long-term trend analysis. A `730-day` retention policy with auto-purging is in place.
+- **Historical Time-Series API:** A new `GET /api/validation/history/metrics` endpoint allows the frontend to query the historical performance of any metric over time.
+- **Institutional PDF Reports:** A `matplotlib`-based chart generation service (`chart_image_service.py`) was built to embed 11 different charts as base64 PNGs into a `WeasyPrint`-rendered PDF report, creating a truly professional, investor-grade deliverable.
+- **Advanced Analytics & Explorer Tools:**
+  - **Trade Explorer (`/trade-explorer`):** A new backend service and API (`/api/trades`) with powerful filtering and pagination to search the entire history of trades.
+  - **Comparison Engine (`/analytics/compare`):** New APIs to fetch and compare the performance of multiple portfolios or strategies side-by-side.
+
+### 🐛 Bugs & Triumphs
+- **The JSONB-to-Column Migration:**
+  - **Issue:** Key analytics data (like best/worst performers) was stored in an inefficient JSON blob inside the `validation_snapshots` table, making it difficult to query and index.
+  - **Resolution:** Executed a complex Alembic migration (`4a92414eca12`) to promote these fields to first-class database columns. The migration included a sophisticated `_BACKFILL_SQL` script to safely migrate all existing data from the JSON blob into the new columns without data loss.
+- **The Data-Mapping Ghost:**
+  - **Issue:** After the successful migration, new metrics were not appearing in the UI or PDF reports.
+  - **Resolution:** The API response models (`validation.py`) and PDF context builder (`validation_report_service.py`) were still attempting to read from the old, now-nonexistent JSON `meta` field. A systematic refactor was performed to update all data access patterns to read from the new, correct top-level columns on the `ValidationSnapshot` object.
+
+---
+
 ## Conclusion
 The platform has successfully transitioned from a conceptual MVP to a highly secure, data-rich ecosystem ready for live-market integration and advanced Machine Learning expansion.

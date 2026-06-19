@@ -6,53 +6,58 @@ import type { RiskMandate, EngineHealth, Portfolio, PortfolioSummary, PortfolioS
  * In server components, `window` is undefined, so we use the internal Docker network URL.
  * In client components, we use the publicly exposed URL.
  */
-const API_BASE_URL = typeof window === 'undefined'
-  ? process.env.INTERNAL_API_URL || "http://backend:8000" // For SSR, connects to backend service name
-  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"; // For CSR, connects to exposed port
+export const API_BASE_URL = typeof window === 'undefined'
+  ? process.env.INTERNAL_API_URL || "http://backend:8000"
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// A wrapper for fetch that includes the auth token and handles errors
-const apiFetch = async (url: string, options: RequestInit = {}) => {
-  const headers: HeadersInit = { ...options.headers };
-
-  // On the client-side, we can access cookies to get the auth token
+async function buildAuthHeaders(options: RequestInit = {}): Promise<HeadersInit> {
+  const headers: HeadersInit = { ...(options.headers ?? {}) };
   if (typeof window !== "undefined") {
-    // Dynamically import js-cookie only on the client side
     const Cookies = (await import("js-cookie")).default;
     const token = Cookies.get("auth_token");
-    if (token) {
-      (headers as { [key: string]: string })['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   } else {
-    // On the server-side, we use `next/headers` to get the cookie
     const { cookies } = await import("next/headers");
     const token = cookies().get("auth_token")?.value;
-    if (token) {
-      (headers as { [key: string]: string })["Authorization"] = `Bearer ${token}`;
-    }
+    if (token) (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
-  
-  // For POST/PUT with a JSON body, ensure Content-Type is set
-  if (options.body && typeof options.body === 'string') {
-      if (!('Content-Type' in headers)) {
-          (headers as { [key: string]: string })['Content-Type'] = 'application/json';
-      }
+  if (options.body && typeof options.body === 'string' && !('Content-Type' in headers)) {
+    (headers as Record<string, string>)['Content-Type'] = 'application/json';
   }
+  return headers;
+}
 
-  const res = await fetch(url, {
-    ...options,
-    headers,
-  });
-
+export const apiFetchRaw = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  const headers = await buildAuthHeaders(options);
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
-    // Try to parse error detail from JSON response, otherwise use status text
     const errorData = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(errorData.detail || "An API error occurred");
   }
+  return res;
+};
 
-  // Handle responses that might not have a body (e.g., 204 No Content)
+export const apiFetch = async (url: string, options: RequestInit = {}) => {
+  const res = await apiFetchRaw(url, options);
   if (res.status === 204) return;
-
   return res.json();
+};
+
+export const apiJson = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
+  return apiFetch(url, options);
+};
+
+export const downloadBlob = async (path: string, filename: string, options: RequestInit = {}): Promise<void> => {
+  const res = await apiFetchRaw(`${API_BASE_URL}${path}`, options);
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 };
 
 export const systemAPI = {
@@ -178,11 +183,20 @@ export const tradeAPI = {
 };
 
 export const auditAPI = {
-  getLogs: (actionType?: string, limit: number = 100, offset: number = 0): Promise<PaginatedAuditLogs> => {
+  getLogs: (
+    actionType?: string,
+    limit: number = 100,
+    offset: number = 0,
+    options?: { exchange?: string; start_date?: string; end_date?: string; search?: string },
+  ): Promise<PaginatedAuditLogs> => {
     const params = new URLSearchParams();
     if (actionType) params.append('action_type', actionType);
+    if (options?.exchange) params.append('exchange', options.exchange);
+    if (options?.start_date) params.append('start_date', options.start_date);
+    if (options?.end_date) params.append('end_date', options.end_date);
+    if (options?.search) params.append('search', options.search);
     params.append('limit', limit.toString());
-    params.append('offset', offset.toString());
+    params.append('skip', offset.toString());
 
     return apiFetch(`${API_BASE_URL}/api/audit/?${params}`, { cache: 'no-store' });
   },
@@ -199,50 +213,27 @@ export const auditAPI = {
 };
 
 export const reportsAPI = {
-  generateReport: (payload: { portfolio_id: string, report_type: string, start_date?: string, end_date?: string }) => {
-    return apiFetch(`${API_BASE_URL}/api/reports/generate`, {
+  generateReport: (payload: { portfolio_id: string, report_type: string, start_date?: string, end_date?: string }): Promise<any> => {
+    return apiJson(`${API_BASE_URL}/api/reports/generate`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
   },
 
-  getReports: (portfolioId: string, reportType?: string, limit: number = 10) => {
+  getReports: (portfolioId: string, reportType?: string, limit: number = 10): Promise<any> => {
     const url = reportType
       ? `${API_BASE_URL}/api/reports/${portfolioId}?report_type=${reportType}&limit=${limit}`
       : `${API_BASE_URL}/api/reports/${portfolioId}`;
     return apiFetch(url, { cache: 'no-store' });
   },
 
-  downloadReport: async (reportId: string, filename: string = "NEXA_Report.pdf") => {
-    const headers: HeadersInit = {};
-    if (typeof window !== "undefined") {
-      const Cookies = (await import("js-cookie")).default;
-      const token = Cookies.get("auth_token");
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const res = await fetch(`${API_BASE_URL}/api/reports/${reportId}/download`, { headers });
-
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ detail: "Failed to download report" }));
-      throw new Error(error.detail || "Failed to download report");
-    }
-
-    // Convert response to a blob and trigger a simulated browser download
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+  downloadReport: (reportId: string, filename: string = "NEXA_Report.pdf"): Promise<void> => {
+    return downloadBlob(`/api/reports/${reportId}/download`, filename);
   }
 };
 
 export const strategiesAPI = {
-  listStrategies: () => {
+  listStrategies: (): Promise<any[]> => {
     return apiFetch(`${API_BASE_URL}/api/strategies`, { cache: 'no-store' });
   },
 
@@ -267,16 +258,10 @@ export const strategiesAPI = {
 
 export const authAPI = {
   login: async (formData: FormData): Promise<AuthResponse> => {
-    const res = await fetch(`${API_BASE_URL}/api/auth/token`, {
+    const data: AuthResponse = await apiFetch(`${API_BASE_URL}/api/auth/token`, {
       method: "POST",
       body: formData,
     });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || "Login failed. Please check your credentials.");
-    }
-    
-    const data = await res.json();
     
     // Automatically set tokens and fetch role so the middleware knows who we are
     if (typeof window !== "undefined") {
@@ -294,16 +279,10 @@ export const authAPI = {
   },
 
   register: async (payload: { email: string, password: string }): Promise<{ id: string, email: string }> => {
-    const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+    return apiJson(`${API_BASE_URL}/api/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || "Registration failed. The email might already be in use.");
-    }
-    return res.json();
   },
 
   getMe: async (): Promise<{ id: string, email: string, role_tier: 'client' | 'operator' | 'risk_manager' | 'admin' }> => {
@@ -356,52 +335,6 @@ export const exchangeAPI = {
 export const executionHealthAPI = {
   getStats: (): Promise<any> => {
     return apiFetch(`${API_BASE_URL}/api/execution/health-stats`, { cache: 'no-store' });
-  },
-};
-
-export const validationAPI = {
-  getSummary: (): Promise<any> => {
-    return apiFetch(`${API_BASE_URL}/api/validation/summary`, { cache: 'no-store' });
-  },
-  downloadReport: async (): Promise<void> => {
-    const headers: HeadersInit = {};
-    if (typeof window !== 'undefined') {
-      const Cookies = (await import('js-cookie')).default;
-      const token = Cookies.get('auth_token');
-      if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${API_BASE_URL}/api/validation/report/pdf`, { headers });
-    if (!res.ok) throw new Error('Failed to download validation report');
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'nexa_validation_report.pdf';
-    a.click();
-    window.URL.revokeObjectURL(url);
-  },
-  downloadSimulationReport: async (params: any): Promise<void> => {
-    const headers: HeadersInit = { 'Content-Type': 'application/json' };
-    if (typeof window !== 'undefined') {
-      const Cookies = (await import('js-cookie')).default;
-      const token = Cookies.get('auth_token');
-      if (token) (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${API_BASE_URL}/api/validation/reports/generate-simulation`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(params),
-    });
-    if (!res.ok) throw new Error('Failed to download simulation report');
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'growth_simulation_report.pdf';
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
   },
 };
 

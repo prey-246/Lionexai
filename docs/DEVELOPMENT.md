@@ -58,7 +58,7 @@ Tailing logs is essential for debugging.
 docker-compose -f docker-compose.prod.yml logs -f nexa_backend_prod
 
 # View logs for the frontend
-docker-compose -f docker--compose.prod.yml logs -f nexa_frontend_prod
+docker-compose -f docker-compose.prod.yml logs -f nexa_frontend_prod
 ```
 
 ### Running Tests
@@ -90,7 +90,43 @@ docker exec -it nexa_frontend_prod pnpm build
     ```
 
 3.  **Apply Migrations:**
-    The `alembic upgrade head` command is run automatically on container startup. To apply migrations manually, you can run the same command inside the container.
+    The `alembic upgrade head` command runs automatically on container startup. To apply manually:
+    ```bash
+    docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+    ```
+
+    **Validation migrations** (required for Stages 1–4):
+    - `b7c3e1a42f90` — extended trade fields
+    - `c4d8e2f91a03` — validation snapshot history
+
+4.  **Refresh Validation Snapshots:**
+    After seeding or when autonomous trades start flowing:
+    ```bash
+    docker compose -f docker-compose.prod.yml exec backend python -c \
+      "from app.services.validation_service import update_validation_snapshots_job; update_validation_snapshots_job()"
+    ```
+
+5.  **Rebuild Frontend After UI Changes:**
+    The frontend container does not hot-reload in production compose. After changing React pages:
+    ```bash
+    docker compose -f docker-compose.prod.yml build frontend
+    docker compose -f docker-compose.prod.yml up -d frontend
+    ```
+
+### Backend Dependencies
+
+Validation PDF chart embedding requires **matplotlib** (`matplotlib>=3.8.0` in `backend/requirements.txt`). Rebuild the backend image after dependency changes.
+
+### Background Jobs
+
+| Job | Interval | Location |
+|-----|----------|----------|
+| Algo executor | 60s | `scripts/algo_executor.py` |
+| Validation snapshots | 15 min + startup | `validation_service.update_validation_snapshots_job()` |
+| Daily archive | 00:05 UTC | Same job, `archive_snapshots_to_history()` |
+| Price updater | 1 hour | `main.py` scheduler |
+| News scraper | 1 hour | `main.py` scheduler |
+| NLP analyzer | 10 min | `main.py` scheduler |
 
 ---
 

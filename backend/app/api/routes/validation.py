@@ -1,27 +1,30 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from fastapi import APIRouter, Depends, Response
-from sqlalchemy import and_, func, or_, cast
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from sqlalchemy.dialects.postgresql import JSONB
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Any
 
 from app.core.database import get_db
 from app.models import domain
 from app.api.deps import require_role
 from app.services.pdf_service import generate_pdf_from_template
+from app.services.validation_constants import EXECUTED_ACTIONS, REJECTED_ACTIONS, PAPER_TRADE_SOURCE
+from app.services.validation_service import (
+    update_validation_snapshots_job,
+    compute_validation_for_date_range,
+    query_validation_history,
+    query_metric_timeseries,
+    archive_snapshots_to_history,
+)
+from app.services.validation_report_service import (
+    build_validation_report_context,
+    validation_pdf_filename,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-EXECUTED_ACTIONS = (
-    "AUTONOMOUS_TRADE_EXECUTED_BINANCE",
-    "AUTONOMOUS_TRADE_EXECUTED_BYBIT",
-    "AUTONOMOUS_TRADE_EXECUTED_VIA_BINANCE",
-    "AUTONOMOUS_TRADE_EXECUTED_VIA_BYBIT",
-    "ORDER_FILLED",
-)
 
 class DayStat(BaseModel):
     day: str
@@ -52,12 +55,14 @@ def get_validation_summary(db: Session = Depends(get_db)):
 
         filled = db.query(func.count(domain.AuditLog.id)).filter(
             domain.AuditLog.action_type.in_(EXECUTED_ACTIONS),
-            domain.AuditLog.timestamp.between(day_start, day_end)
+            domain.AuditLog.timestamp.between(day_start, day_end),
+            domain.AuditLog.metadata_json.op('->>')('exchange').in_(['binance', 'bybit']),
         ).scalar() or 0
 
         rejected = db.query(func.count(domain.AuditLog.id)).filter(
-            domain.AuditLog.action_type == "RISK_REJECTION",
-            domain.AuditLog.timestamp.between(day_start, day_end)
+            domain.AuditLog.action_type.in_(REJECTED_ACTIONS),
+            domain.AuditLog.timestamp.between(day_start, day_end),
+            domain.AuditLog.metadata_json.op('->>')('exchange').in_(['binance', 'bybit']),
         ).scalar() or 0
 
         total = filled + rejected
@@ -71,19 +76,26 @@ def get_validation_summary(db: Session = Depends(get_db)):
         ))
 
     three_days_ago = now - timedelta(days=3)
-    total_filled = db.query(func.count(domain.AuditLog.id)).filter(domain.AuditLog.action_type.in_(EXECUTED_ACTIONS), domain.AuditLog.timestamp >= three_days_ago).scalar() or 0
-    total_rejected = db.query(func.count(domain.AuditLog.id)).filter(domain.AuditLog.action_type == "RISK_REJECTION", domain.AuditLog.timestamp >= three_days_ago).scalar() or 0
-    
-    latency_logs = db.query(domain.AuditLog.metadata_json).filter(
-        domain.AuditLog.action_type.in_(EXECUTED_ACTIONS),
+    paper_audit = db.query(domain.AuditLog).filter(
         domain.AuditLog.timestamp >= three_days_ago,
-        domain.AuditLog.metadata_json.op('->>')('latency_ms').isnot(None)
-    ).all()
+        domain.AuditLog.metadata_json.op('->>')('exchange').in_(['binance', 'bybit']),
+    )
+    total_filled = paper_audit.filter(domain.AuditLog.action_type.in_(EXECUTED_ACTIONS)).count()
+    total_rejected = paper_audit.filter(domain.AuditLog.action_type.in_(REJECTED_ACTIONS)).count()
+    
+    latency_logs = paper_audit.filter(
+        domain.AuditLog.action_type.in_(EXECUTED_ACTIONS),
+        domain.AuditLog.metadata_json.op('->>')('latency_ms').isnot(None),
+    ).with_entities(domain.AuditLog.metadata_json).all()
     latencies = [log[0]['latency_ms'] for log in latency_logs if log[0] and log[0].get('latency_ms') is not None]
     avg_latency = round(sum(latencies) / len(latencies), 2) if latencies else 0.0
 
     # Simplified PnL calculation for best/worst portfolio
-    trades = db.query(domain.Trade.portfolio_id, domain.Trade.pnl).filter(domain.Trade.created_at >= three_days_ago, domain.Trade.pnl.isnot(None)).all()
+    trades = db.query(domain.Trade.portfolio_id, domain.Trade.pnl).filter(
+        domain.Trade.trade_source == PAPER_TRADE_SOURCE,
+        domain.Trade.created_at >= three_days_ago,
+        domain.Trade.pnl.isnot(None),
+    ).all()
     pnl_by_portfolio = {}
     for trade in trades:
         pnl_by_portfolio[trade.portfolio_id] = pnl_by_portfolio.get(trade.portfolio_id, 0) + trade.pnl
@@ -114,15 +126,319 @@ def get_validation_summary(db: Session = Depends(get_db)):
 
     return ValidationSummary(daily_stats=daily_stats, aggregated=aggregated)
 
-@router.get("/report/pdf", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
-def get_validation_report_pdf(db: Session = Depends(get_db)):
-    summary_data = get_validation_summary(db)
-    context = {
-        "report_date": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
-        "summary": summary_data.dict()
-    }
+def _render_validation_pdf(db: Session, period: str) -> tuple[bytes, str]:
+    context = build_validation_report_context(db, period=period)
     pdf_bytes = generate_pdf_from_template("validation_report.html", context)
-    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=nexa_validation_report.pdf"})
+    filename = validation_pdf_filename(context.get("period_code", period))
+    return pdf_bytes, filename
+
+
+@router.get("/report/pdf", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_validation_report_pdf(period: str = "30D", db: Session = Depends(get_db)):
+    """Institutional validation PDF. period: TODAY, 7D, 14D, 30D, ALL."""
+    pdf_bytes, filename = _render_validation_pdf(db, period)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/report/pdf/weekly", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_weekly_validation_report_pdf(db: Session = Depends(get_db)):
+    pdf_bytes, filename = _render_validation_pdf(db, "7D")
+    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+@router.get("/report/pdf/monthly", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_monthly_validation_report_pdf(db: Session = Depends(get_db)):
+    pdf_bytes, filename = _render_validation_pdf(db, "30D")
+    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+@router.get("/report/pdf/30-day", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_30_day_validation_report_pdf(db: Session = Depends(get_db)):
+    pdf_bytes, filename = _render_validation_pdf(db, "30D")
+    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+class ExchangeDistribution(BaseModel):
+    binance: int = 0
+    bybit: int = 0
+    binance_pct: float = 0.0
+    bybit_pct: float = 0.0
+
+
+class ValidationSnapshotResponse(BaseModel):
+    snapshot_key: str
+    snapshot_type: str
+    period: str
+    scope_id: str | None = None
+    total_trades: int
+    winning_trades: int
+    losing_trades: int
+    win_rate_pct: float
+    total_pnl: float
+    profit_factor: float | None
+    sharpe_ratio: float | None
+    max_drawdown_pct: float
+    avg_return_pct: float
+    largest_win: float
+    largest_loss: float
+    avg_latency_ms: float
+    fill_rate_pct: float
+    total_orders: int = 0
+    filled_orders: int = 0
+    rejected_orders: int = 0
+    best_portfolio: str | None = None
+    worst_portfolio: str | None = None
+    best_strategy: str | None = None
+    worst_strategy: str | None = None
+    exchange_distribution: ExchangeDistribution | None = None
+    chart_data: Dict[str, Any] | None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+def _snapshot_to_response(snapshot: domain.ValidationSnapshot) -> ValidationSnapshotResponse:
+    exchange_raw = snapshot.exchange_distribution or {}
+    return ValidationSnapshotResponse(
+        snapshot_key=snapshot.snapshot_key,
+        snapshot_type=snapshot.snapshot_type,
+        period=snapshot.period,
+        scope_id=snapshot.scope_id,
+        total_trades=snapshot.total_trades,
+        winning_trades=snapshot.winning_trades,
+        losing_trades=snapshot.losing_trades,
+        win_rate_pct=snapshot.win_rate_pct,
+        total_pnl=snapshot.total_pnl,
+        profit_factor=snapshot.profit_factor,
+        sharpe_ratio=snapshot.sharpe_ratio,
+        max_drawdown_pct=snapshot.max_drawdown_pct,
+        avg_return_pct=snapshot.avg_return_pct,
+        largest_win=snapshot.largest_win,
+        largest_loss=snapshot.largest_loss,
+        avg_latency_ms=snapshot.avg_latency_ms,
+        fill_rate_pct=snapshot.fill_rate_pct,
+        total_orders=snapshot.total_orders,
+        filled_orders=snapshot.filled_orders,
+        rejected_orders=snapshot.rejected_orders,
+        best_portfolio=snapshot.best_portfolio,
+        worst_portfolio=snapshot.worst_portfolio,
+        best_strategy=snapshot.best_strategy,
+        worst_strategy=snapshot.worst_strategy,
+        exchange_distribution=ExchangeDistribution(**exchange_raw) if exchange_raw else None,
+        chart_data=snapshot.chart_data or None,
+        updated_at=snapshot.updated_at,
+    )
+
+@router.post("/snapshots/refresh", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def refresh_validation_snapshots(db: Session = Depends(get_db)):
+    """Force immediate recalculation of all validation snapshots."""
+    update_validation_snapshots_job()
+    return {"status": "ok", "message": "Validation snapshots refreshed."}
+
+
+@router.get("/snapshots", response_model=List[ValidationSnapshotResponse], dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_validation_snapshots(
+    period: str | None = None,
+    snapshot_type: str | None = None,
+    scope_id: str | None = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve pre-calculated validation snapshots.
+    Filter by period (7D, 14D, 30D, ALL), type (GLOBAL, PORTFOLIO, STRATEGY), or scope_id.
+    """
+    count = db.query(domain.ValidationSnapshot).count()
+    if count == 0:
+        update_validation_snapshots_job()
+
+    query = db.query(domain.ValidationSnapshot)
+
+    if period:
+        query = query.filter(domain.ValidationSnapshot.period == period.upper())
+
+    if snapshot_type:
+        query = query.filter(domain.ValidationSnapshot.snapshot_type == snapshot_type.upper())
+
+    if scope_id:
+        query = query.filter(domain.ValidationSnapshot.scope_id == scope_id)
+
+    snapshots = query.order_by(domain.ValidationSnapshot.snapshot_key).all()
+    return [_snapshot_to_response(s) for s in snapshots]
+
+
+class ValidationHistoryResponse(BaseModel):
+    archive_date: date
+    snapshot_key: str
+    snapshot_type: str
+    period: str
+    scope_id: str | None = None
+    total_trades: int
+    winning_trades: int
+    losing_trades: int
+    win_rate_pct: float
+    total_pnl: float
+    profit_factor: float | None
+    sharpe_ratio: float | None
+    max_drawdown_pct: float
+    avg_return_pct: float
+    largest_win: float
+    largest_loss: float
+    avg_latency_ms: float
+    fill_rate_pct: float
+    archived_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MetricTimeseriesPoint(BaseModel):
+    date: str
+    time: int
+    value: float | None
+
+
+class MetricTimeseriesResponse(BaseModel):
+    snapshot_key: str
+    metric: str
+    series: List[MetricTimeseriesPoint]
+
+
+def _history_to_response(row: domain.ValidationSnapshotHistory) -> ValidationHistoryResponse:
+    return ValidationHistoryResponse(
+        archive_date=row.archive_date,
+        snapshot_key=row.snapshot_key,
+        snapshot_type=row.snapshot_type,
+        period=row.period,
+        scope_id=row.scope_id,
+        total_trades=row.total_trades,
+        winning_trades=row.winning_trades,
+        losing_trades=row.losing_trades,
+        win_rate_pct=row.win_rate_pct,
+        total_pnl=row.total_pnl,
+        profit_factor=row.profit_factor,
+        sharpe_ratio=row.sharpe_ratio,
+        max_drawdown_pct=row.max_drawdown_pct,
+        avg_return_pct=row.avg_return_pct,
+        largest_win=row.largest_win,
+        largest_loss=row.largest_loss,
+        avg_latency_ms=row.avg_latency_ms,
+        fill_rate_pct=row.fill_rate_pct,
+        archived_at=row.archived_at,
+    )
+
+
+def _computed_to_response(data: dict[str, Any]) -> ValidationSnapshotResponse:
+    raw_chart = data.get("chart_data") or {}
+    meta = raw_chart.get("meta", {})
+    chart_data = {k: v for k, v in raw_chart.items() if k != "meta"}
+    exchange_raw = meta.get("exchange_distribution") or {}
+    return ValidationSnapshotResponse(
+        snapshot_key=data["snapshot_key"],
+        snapshot_type=data["snapshot_type"],
+        period=data["period"],
+        scope_id=data.get("scope_id"),
+        total_trades=data["total_trades"],
+        winning_trades=data["winning_trades"],
+        losing_trades=data["losing_trades"],
+        win_rate_pct=data["win_rate_pct"],
+        total_pnl=data["total_pnl"],
+        profit_factor=data.get("profit_factor"),
+        sharpe_ratio=data.get("sharpe_ratio"),
+        max_drawdown_pct=data["max_drawdown_pct"],
+        avg_return_pct=data["avg_return_pct"],
+        largest_win=data["largest_win"],
+        largest_loss=data["largest_loss"],
+        avg_latency_ms=data["avg_latency_ms"],
+        fill_rate_pct=data["fill_rate_pct"],
+        total_orders=meta.get("total_orders", 0),
+        filled_orders=meta.get("filled_orders", 0),
+        rejected_orders=meta.get("rejected_orders", 0),
+        best_portfolio=meta.get("best_portfolio"),
+        worst_portfolio=meta.get("worst_portfolio"),
+        best_strategy=meta.get("best_strategy"),
+        worst_strategy=meta.get("worst_strategy"),
+        exchange_distribution=ExchangeDistribution(**exchange_raw) if exchange_raw else None,
+        chart_data=chart_data or None,
+        updated_at=datetime.utcnow(),
+    )
+
+
+@router.get("/snapshots/range", response_model=ValidationSnapshotResponse, dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_validation_snapshot_for_range(
+    start_date: datetime,
+    end_date: datetime,
+    portfolio_id: str | None = None,
+    strategy: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """Compute validation metrics for a custom start/end date window."""
+    if end_date <= start_date:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="end_date must be after start_date")
+    try:
+        data = compute_validation_for_date_range(db, start_date, end_date, portfolio_id, strategy)
+    except ValueError as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=str(e))
+    return _computed_to_response(data)
+
+
+@router.get("/history", response_model=List[ValidationHistoryResponse], dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_validation_history(
+    snapshot_key: str | None = None,
+    snapshot_type: str | None = None,
+    scope_id: str | None = None,
+    period: str | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    """Query append-only daily validation snapshot archives."""
+    rows = query_validation_history(
+        db,
+        snapshot_key=snapshot_key,
+        snapshot_type=snapshot_type,
+        scope_id=scope_id,
+        period=period,
+        start_date=start_date,
+        end_date=end_date,
+        limit=min(limit, 500),
+    )
+    return [_history_to_response(r) for r in rows]
+
+
+@router.get("/history/metrics", response_model=MetricTimeseriesResponse, dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def get_validation_metric_timeseries(
+    snapshot_key: str,
+    metric: str = "win_rate_pct",
+    start_date: date | None = None,
+    end_date: date | None = None,
+    db: Session = Depends(get_db),
+):
+    """Rolling metric time-series from daily archives (win rate, drawdown, PnL, etc.)."""
+    from fastapi import HTTPException
+    try:
+        series = query_metric_timeseries(db, snapshot_key, metric, start_date, end_date)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return MetricTimeseriesResponse(
+        snapshot_key=snapshot_key,
+        metric=metric,
+        series=[MetricTimeseriesPoint(**point) for point in series],
+    )
+
+
+@router.post("/history/archive", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def force_archive_validation_snapshots(db: Session = Depends(get_db)):
+    """Force archive of current snapshots into daily history."""
+    count = archive_snapshots_to_history(db)
+    return {"status": "ok", "archived": count}
 
 
 class SimulationParams(BaseModel):

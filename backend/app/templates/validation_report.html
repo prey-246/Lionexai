@@ -1,49 +1,355 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>NEXA Validation Report</title>
+    <meta charset="UTF-8">
+    <title>NEXA Institutional Validation Report</title>
     <style>
-        body { font-family: sans-serif; color: #333; }
-        h1, h2 { color: #D4AF37; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
+        @page { size: A4; margin: 18mm 16mm 22mm 16mm; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1f2937; font-size: 10pt; line-height: 1.45; margin: 0; }
+        .cover { text-align: center; border-bottom: 3px solid #D4AF37; padding-bottom: 18px; margin-bottom: 24px; }
+        .logo { font-size: 26px; font-weight: bold; color: #111827; letter-spacing: 3px; }
+        .logo span { color: #D4AF37; }
+        .subtitle { font-size: 14px; color: #6b7280; margin-top: 6px; }
+        .meta-row { display: flex; justify-content: space-between; font-size: 9pt; color: #6b7280; margin-top: 10px; }
+        h2 { font-size: 13pt; color: #111827; border-bottom: 2px solid #D4AF37; padding-bottom: 4px; margin: 22px 0 12px; page-break-after: avoid; }
+        h3 { font-size: 11pt; color: #374151; margin: 14px 0 8px; page-break-after: avoid; }
+        .executive-box { background: #fafafa; border: 1px solid #e5e7eb; border-left: 4px solid #D4AF37; padding: 14px 16px; margin-bottom: 16px; border-radius: 4px; }
+        .executive-box p { margin: 0; font-size: 10.5pt; }
+        .kpi-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+        .kpi-card { flex: 1; min-width: 110px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; }
+        .kpi-label { font-size: 8pt; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 16pt; font-weight: bold; color: #111827; margin-top: 2px; }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 9pt; }
+        th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+        th { background: #f3f4f6; font-weight: 600; color: #374151; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .chart-grid { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0 16px; }
+        .chart-cell { flex: 1; min-width: 46%; text-align: center; page-break-inside: avoid; }
+        .chart-cell img { max-width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 4px; }
+        .chart-full { width: 100%; page-break-inside: avoid; margin: 10px 0 16px; text-align: center; }
+        .chart-full img { max-width: 100%; border: 1px solid #e5e7eb; border-radius: 4px; }
+        .two-col { display: flex; gap: 16px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 45%; }
+        .stat-list { list-style: none; padding: 0; margin: 0; }
+        .stat-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f3f4f6; font-size: 9.5pt; }
+        .stat-list li:last-child { border-bottom: none; }
+        .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 8pt; color: #9ca3af; text-align: center; }
+        .legacy-banner { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 9.5pt; }
+        .page-break { page-break-before: always; }
+        .empty-note { color: #9ca3af; font-style: italic; font-size: 9pt; }
     </style>
 </head>
 <body>
-    <h1>NEXA Platform 3-Day Validation Report</h1>
-    <p>Generated on: {{ report_date }}</p>
 
-    <h2>Aggregated Results (Last 3 Days)</h2>
-    <ul>
-        <li><strong>Total Orders Submitted:</strong> {{ summary.aggregated.total_orders }}</li>
-        <li><strong>Orders Filled:</strong> {{ summary.aggregated.filled_orders }}</li>
-        <li><strong>Orders Rejected by Risk Engine:</strong> {{ summary.aggregated.rejected_orders }}</li>
-        <li><strong>Average Execution Latency:</strong> {{ summary.aggregated.average_latency }} ms</li>
-        <li><strong>Best Performing Portfolio:</strong> {{ summary.aggregated.best_portfolio or 'N/A' }}</li>
-        <li><strong>Worst Performing Portfolio:</strong> {{ summary.aggregated.worst_portfolio or 'N/A' }}</li>
-    </ul>
+<div class="cover">
+    <div class="logo">UNIFYX <span>NEXA</span></div>
+    <div class="subtitle">Institutional Paper-Trading Validation Report</div>
+    <div class="meta-row">
+        <span><strong>Period:</strong> {{ period }}</span>
+        <span><strong>Generated:</strong> {{ report_date }}</span>
+    </div>
+    {% if snapshot and snapshot.updated_at %}
+    <div class="meta-row"><span><strong>Snapshot Updated:</strong> {{ snapshot.updated_at }}</span></div>
+    {% endif %}
+</div>
 
-    <h2>Daily Performance Breakdown</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Day</th>
-                <th>Trades Executed</th>
-                <th>Risk Rejections</th>
-                <th>Success Rate</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for stat in summary.daily_stats %}
-            <tr>
-                <td>{{ stat.day }}</td>
-                <td>{{ stat.trades_executed }}</td>
-                <td>{{ stat.risk_rejections }}</td>
-                <td>{{ stat.success_rate }}%</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% if legacy %}
+<div class="legacy-banner">
+    <strong>Legacy Mode:</strong> Pre-calculated validation snapshots are unavailable. This report shows the 3-day execution summary fallback.
+</div>
+
+<h2>3-Day Execution Summary</h2>
+<table>
+    <thead><tr><th>Day</th><th>Trades Executed</th><th>Success Rate</th><th>Risk Rejections</th></tr></thead>
+    <tbody>
+        {% for stat in daily_stats %}
+        <tr>
+            <td>{{ stat.day }}</td>
+            <td>{{ stat.trades_executed }}</td>
+            <td>{{ stat.success_rate }}%</td>
+            <td>{{ stat.risk_rejections }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% if executive and executive.assessment %}
+<div class="executive-box"><p>{{ executive.assessment }}</p></div>
+{% endif %}
+
+{% else %}
+
+<!-- Executive Summary -->
+<h2>1. Executive Summary</h2>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-label">Total P&amp;L</div>
+        <div class="kpi-value {% if executive.headline_pnl >= 0 %}positive{% else %}negative{% endif %}">${{ "%.2f"|format(executive.headline_pnl) }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Win Rate</div>
+        <div class="kpi-value">{{ "%.1f"|format(executive.win_rate) }}%</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Sharpe Ratio</div>
+        <div class="kpi-value">{{ "%.2f"|format(executive.sharpe) if executive.sharpe is not none else 'N/A' }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Max Drawdown</div>
+        <div class="kpi-value negative">{{ "%.1f"|format(executive.max_drawdown) }}%</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Total Trades</div>
+        <div class="kpi-value">{{ executive.total_trades }}</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Fill Rate</div>
+        <div class="kpi-value">{{ "%.1f"|format(executive.fill_rate) }}%</div>
+    </div>
+</div>
+<div class="executive-box"><p>{{ executive.assessment }}</p></div>
+
+<!-- Capital & Drawdown Charts -->
+<h2>2. Capital Curve &amp; Drawdown</h2>
+<div class="chart-grid">
+    {% if charts.capital_curve %}
+    <div class="chart-cell"><img src="data:image/png;base64,{{ charts.capital_curve }}" alt="Capital Curve"></div>
+    {% endif %}
+    {% if charts.drawdown_curve %}
+    <div class="chart-cell"><img src="data:image/png;base64,{{ charts.drawdown_curve }}" alt="Drawdown Curve"></div>
+    {% endif %}
+</div>
+{% if not charts.capital_curve and not charts.drawdown_curve %}
+<p class="empty-note">Insufficient trade history to render capital/drawdown charts.</p>
+{% endif %}
+
+<!-- Risk Metrics -->
+<h2>3. Risk Metrics</h2>
+<div class="two-col">
+    <div class="col">
+        <ul class="stat-list">
+            <li><span>Sharpe Ratio (Annualized)</span><strong>{{ "%.2f"|format(snapshot.sharpe_ratio) if snapshot.sharpe_ratio is not none else 'N/A' }}</strong></li>
+            <li><span>Maximum Drawdown</span><strong class="negative">{{ "%.1f"|format(snapshot.max_drawdown_pct) }}%</strong></li>
+            <li><span>Profit Factor</span><strong>{{ "%.2f"|format(snapshot.profit_factor) if snapshot.profit_factor is not none else 'N/A' }}</strong></li>
+            <li><span>Average Return per Trade</span><strong>{{ "%.2f"|format(snapshot.avg_return_pct) }}%</strong></li>
+        </ul>
+    </div>
+    <div class="col">
+        <ul class="stat-list">
+            <li><span>Winning Trades</span><strong class="positive">{{ snapshot.winning_trades }}</strong></li>
+            <li><span>Losing Trades</span><strong class="negative">{{ snapshot.losing_trades }}</strong></li>
+            <li><span>Largest Win</span><strong class="positive">${{ "%.2f"|format(snapshot.largest_win) }}</strong></li>
+            <li><span>Largest Loss</span><strong class="negative">${{ "%.2f"|format(snapshot.largest_loss) }}</strong></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Trade Distribution -->
+<h2>4. Trade Distribution</h2>
+<div class="two-col">
+    <div class="col">
+        <ul class="stat-list">
+            <li><span>Total Closed Trades</span><strong>{{ trade_distribution.total_closed }}</strong></li>
+            <li><span>Buy Side</span><strong>{{ trade_distribution.buy_count }}</strong></li>
+            <li><span>Sell Side</span><strong>{{ trade_distribution.sell_count }}</strong></li>
+            <li><span>Winning / Losing / Flat</span><strong>{{ trade_distribution.winning_trades }} / {{ trade_distribution.losing_trades }} / {{ trade_distribution.flat_trades }}</strong></li>
+        </ul>
+    </div>
+    <div class="col">
+        {% if charts.win_loss_distribution %}
+        <img src="data:image/png;base64,{{ charts.win_loss_distribution }}" alt="Win/Loss Distribution" style="max-width:100%;">
+        {% else %}
+        <p class="empty-note">Not enough trades for P&amp;L distribution chart.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="chart-grid">
+    {% if charts.daily_pnl %}<div class="chart-cell"><img src="data:image/png;base64,{{ charts.daily_pnl }}" alt="Daily PnL"></div>{% endif %}
+    {% if charts.daily_trades %}<div class="chart-cell"><img src="data:image/png;base64,{{ charts.daily_trades }}" alt="Daily Trades"></div>{% endif %}
+    {% if charts.daily_returns %}<div class="chart-cell"><img src="data:image/png;base64,{{ charts.daily_returns }}" alt="Daily Returns"></div>{% endif %}
+    {% if charts.rolling_win_rate %}<div class="chart-cell"><img src="data:image/png;base64,{{ charts.rolling_win_rate }}" alt="Rolling Win Rate"></div>{% endif %}
+</div>
+
+<!-- Portfolio / Strategy / Exchange Performance -->
+<div class="page-break"></div>
+<h2>5. Portfolio Performance</h2>
+{% if portfolio_performance %}
+<table>
+    <thead><tr><th>Portfolio</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+    <tbody>
+        {% for row in portfolio_performance %}
+        <tr>
+            <td>{{ row.portfolio }}</td><td>{{ row.trades }}</td><td>{{ row.wins }}</td><td>{{ row.losses }}</td>
+            <td>{{ row.win_rate_pct }}%</td>
+            <td class="{% if row.pnl >= 0 %}positive{% else %}negative{% endif %}">${{ "%.2f"|format(row.pnl) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}<p class="empty-note">No portfolio-level performance data for this period.</p>{% endif %}
+
+<h2>6. Strategy Performance</h2>
+{% if strategy_performance %}
+<table>
+    <thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+    <tbody>
+        {% for row in strategy_performance %}
+        <tr>
+            <td>{{ row.strategy }}</td><td>{{ row.trades }}</td><td>{{ row.wins }}</td><td>{{ row.losses }}</td>
+            <td>{{ row.win_rate_pct }}%</td>
+            <td class="{% if row.pnl >= 0 %}positive{% else %}negative{% endif %}">${{ "%.2f"|format(row.pnl) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}<p class="empty-note">No strategy attribution data for this period.</p>{% endif %}
+
+<h2>7. Exchange Performance</h2>
+<div class="two-col">
+    <div class="col">
+        {% if exchange_performance %}
+        <table>
+            <thead><tr><th>Exchange</th><th>Fills</th><th>Closed Trades</th><th>Share</th><th>P&amp;L</th></tr></thead>
+            <tbody>
+                {% for row in exchange_performance %}
+                <tr>
+                    <td>{{ row.exchange }}</td><td>{{ row.fills }}</td><td>{{ row.trades }}</td>
+                    <td>{{ row.share_pct }}%</td>
+                    <td class="{% if row.pnl >= 0 %}positive{% else %}negative{% endif %}">${{ "%.2f"|format(row.pnl) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="empty-note">No exchange breakdown available.</p>{% endif %}
+    </div>
+    <div class="col">
+        {% if charts.exchange_pie %}
+        <img src="data:image/png;base64,{{ charts.exchange_pie }}" alt="Exchange Distribution" style="max-width:100%;">
+        {% endif %}
+    </div>
+</div>
+
+<!-- Top Symbols & Largest Trades -->
+<h2>8. Top Symbols &amp; Largest Trades</h2>
+<h3>Top Symbols by P&amp;L</h3>
+{% if top_symbols %}
+<table>
+    <thead><tr><th>Symbol</th><th>Trades</th><th>Wins</th><th>P&amp;L</th></tr></thead>
+    <tbody>
+        {% for row in top_symbols %}
+        <tr>
+            <td>{{ row.symbol }}</td><td>{{ row.trades }}</td><td>{{ row.wins }}</td>
+            <td class="{% if row.pnl >= 0 %}positive{% else %}negative{% endif %}">${{ "%.2f"|format(row.pnl) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}<p class="empty-note">No symbol-level data.</p>{% endif %}
+
+<div class="two-col">
+    <div class="col">
+        <h3>Largest Winners</h3>
+        {% if top_winners %}
+        <table>
+            <thead><tr><th>Symbol</th><th>Side</th><th>P&amp;L</th><th>Strategy</th></tr></thead>
+            <tbody>
+                {% for row in top_winners %}
+                <tr><td>{{ row.symbol }}</td><td>{{ row.side }}</td><td class="positive">${{ "%.2f"|format(row.pnl) }}</td><td>{{ row.strategy }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="empty-note">No winning trades recorded.</p>{% endif %}
+    </div>
+    <div class="col">
+        <h3>Largest Losers</h3>
+        {% if top_losers %}
+        <table>
+            <thead><tr><th>Symbol</th><th>Side</th><th>P&amp;L</th><th>Strategy</th></tr></thead>
+            <tbody>
+                {% for row in top_losers %}
+                <tr><td>{{ row.symbol }}</td><td>{{ row.side }}</td><td class="negative">${{ "%.2f"|format(row.pnl) }}</td><td>{{ row.strategy }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}<p class="empty-note">No losing trades recorded.</p>{% endif %}
+    </div>
+</div>
+
+<!-- Latency Analysis -->
+<div class="page-break"></div>
+<h2>9. Latency Analysis</h2>
+{% if latency.count > 0 %}
+<div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Samples</div><div class="kpi-value" style="font-size:14pt;">{{ latency.count }}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Average</div><div class="kpi-value" style="font-size:14pt;">{{ latency.avg_ms }} ms</div></div>
+    <div class="kpi-card"><div class="kpi-label">P50</div><div class="kpi-value" style="font-size:14pt;">{{ latency.p50_ms }} ms</div></div>
+    <div class="kpi-card"><div class="kpi-label">P95</div><div class="kpi-value" style="font-size:14pt;">{{ latency.p95_ms }} ms</div></div>
+    <div class="kpi-card"><div class="kpi-label">Min / Max</div><div class="kpi-value" style="font-size:14pt;">{{ latency.min_ms }} / {{ latency.max_ms }} ms</div></div>
+</div>
+{% if latency.histogram %}
+<div class="chart-full"><img src="data:image/png;base64,{{ latency.histogram }}" alt="Latency Histogram"></div>
+{% endif %}
+{% else %}
+<p class="empty-note">No latency samples recorded for this period.</p>
+{% endif %}
+
+<!-- Risk Events -->
+<h2>10. Risk Events</h2>
+{% if risk_events %}
+<table>
+    <thead><tr><th>Time</th><th>Portfolio</th><th>Type</th><th>Severity</th><th>Description</th><th>Resolved</th></tr></thead>
+    <tbody>
+        {% for event in risk_events %}
+        <tr>
+            <td>{{ event.triggered_at }}</td><td>{{ event.portfolio }}</td><td>{{ event.event_type }}</td>
+            <td>{{ event.severity }}</td><td>{{ event.description }}</td><td>{{ 'Yes' if event.resolved else 'No' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}<p class="empty-note">No risk events recorded for this period.</p>{% endif %}
+
+<!-- System Health -->
+<h2>11. System Health &amp; Execution</h2>
+{% if system_health %}
+<div class="two-col">
+    <div class="col">
+        <ul class="stat-list">
+            <li><span>Total Orders</span><strong>{{ system_health.total_orders }}</strong></li>
+            <li><span>Filled Orders</span><strong class="positive">{{ system_health.filled_orders }}</strong></li>
+            <li><span>Rejected Orders</span><strong class="negative">{{ system_health.rejected_orders }}</strong></li>
+            <li><span>Fill Rate</span><strong>{{ "%.1f"|format(system_health.fill_rate_pct) }}%</strong></li>
+            <li><span>Avg Latency</span><strong>{{ "%.0f"|format(system_health.avg_latency_ms) }} ms</strong></li>
+        </ul>
+    </div>
+    <div class="col">
+        <ul class="stat-list">
+            <li><span>Risk Rejections</span><strong>{{ system_health.risk_rejections }}</strong></li>
+            <li><span>Order Rejections</span><strong>{{ system_health.order_rejections }}</strong></li>
+            <li><span>AI / Sentiment Blocks</span><strong>{{ system_health.ai_rejections }}</strong></li>
+            <li><span>Leverage Blocks</span><strong>{{ system_health.leverage_rejections }}</strong></li>
+            <li><span>Kill Switch Blocks</span><strong>{{ system_health.kill_switch_rejections }}</strong></li>
+        </ul>
+    </div>
+</div>
+<ul class="stat-list">
+    <li><span>Binance Fills / Bybit Fills</span><strong>{{ system_health.binance_fills }} / {{ system_health.bybit_fills }}</strong></li>
+    {% if snapshot.best_portfolio %}<li><span>Best Portfolio</span><strong class="positive">{{ snapshot.best_portfolio }}</strong></li>{% endif %}
+    {% if snapshot.worst_portfolio %}<li><span>Worst Portfolio</span><strong class="negative">{{ snapshot.worst_portfolio }}</strong></li>{% endif %}
+    {% if snapshot.best_strategy %}<li><span>Best Strategy</span><strong class="positive">{{ snapshot.best_strategy }}</strong></li>{% endif %}
+    {% if snapshot.worst_strategy %}<li><span>Worst Strategy</span><strong class="negative">{{ snapshot.worst_strategy }}</strong></li>{% endif %}
+</ul>
+{% endif %}
+
+{% endif %}
+
+<div class="footer">
+    UNIFYX NEXA — Institutional Paper-Trading Validation Report<br>
+    Autonomous paper trades only (Binance / Bybit). For informational purposes; not financial advice.<br>
+    Confidential — {{ report_date }}
+</div>
+
 </body>
 </html>

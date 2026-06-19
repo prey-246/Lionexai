@@ -1,144 +1,201 @@
 # UnifyX / NEXA MVP
 
-A production-grade quantitative wealth management platform. It provides a full suite of tools for backtesting strategies, managing paper-trading portfolios with institutional-grade risk controls, connecting to live exchange testnets (Binance, Bybit), and analyzing performance through comprehensive dashboards and exportable reports.
+A production-grade quantitative wealth management platform for backtesting strategies, managing paper-trading portfolios with institutional-grade risk controls, connecting to live exchange testnets (Binance, Bybit), and validating autonomous execution through rolling metrics, PDF reports, and analytics tooling.
 
-**Status**: Institutional Validation & Live Paper Trading Complete
+**Status**: Institutional Validation Roadmap ~92% Complete · Live Paper Trading on Binance Testnet & Bybit Demo
 
 ## Features
 
 ### Core Platform
-- **Secure Authentication**: User registration and login system using JWT tokens stored in secure cookies.
-- **Multi-Container Architecture**: Fully containerized using Docker for consistent development and production environments.
-- **Production-Grade Local Setup**: Utilizes `uvicorn` and a dedicated production Docker Compose file for a stable and performant local environment.
-- **CI/CD Pipeline**: Automated testing, linting, security scanning, and build pipeline using GitHub Actions.
+- **Secure Authentication**: JWT tokens stored in secure cookies with role-based access (`client`, `operator`, `risk_manager`, `admin`).
+- **Multi-Container Architecture**: Docker Compose stack — FastAPI backend, Next.js frontend, PostgreSQL + TimescaleDB, Redis.
+- **Production-Grade Local Setup**: `docker-compose.prod.yml` with uvicorn hot-reload for backend development.
+- **CI/CD Pipeline**: GitHub Actions for testing, linting, security scanning, and builds.
 
 ### Portfolio & Paper Trading
-- **Portfolio Management**: Create, view, and delete trading portfolios with customizable IDs and initial capital.
-- **Paper Trading**: Simulated trade execution (`BUY`/`SELL`) against a portfolio.
-- **Autonomous Execution**: A background engine that automatically runs assigned algorithms and executes paper trades securely routed through the Risk Gatekeeper.
-- **Real-time Updates**: Portfolio statistics, equity, and trade lists update in real-time across all connected clients using WebSockets.
+- **Portfolio Management**: Create, view, and delete portfolios with customizable IDs, mandates, and initial capital.
+- **Manual Paper Trading**: Simulated `BUY`/`SELL` execution with pre-trade risk validation.
+- **Autonomous Execution**: 60-second algo executor runs assigned strategies through the Risk Engine to Binance/Bybit testnets.
+- **Full Trade Capture**: Every autonomous trade records `exchange`, `execution_latency_ms`, `strategy_name`, `rejection_reason`, and `trade_source` (`AUTONOMOUS` / `MANUAL` / `SEED`).
+- **Real-time Updates**: Portfolio stats and trade lists update via WebSockets.
+
+### Exchange Integration
+- **Unified Exchange Layer**: CCXT-based adapters for Binance Spot Testnet and Bybit Demo Trading.
+- **Execution Monitor**: Live exchange balances, open orders, and latency at `/execution-monitor`.
+- **Execution Health**: Order throughput, fill/reject rates, and risk rejection breakdown at `/execution-health`.
 
 ### Risk Management
-- **Risk Mandates**: Pre-defined risk profiles (e.g., max drawdown, daily loss limits) that can be assigned to portfolios.
-- **Pre-Trade Risk Validation**: The risk engine validates every trade against the portfolio's mandate before execution.
-- **Kill Switch**: A mechanism to halt trading on a mandate if critical risk thresholds are breached.
-- **Global Controls & AI Integration**: System-wide configuration for max leverage, slippage/commissions, global emergency halt, and automated trade blocking when AI detects extreme bearish market sentiment.
-- **Audit Trail**: Immutable logging of all critical system events, including trade executions and risk rejections.
+- **Version-Controlled Mandates**: Immutable risk contracts with automatic portfolio migration on update.
+- **Pre-Trade Risk Validation**: Leverage, drawdown, margin, kill switch, and AI sentiment gatekeeper checks.
+- **Stress Test Suite**: Five live validation scenarios at `/stress-test` (leverage, AI gate, mandate/global kill switch, daily loss).
+- **Enhanced Audit Trail**: System-wide logs for privileged roles with search, exchange, and date filters at `/audit`.
 
-### Treasury & Yield Distribution
-- **Ecosystem Treasury**: Macro-capital pools (Reserve, Yield, Growth) managing platform health.
-- **LNX Digital Asset**: An internal ecosystem index whose NAV is derived from platform treasury accounting metrics.
-- **Automated Yield Sweeper**: Background algorithmic sweep of winning trade PnL into the central Yield pool.
+### Institutional Validation (Stages 1–4)
+- **Rolling Snapshots**: Pre-calculated metrics for TODAY, 7D, 14D, 30D, and ALL — refreshed every 15 minutes.
+- **Validation Dashboard**: KPI grid, cumulative PnL, daily returns, rolling win rate/drawdown, weekly/monthly PnL at `/validation`.
+- **Scope**: Metrics computed from autonomous paper trades only (`trade_source = AUTONOMOUS`).
+- **Daily Archive**: Append-only `validation_snapshot_history` with 730-day retention and metric time-series API.
+- **Institutional PDFs**: 11-section investor-grade reports with embedded matplotlib charts (weekly, monthly, parametric periods).
 
-### Analytics & Reporting
-- **Portfolio Dashboards**: Detailed views of individual portfolio performance, including equity curves, P&L, and trade history.
-- **System-Wide Summary**: A main dashboard summarizing the performance of all portfolios.
-- **NEXA Intelligence**: Real-time market sentiment analysis using Natural Language Processing (NLP) on live scraped crypto news to determine market sensitivity scores.
-- **On-Demand Reporting**: Generate historical performance reports for any portfolio on a weekly or monthly basis.
-- **PDF Export**: Download beautifully formatted PDF versions of generated performance reports for offline analysis and sharing.
+### Analytics & Explorer (Stage 5)
+- **Trade Explorer**: Paginated search with filters for portfolio, symbol, strategy, exchange, status, and date range at `/trade-explorer`.
+- **Strategy Analytics**: Live win rate and PnL per algorithm on `/strategies` and via `GET /api/analytics/strategies`.
+- **Comparison Tools**: Side-by-side portfolio and strategy comparison at `/analytics/compare`.
+- **Executive Dashboard**: Admin summary at `/executive`.
+
+### Treasury & Yield
+- **Ecosystem Treasury**: Macro-capital pools (Reserve, Yield, Growth).
+- **LNX Digital Asset**: Internal ecosystem index derived from treasury accounting.
+- **Automated Yield Sweeper**: Background sweep of winning trade PnL into the Yield pool.
 
 ### Strategy & Backtesting
-- **Vectorized Backtesting Engine**: Simulate MA Crossovers and RSI Mean Reversion algorithms against historical TimescaleDB OHLCV data.
-- **Interactive Visualization**: Equity curves rendered via TradingView Lightweight charts with chronological trade logs.
-- **Strategy Registry**: A central repository where quantitative operators save, review, and assign highly profitable algorithmic models to live portfolios.
+- **Vectorized Backtesting**: MA Crossover and RSI Mean Reversion against TimescaleDB OHLCV data.
+- **Strategy Registry**: Save, assign to portfolios, and route to Binance or Bybit for autonomous execution.
+- **Interactive Visualization**: TradingView Lightweight Charts with trade logs.
+
+### Reporting & Intelligence
+- **Portfolio Reports**: Weekly/monthly PDF generation per portfolio at `/reports`.
+- **NEXA Intelligence**: NLP sentiment analysis on scraped crypto news with AI risk gatekeeper integration.
+- **Growth Simulator**: Client-facing projection PDF at `/simulator`.
+
+## Documentation
+
+Full documentation lives in [`docs/`](docs/README.md):
+
+| Document | Description |
+|----------|-------------|
+| [docs/README.md](docs/README.md) | Documentation index |
+| [docs/VALIDATION_ROADMAP_STATUS.md](docs/VALIDATION_ROADMAP_STATUS.md) | 5-stage roadmap completion (~92%) |
+| [docs/VALIDATION_REPORT.md](docs/VALIDATION_REPORT.md) | Validation framework & metrics |
+| [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | Complete REST endpoint catalog |
+| [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | High-level architecture diagrams |
+| [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) | Persona-driven demo scripts (A–D) |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local setup, migrations, background jobs |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deployment guide |
 
 ## Tech Stack
 
 ### Backend
-- **Framework**: FastAPI 0.110+
-- **Language**: Python 3.12
-- **Database**: PostgreSQL 15 + TimescaleDB
-- **Cache**: Redis 7
-- **ORM**: SQLAlchemy 2.0
-- **Migrations**: Alembic
-- **Market Data**: CCXT
-- **PDF Generation**: WeasyPrint & Jinja2
-- **WebSockets**: python-websockets
+- **Framework**: FastAPI 0.110+ · Python 3.12
+- **Database**: PostgreSQL 15 + TimescaleDB · Redis 7
+- **ORM / Migrations**: SQLAlchemy 2.0 · Alembic
+- **Market Data / Exchanges**: CCXT (Binance, Bybit)
+- **PDF Generation**: WeasyPrint, Jinja2, matplotlib (validation chart embedding)
+- **Scheduling**: APScheduler (validation snapshots, news, NLP, yield sweep)
 
 ### Frontend
-- **Framework**: Next.js 15
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS 4
-- **Charts**: TradingView Lightweight Charts
-- **State Management**: React Hooks (`useState`, `useEffect`)
-- **Component Library**: Custom components with `lucide-react` for icons.
+- **Framework**: Next.js 15 · TypeScript · Tailwind CSS 4
+- **Charts**: TradingView Lightweight Charts · Recharts (validation dashboard)
+- **Icons**: lucide-react
 
 ### DevOps
-- **Containerization**: Docker & Docker Compose
-- **CI/CD**: GitHub Actions
-- **Database**: TimescaleDB for time-series
-- **Deployment**: VPS-ready configuration
+- Docker & Docker Compose · GitHub Actions · VPS-ready Nginx deployment
 
-## Setup & Production-Grade Local Start
+## Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose
 
-### Running the Application
+### Run the Application
+
 ```bash
-# Clone the repository
 git clone <your-repo-url>
 cd Lionexai
+cp .env.example .env   # configure BINANCE/BYBIT testnet keys for autonomous trading
 
-# Ensure you have a .env file configured (you can copy .env.example)
-
-# Build and start all services in production mode
-docker-compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml up --build -d
 ```
 
-Your application is now running and accessible:
-- **Frontend**: `http://localhost:3000`
-- **Backend API Docs**: `http://localhost:8000/docs`
+**Access:**
+- Frontend: `http://localhost:3000`
+- API Docs: `http://localhost:8000/docs`
 
-## Feature Deep Dive & How to Test
+### Post-Setup (Recommended)
 
-### 1. User Authentication
-- **To Test**: Navigate to `http://localhost:3000`. You will be redirected to the `/login` page. Use the link to `/register`, create a new account, and then log in. Upon successful login, you will be directed to the main dashboard.
+```bash
+# Apply migrations (validation tables + extended trade fields)
+docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 
-### 2. Portfolio Creation with Custom Capital
-- **To Test**: Go to the "Portfolios" page from the sidebar. Use the "Create New Portfolio" form. Enter a unique ID, select a risk mandate, and specify the "Initial Capital". Click "Create Portfolio" and it will appear in the list below.
+# Seed demo data
+docker compose -f docker-compose.prod.yml exec backend python scripts/seed_demo_environment.py
 
-### 3. Real-Time Updates with WebSockets
-- **To Test**: Open two browser windows and navigate to the same portfolio detail page in both. In one window, execute a trade. Observe the "Recent Trades" list and portfolio stats update in the second window instantly, without needing a page refresh.
+# Refresh validation snapshots
+docker compose -f docker-compose.prod.yml exec backend python -c \
+  "from app.services.validation_service import update_validation_snapshots_job; update_validation_snapshots_job()"
+```
 
-### 4. On-Demand PDF Reporting
-- **To Test**: Navigate to the "Reports" page. Select a portfolio that has some closed trades. Click "Generate Weekly" or "Generate Monthly". A new report item will appear in the list. Hover over this item to reveal a download icon. Click it to download a professional PDF summary of the portfolio's performance.
+After UI changes, rebuild the frontend:
 
-### 5. Pre-Trade Risk Validation
-- **To Test**: On a portfolio dashboard, attempt to execute a trade with a size that would violate the assigned risk mandate (e.g., a size far greater than the portfolio's equity). The API will reject the trade with an error message, and a "RISK_REJECTION" event will be logged in the audit trail.
+```bash
+docker compose -f docker-compose.prod.yml build frontend
+docker compose -f docker-compose.prod.yml up -d frontend
+```
 
-## Development Journey & Key Learnings
+## Key UI Routes
 
-This project involved overcoming several common but challenging real-world development hurdles.
+| Route | Purpose |
+|-------|---------|
+| `/validation` | Institutional validation dashboard |
+| `/trade-explorer` | Historical trade search & filters |
+| `/analytics/compare` | Portfolio & strategy comparison |
+| `/execution-monitor` | Live exchange status (Binance/Bybit) |
+| `/execution-health` | Order throughput & rejections |
+| `/strategies` | Strategy registry + live performance |
+| `/stress-test` | Risk validation scenarios |
+| `/audit` | Enhanced compliance audit trail |
+| `/executive` | Admin executive summary |
+| `/reports` | Portfolio PDF reports |
+| `/simulator` | Client growth projections |
 
-1.  **Challenge**: A persistent redirect loop after user login.
-    -   **Analysis**: We discovered a race condition between Next.js's fast client-side navigation (`router.push('/')`) and the browser setting the authentication cookie. The server-side middleware would check for the cookie before it was sent, see no user, and redirect back to login, creating a loop.
-    -   **Solution**: We replaced the "soft" navigation with a "hard" page reload (`window.location.href = '/'`) after login. This forces the browser to perform a full refresh, guaranteeing that the newly set `auth_token` cookie is included in the request to the new page, which the middleware can then correctly validate.
+## How to Test
 
-2.  **Challenge**: The "Reports" page would crash with a `TypeError: Cannot read properties of undefined (reading 'toLocaleString')`.
-    -   **Analysis**: The component was attempting to render data (e.g., `report.performance_metrics.total_pnl`) before the API call had finished or if a report had no trades and thus no performance metrics.
-    -   **Solution**: We fortified the JSX by implementing **optional chaining (`?.`)** and **nullish coalescing (`??`)**. For example, `report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'`. This makes the UI resilient by safely accessing nested properties and providing a default value if any part of the chain is `null` or `undefined`, preventing crashes.
+### 1. Authentication
+Register at `/register`, log in, and confirm redirect to the dashboard.
 
-3.  **Challenge**: Multiple errors during attempts to deploy to a PaaS (Render).
-    -   **Analysis**: We encountered a series of platform-specific configuration errors in our `render.yaml` file, including `unknown type "psql"`, `field healthCheck not found`, and `field rewrites not found`. These were caused by subtle differences between the platform's Blueprint specification and our initial configuration.
-    -   **Solution**: We reverted the cloud-specific changes to focus on a robust local production environment. We upgraded our `docker-compose.prod.yml` to use `gunicorn` for the backend, providing a more stable and performant setup. The key takeaway was the importance of meticulously following a specific cloud provider's Infrastructure as Code (IaC) schema and the value of a solid, production-like local environment for debugging.
+### 2. Autonomous Paper Trading
+1. Assign a strategy to a portfolio with `execution_exchange: binance` (or `bybit`).
+2. Set `is_active: true` on the strategy.
+3. Wait 60–120 seconds for the algo executor cycle.
+4. Check `/execution-monitor` and `/audit` for `AUTONOMOUS_TRADE_EXECUTED_*` events.
 
-## API Documentation
+### 3. Institutional Validation
+1. Navigate to `/validation` and switch period tabs (Today → 30D → All Time).
+2. Download a PDF via the report buttons.
+3. After multiple days of operation, historical win rate/drawdown charts populate from the daily archive.
 
-An interactive Swagger/OpenAPI documentation is available when the application is running.
+### 4. Trade Explorer & Analytics
+1. Open `/trade-explorer` — filter by `trade_source`, exchange, or strategy.
+2. Open `/analytics/compare` — select 2+ portfolios or strategies for side-by-side view.
+3. Open `/strategies` — review live performance table.
 
-**Interactive API Docs**: `http://localhost:8000/docs`
+### 5. Risk Validation
+Run all five scenarios at `/stress-test`. Each should return REJECTED with an audit log entry.
 
-### Key Endpoints
+## API Overview
 
-... (existing endpoints) ...
+Interactive Swagger: `http://localhost:8000/docs` · Full catalog: [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
 
-**Reporting**
-- `POST /api/reports/generate` - Generate performance report
-- `GET /api/reports/{portfolio_id}` - Get reports for a portfolio
-- `GET /api/reports/{report_id}/download` - Download a generated report as a PDF
+**Validation**
+- `GET /api/validation/snapshots` — Rolling metrics (TODAY / 7D / 14D / 30D / ALL)
+- `GET /api/validation/history` — Daily snapshot archive
+- `GET /api/validation/history/metrics` — Metric time-series
+- `GET /api/validation/report/pdf?period=30D` — Institutional PDF
 
-... (existing endpoints) ...
+**Analytics & Trades**
+- `GET /api/analytics/strategies` — Live strategy performance
+- `GET /api/analytics/portfolios/compare?ids=...` — Portfolio comparison
+- `GET /api/trades/` — Trade explorer with filters
+
+**Exchange & Execution**
+- `GET /api/exchange/{binance|bybit}/status` — Exchange health
+- `GET /api/execution/health-stats` — Execution dashboard data
+
+**Core**
+- `POST /api/trading/{portfolio_id}/execute` — Manual paper trade
+- `POST /api/backtest/run` — Run backtest
+- `GET /api/audit/` — Audit trail (enhanced filters for privileged roles)
+
+**WebSockets:** `/ws/market` · `/ws/portfolio` · `/ws/alerts`
 
 ## Project Structure
 
@@ -146,410 +203,128 @@ An interactive Swagger/OpenAPI documentation is available when the application i
 Lionexai/
 ├── backend/
 │   ├── app/
-│   │   ├── api/
-│   │   │   └── routes/
-│   │   │       ├── auth.py
-│   │   │       ├── audit.py
-│   │   │       ├── backtest.py
-│   │   │       ├── mandates.py
-│   │   │       ├── portfolios.py
-│   │   │       ├── reports.py
-│   │   │       ├── strategies.py
-│   │   │       └── trading.py
-│   │   ├── core/
-│   │   ├── engines/
-│   │   ├── models/
+│   │   ├── api/routes/
+│   │   │   ├── validation.py      # Snapshots, history, PDF reports
+│   │   │   ├── analytics.py       # Strategy/portfolio compare
+│   │   │   ├── trades.py          # Trade explorer
+│   │   │   ├── exchange.py        # Binance/Bybit adapters
+│   │   │   ├── execution_health.py
+│   │   │   └── ...
+│   │   ├── exchange/              # CCXT adapter layer
 │   │   ├── services/
+│   │   │   ├── validation_service.py
+│   │   │   ├── validation_report_service.py
+│   │   │   ├── chart_image_service.py
+│   │   │   └── analytics_service.py
 │   │   ├── templates/
-│   │   │   └── report.html  # PDF template
+│   │   │   ├── validation_report.html
+│   │   │   └── report.html
 │   │   └── main.py
-│   ├── alembic/
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── (pages)/
-│   │   ├── components/
-│   │   └── lib/
-│   │       ├── api.ts
-│   │       └── types.ts
-│   ├── package.json
-│   └── Dockerfile
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml
-├── docs/
-├── docker-compose.yml
+│   ├── scripts/algo_executor.py
+│   └── alembic/versions/
+├── frontend/src/app/
+│   ├── validation/
+│   ├── trade-explorer/
+│   ├── analytics/compare/
+│   ├── execution-monitor/
+│   ├── execution-health/
+│   ├── stress-test/
+│   └── ...
+├── docs/                          # Full platform documentation
 ├── docker-compose.prod.yml
-├── .env
 └── README.md
 ```
-
-## Troubleshooting
-
-### Backend won't start
-```bash
-# Check logs for errors
-docker-compose -f docker-compose.prod.yml logs nexa_backend_prod
-
-# Rebuild the container if code has changed significantly
-docker-compose -f docker-compose.prod.yml build --no-cache backend
-```
-
-### Frontend shows API errors
-```bash
-# Ensure the backend is healthy
-curl http://localhost:8000/api/health
-
-# Check frontend logs
-docker-compose -f docker-compose.prod.yml logs nexa_frontend_prod
-```
-
-### Database connection issues
-```bash
-# Reset the entire stack (WARNING: deletes all data)
-docker-compose -f docker-compose.prod.yml down -v
-docker-compose -f docker-compose.prod.yml up --build -d
-```
-
-... (rest of the file) ...
-```
-
-## API Documentation
-
-### Endpoints
-
-**Health & System**
-- `GET /health` - Engine status
-- `GET /api/mandates` - List risk mandates
-- `GET /api/mandates/{id}` - Get mandate details
-
-**Portfolio Management**
-- `GET /api/portfolios` - List all portfolios
-- `GET /api/portfolios/{id}` - Get portfolio details
-- `GET /api/portfolios/{id}/stats` - Portfolio statistics
-- `GET /api/portfolios/{id}/trades` - Get trades
-- `GET /api/portfolios/{id}/equity-curve` - Equity curve history
-- `GET /api/portfolios/{id}/risk-events` - Risk events
-
-**Trading Execution**
-- `POST /api/trading/execute` - Execute paper order (with risk validation)
-- `GET /api/trading/portfolio` - Get active portfolio
-
-**Backtesting**
-- `POST /api/backtest/run` - Run strategy backtest
-
-**Reporting**
-- `POST /api/reports/generate` - Generate performance report
-- `GET /api/reports/{portfolio_id}` - Get reports
-
-**Audit & Risk**
-- `GET /api/audit` - Get audit logs
-- `GET /api/audit/events/risk-rejections` - Risk rejections
-- `GET /api/audit/events/kill-switch` - Kill switch events
-
-**Strategies**
-- `POST /api/strategies` - Create strategy
-- `GET /api/strategies` - List strategies
-- `PUT /api/strategies/{id}` - Update strategy
-
-**Treasury Ecosystem**
-- `POST /api/treasury/seed` - Initialize Treasury pools
-- `GET /api/treasury/pools` - List active capital pools
-- `GET /api/treasury/transactions` - View immutable capital ledger
-- `POST /api/treasury/transfer` - Transfer capital between pools
-- `POST /api/treasury/sweep` - Trigger manual yield sweep
-
-**NEXA Intelligence**
-- `GET /api/intelligence/news` - Get latest market news
-- `GET /api/intelligence/sentiment/{symbol}` - Get AI sentiment score
-
-### WebSocket Streams
-- `/ws/market` - Live market data
-- `/ws/portfolio` - Portfolio updates
-- `/ws/alerts` - Risk alerts
-
-**Interactive API Docs**: http://localhost:8000/docs
 
 ## Database Schema
 
-### Core Tables
-- `users` - User accounts and roles
-- `mandates` - Risk parameter sets
-- `portfolios` - Trading portfolios
-- `trades` - Trade history
-- `strategies` - Strategy definitions
-- `global_settings` - System-wide configuration
-- `backtest_results` - Backtest results
+**Core:** `users`, `mandates`, `portfolios`, `trades`, `strategies`, `global_settings`, `backtest_results`
 
-### Monitoring Tables
-- `audit_logs` - Immutable event log
-- `equity_curves` - Portfolio equity snapshots
-- `risk_events` - Risk trigger events
-- `reports` - Performance reports
-- `market_news_articles` - Scraped alt-data
-- `economic_events` - Macro event calendar
-- `nlp_sentiments` - Processed NLP text scores
-- `market_sensitivity_scores` - Aggregated AI asset sentiment
+**Validation:** `validation_snapshots` (live rolling cache), `validation_snapshot_history` (daily archive, 730-day retention)
 
-### Migrations
-```bash
-# Apply migrations (automatic on startup)
-cd backend
-alembic upgrade head
+**Monitoring:** `audit_logs`, `equity_curves`, `risk_events`, `reports`, `market_news_articles`, `nlp_sentiments`, `market_sensitivity_scores`, `market_data_ohlcv`
 
-# Create new migration
-alembic revision --autogenerate -m "Add new column"
-```
+**Trade extensions** (migration `b7c3e1a42f90`, `4a92414eca12`): `exchange`, `execution_latency_ms`, `strategy_name`, `rejection_reason`, `trade_source`. Snapshot tables now have first-class columns for all metadata.
 
-## Dashboard Features
-
-### Operations Dashboard (Home `/`)
-- Engine status
-- Active portfolios count
-- Kill switch breaches (24h)
-- Database connection status
-- Risk mandate parameters table
-
-### Client Dashboard (`/dashboard`)
-- Current equity
-- Available margin
-- Total return %
-- Win rate
-- Current drawdown
-- Recent trades table
-
-### Execution Terminal (`/trade`)
-- Order entry form
-- Asset selection (with whitelist enforcement)
-- Side (BUY/SELL)
-- Position sizing
-- Real-time margin impact
-
-### Strategy Engine (`/backtest`)
-- Asset selection (BTC/USDT, ETH/USDT, SOL/USDT)
-- Timeframe selection (1h, 4h, 1d)
-- Strategy selection (currently MA Crossover)
-- Performance metrics output
-
-### Reports (`/reports`)
-- Weekly/monthly report generation
-- Performance metrics
-- Win rate analysis
-- Trade summary
-
-### Risk Monitoring (`/risk`)
-- Real-time risk events
-- Risk rejection audit trail
-- Kill switch event history
+See [docs/DATABASE.md](docs/DATABASE.md) for full schema.
 
 ## Configuration
 
-### Environment Variables (.env)
-
 ```env
 # Infrastructure
-ENVIRONMENT=development
-PROJECT_NAME="UnifyX NEXA MVP"
-
-# Database
 POSTGRES_USER=nexa_admin
 POSTGRES_PASSWORD=nexa_secure_pass
 POSTGRES_DB=nexa_mvp
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-
-# Redis
 REDIS_HOST=redis
-REDIS_PORT=6379
 
 # Security
 SECRET_KEY=<your-secure-key>
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # Frontend
 NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Exchange testnet keys (required for autonomous validation metrics)
+BINANCE_API_KEY=...
+BINANCE_SECRET_KEY=...
+BYBIT_API_KEY=...
+BYBIT_SECRET_KEY=...
+ENVIRONMENT_STATE=PAPER
 ```
-
-## Project Structure
-
-```
-Lionexai/
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   └── routes/
-│   │   │       ├── mandates.py
-│   │   │       ├── trading.py
-│   │   │       ├── backtest.py
-│   │   │       ├── portfolios.py
-│   │   │       ├── audit.py
-│   │   │       ├── reports.py
-│   │   │       ├── strategies.py
-│   │   │       └── stream.py
-│   │   ├── core/
-│   │   │   ├── config.py
-│   │   │   ├── database.py
-│   │   │   └── sockets.py
-│   │   ├── engines/
-│   │   │   ├── backtester.py
-│   │   │   └── risk_engine.py
-│   │   ├── models/
-│   │   │   └── domain.py
-│   │   ├── services/
-│   │   │   └── market_data.py
-│   │   └── main.py
-│   ├── alembic/
-│   │   ├── env.py
-│   │   └── versions/
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── page.tsx
-│   │   │   ├── layout.tsx
-│   │   │   ├── dashboard/
-│   │   │   ├── trade/
-│   │   │   ├── backtest/
-│   │   │   ├── reports/
-│   │   │   └── risk/
-│   │   ├── components/
-│   │   │   └── ui/
-│   │   └── lib/
-│   │       └── api.ts
-│   ├── package.json
-│   └── Dockerfile
-├── .github/
-│   └── workflows/
-│       └── ci-cd.yml
-├── docker-compose.yml
-├── .env
-└── README.md
-```
-
-## Monitoring & Observability
-
-### Health Checks
-- Backend: `GET /health` - Returns engine status and database connection
-- Frontend: Accessible at http://localhost:3000
-- Database: PostgreSQL healthcheck via Docker
-
-### Logging
-- Backend logs to stdout with structured format
-- Risk engine logs all rejections to audit_logs table
-- Kill switch events logged to audit trail
-
-### Metrics
-All performance metrics available via:
-- Portfolio stats endpoint
-- Backtest results
-- Reports API
-
-## Testing
-
-### Backend Tests
-```bash
-cd backend
-pytest                          # Run all tests
-pytest --cov=app               # With coverage
-pytest -v                       # Verbose output
-```
-
-### Frontend Tests
-```bash
-cd frontend
-pnpm lint                       # ESLint
-pnpm build                      # Build check
-```
-
-## Deployment
-
-### Docker Compose (Production)
-```bash
-docker-compose -f docker-compose.yml up -d
-```
-
-### VPS Deployment
-1. Install Docker & Docker Compose
-2. Clone repository
-3. Configure `.env` with production values
-4. Run `docker-compose up -d`
-5. Configure reverse proxy (nginx/Caddy)
-6. Set up SSL/TLS certificates
-
-### Environment-Specific Configuration
-- **Development**: Use `ENVIRONMENT=development` in `.env`
-- **Production**: Use `ENVIRONMENT=production` with secured values
 
 ## Troubleshooting
 
-### Backend won't start
 ```bash
-# Check logs
-docker logs nexa_backend
+# Backend logs
+docker compose -f docker-compose.prod.yml logs -f nexa_backend_prod
 
-# Verify database connection
-docker logs nexa_db
+# Health check
+curl http://localhost:8000/api/system/health
 
-# Rebuild container
-docker-compose build --no-cache backend
+# Rebuild after code changes
+docker compose -f docker-compose.prod.yml build backend frontend
+docker compose -f docker-compose.prod.yml up -d
+
+# Reset stack (WARNING: deletes all data)
+docker compose -f docker-compose.prod.yml down -v
+docker compose -f docker-compose.prod.yml up --build -d
 ```
 
-### Frontend won't build
+**Validation metrics show zeros?** Autonomous validation requires valid exchange API keys, an active strategy assigned to a portfolio with `execution_exchange` set, and at least one algo executor cycle (~60s). Seed/manual trades are excluded from validation by design.
+
+## Testing
+
 ```bash
-# Clear cache and reinstall
-cd frontend
-rm -rf node_modules pnpm-lock.yaml
-pnpm install
-pnpm build
+# Backend
+docker compose -f docker-compose.prod.yml exec backend pytest
+
+# Frontend
+docker compose -f docker-compose.prod.yml exec frontend pnpm lint
+docker compose -f docker-compose.prod.yml exec frontend pnpm build
 ```
-
-### Database connection issues
-```bash
-# Reset database (WARNING: loses all data)
-docker-compose down -v
-docker-compose up -d
-```
-
-## Contributing
-
-1. Create feature branch: `git checkout -b feature/description`
-2. Commit changes: `git commit -am "Add feature description"`
-3. Push to branch: `git push origin feature/description`
-4. Submit pull request
-
-## License
-
-Proprietary - All rights reserved
-
-## Support
-
-For issues and questions:
-1. Check existing GitHub issues
-2. Review API documentation at `http://localhost:8000/docs`
-3. Check logs: `docker-compose logs -f`
 
 ## Roadmap
 
-### Phase 2
-- Live trading integration (paper->live migration)
+### Completed (Institutional Validation)
+- [x] **Stage 1** — Trade capture + rolling validation stats
+- [x] **Stage 2** — Validation dashboard (periods, charts, KPIs)
+- [x] **Stage 3** — Institutional PDF reports with embedded charts
+- [x] **Stage 4** — Continuous engine + daily snapshot archive
+- [x] **Stage 5** — Trade explorer, analytics compare, enhanced audit
+
+### Remaining Polish (~5%)
+- UI for on-demand date range reports in `/reports`
+- Backtest results on strategies page UI
+- Risk events on portfolio detail page
+
+### Future Phases
+- Live trading migration (paper → live)
 - Advanced strategy builder UI
-- Machine learning prediction layer
-- Real-time alerts (email, Slack, SMS)
-- Mobile app
-
-### Phase 3
+- ML prediction layer
+- Real-time alerts (email, Slack)
 - Multi-asset support (forex, commodities)
-- Advanced charting with TradingView integration
-- Collaborative portfolio management
-- Algorithmic rebalancing
-- Tax reporting
 
-## Architecture Overview
+## Architecture
 
-See `docs/ARCHITECTURE.md` for detailed system design.
+See [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed system design, execution flows, and validation pipeline.
 
 ---
 

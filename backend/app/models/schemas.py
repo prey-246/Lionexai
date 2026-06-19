@@ -149,6 +149,11 @@ class Trade(BaseModel):
     exit_price: float | None = None
     status: str
     pnl: float | None = None
+    exchange: str | None = None
+    execution_latency_ms: float | None = None
+    strategy_name: str | None = None
+    rejection_reason: str | None = None
+    trade_source: str | None = None
     created_at: datetime
     closed_at: datetime | None = None
 

@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database, TrendingUp, ShieldCheck, Server, HeartPulse } from 'lucide-react';
+import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database, TrendingUp, ShieldCheck, Server, HeartPulse, Search, GitCompare, FileText } from 'lucide-react';
 import clsx from 'clsx';
 import Cookies from 'js-cookie';
 import { useUser } from '@/contexts/UserContext';
@@ -33,11 +33,14 @@ export function TerminalSidebar() {
   const operatorNav = [
     { href: '/', label: 'System Operations', icon: Activity },
     { href: '/audit', label: 'Audit Trail', icon: History },
+    { href: '/trade-explorer', label: 'Trade Explorer', icon: Search },
+    { href: '/analytics/compare', label: 'Compare Analytics', icon: GitCompare },
     { href: '/backtest', label: 'Strategy Engine', icon: FlaskConical },
     { href: '/strategies', label: 'Strategy Registry', icon: Database },
     { href: '/execution-monitor', label: 'Execution Monitor', icon: Server },
     { href: '/execution-health', label: 'Execution Health', icon: HeartPulse },
     { href: '/validation', label: 'Validation Framework', icon: ShieldCheck },
+    { href: '/reports', label: 'Performance Reports', icon: FileText },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
   ];
 

@@ -74,7 +74,9 @@ Flow per active strategy:
 4. Compare signal vs current holdings
 5. Evaluate through `RiskEngine.evaluate_pre_trade()`
 6. Place market order via exchange adapter
-7. Write audit logs and internal trade records
+7. Write audit logs and internal trade records with full validation fields:
+   - `exchange`, `execution_latency_ms`, `strategy_name`, `trade_source='AUTONOMOUS'`
+   - On rejection: `status='REJECTED'`, `rejection_reason` populated
 
 ## Audit Events
 
@@ -96,8 +98,13 @@ Flow per active strategy:
 | `GET /api/exchange/{id}/heartbeat` | Connectivity ping |
 | `DELETE /api/exchange/{id}/orders/{order_id}` | Cancel order |
 | `GET /api/execution/health-stats` | Execution health dashboard |
-| `GET /api/validation/summary` | Three-day validation metrics |
-| `GET /api/validation/report/pdf` | Downloadable validation PDF |
+| `GET /api/validation/summary` | Legacy 3-day validation metrics |
+| `GET /api/validation/snapshots` | Rolling validation snapshots |
+| `GET /api/validation/history` | Daily snapshot archive |
+| `GET /api/validation/history/metrics` | Metric time-series |
+| `GET /api/validation/report/pdf` | Institutional validation PDF |
+| `GET /api/trades/` | Trade explorer with filters |
+| `GET /api/analytics/strategies` | Strategy performance analytics |
 | `POST /api/stress-test/{scenario_id}/run` | Risk validation scenarios |
 
 ## Environment Configuration
@@ -118,10 +125,27 @@ ENVIRONMENT_STATE=PAPER
 |------|---------|
 | `/execution-monitor` | Live exchange balances, orders, latency |
 | `/execution-health` | Operational metrics and recent activity |
-| `/validation` | Three-day validation framework |
+| `/validation` | Institutional validation dashboard (TODAY–ALL periods) |
+| `/trade-explorer` | Historical trade search and filters |
+| `/analytics/compare` | Portfolio & strategy comparison |
 | `/stress-test` | Institutional risk control validation |
 | `/simulator` | Client-facing growth projections |
-| `/strategies` | Strategy assignment to portfolio + exchange |
+| `/strategies` | Strategy registry + live performance analytics |
+| `/audit` | Enhanced audit trail with search filters |
+| `/executive` | Admin executive summary |
+| `/reports` | Portfolio performance PDF reports |
+
+## Validation Scheduler
+
+Integrated in `backend/app/main.py`:
+
+| Trigger | Action |
+|---------|--------|
+| Application startup | Immediate snapshot refresh |
+| Every 15 minutes | Recompute all validation snapshots |
+| Daily 00:05 UTC | Archive snapshots to history table |
+
+Service: `validation_service.update_validation_snapshots_job()`
 
 ## Demo Data
 

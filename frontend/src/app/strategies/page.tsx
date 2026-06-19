@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { strategiesAPI, portfolioAPI } from '@/lib/api';
+import { analyticsAPI } from '@/lib/api/analytics';
+import type { StrategyAnalytics } from '@/lib/api/analytics';
 import { Loader2, FlaskConical, Play, Database, Wallet, Server } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StrategyRegistryPage() {
   const [strategies, setStrategies] = useState<any[]>([]);
   const [portfolios, setPortfolios] = useState<any[]>([]);
+  const [liveAnalytics, setLiveAnalytics] = useState<StrategyAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -22,11 +25,13 @@ export default function StrategyRegistryPage() {
   useEffect(() => {
     Promise.all([
       strategiesAPI.listStrategies(),
-      portfolioAPI.listPortfolios()
+      portfolioAPI.listPortfolios(),
+      analyticsAPI.getStrategyAnalytics('AUTONOMOUS'),
     ])
-      .then(([stratsData, portsData]) => {
+      .then(([stratsData, portsData, analytics]) => {
         setStrategies(stratsData || []);
         setPortfolios(portsData || []);
+        setLiveAnalytics(analytics || []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -64,6 +69,26 @@ export default function StrategyRegistryPage() {
   return (
     <div className="space-y-8">
       <PageHeader title="Strategy Registry" subtitle="Repository of quantitative models and algorithmic parameters for review and deployment." />
+
+      {liveAnalytics.length > 0 && (
+        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 overflow-x-auto">
+          <h3 className="text-sm font-semibold text-text-primary mb-3">Live Autonomous Strategy Performance</h3>
+          <table className="nexa-table w-full text-sm">
+            <thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>Total P&L</th><th>Avg P&L</th></tr></thead>
+            <tbody>
+              {liveAnalytics.map(a => (
+                <tr key={a.strategy_name}>
+                  <td className="font-semibold">{a.strategy_name}</td>
+                  <td>{a.total_trades}</td>
+                  <td>{a.win_rate_pct}%</td>
+                  <td className={a.total_pnl >= 0 ? 'text-success' : 'text-danger'}>${a.total_pnl.toFixed(2)}</td>
+                  <td>${a.avg_pnl.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {strategies.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 text-center space-y-4">

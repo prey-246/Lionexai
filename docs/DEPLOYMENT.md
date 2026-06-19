@@ -63,6 +63,27 @@ docker-compose -f docker-compose.prod.yml ps
 ```
 You should see `nexa_backend_prod`, `nexa_frontend_prod`, `nexa_db_prod`, and `nexa_redis_prod` with a status of `Up`.
 
+**Post-Deploy Validation Setup:**
+
+```bash
+# Apply database migrations (including validation tables)
+docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+
+# Seed demo environment (optional)
+docker compose -f docker-compose.prod.yml exec backend python scripts/seed_demo_environment.py
+
+# Refresh validation snapshots
+docker compose -f docker-compose.prod.yml exec backend python -c \
+  "from app.services.validation_service import update_validation_snapshots_job; update_validation_snapshots_job()"
+```
+
+**Note:** Validation PDF chart embedding requires matplotlib in the backend image. Rebuild backend after pulling dependency changes:
+
+```bash
+docker compose -f docker-compose.prod.yml build backend frontend
+docker compose -f docker-compose.prod.yml up -d
+```
+
 ---
 
 ## 4. Nginx Reverse Proxy Setup

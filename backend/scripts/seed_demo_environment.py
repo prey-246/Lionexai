@@ -185,6 +185,7 @@ def _seed_trades(db, portfolios):
             exit_price=price * 1.02 if side == "SELL" else None,
             status="CLOSED" if side == "SELL" else "OPEN",
             pnl=pnl if side == "SELL" else None,
+            trade_source="SEED",
             created_at=created,
             closed_at=created + timedelta(hours=2) if side == "SELL" else None,
         ))

@@ -156,6 +156,22 @@ async def run_autonomous_execution():
                     risk_engine.evaluate_pre_trade(portfolio, mandate, order_details)
                 except RiskRejectionError as e:
                     logger.warning(f"[RISK REJECTION] Autonomous trade blocked for {portfolio.id}: {e}")
+                    db.add(domain.Trade(
+                        id=f"trd_{uuid.uuid4().hex[:12]}",
+                        portfolio_id=portfolio.pk_id,
+                        symbol=symbol,
+                        side=trade_side,
+                        quantity=trade_size,
+                        entry_price=current_price,
+                        status="REJECTED",
+                        pnl=0.0,
+                        exchange=execution_exchange,
+                        strategy_name=strategy.name,
+                        rejection_reason=str(e),
+                        trade_source="AUTONOMOUS",
+                        created_at=datetime.utcnow(),
+                        closed_at=datetime.utcnow(),
+                    ))
                     db.add(domain.AuditLog(
                         action_type="ORDER_REJECTED",
                         description=str(e),
@@ -232,6 +248,10 @@ async def run_autonomous_execution():
                     entry_price=fill_price,
                     status="OPEN" if exchange_order.side.upper() == "BUY" else "CLOSED",
                     pnl=0.0,
+                    exchange=execution_exchange,
+                    execution_latency_ms=latency_ms,
+                    strategy_name=strategy.name,
+                    trade_source="AUTONOMOUS",
                 )
 
                 if new_trade.side == "SELL" and open_positions:
@@ -261,11 +281,29 @@ async def run_autonomous_execution():
                         "exchange": execution_exchange,
                         "symbol": symbol,
                         "side": trade_side,
+                        "quantity": trade_size,
                         "reason": "EXCHANGE_ERROR",
+                        "strategy": strategy.name,
                         "error": str(e),
                     },
                 ))
-                db.rollback()
+                db.add(domain.Trade(
+                    id=f"trd_{uuid.uuid4().hex[:12]}",
+                    portfolio_id=portfolio.pk_id,
+                    symbol=symbol,
+                    side=trade_side,
+                    quantity=trade_size,
+                    entry_price=current_price,
+                    status="REJECTED",
+                    pnl=0.0,
+                    exchange=execution_exchange,
+                    strategy_name=strategy.name,
+                    rejection_reason=f"EXCHANGE_ERROR: {e}",
+                    trade_source="AUTONOMOUS",
+                    created_at=datetime.utcnow(),
+                    closed_at=datetime.utcnow(),
+                ))
+                db.commit()
 
     except Exception as e:
         logger.error(f"Failed to execute autonomous strategies: {e}")

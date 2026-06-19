@@ -65,16 +65,16 @@ export default function PortfolioDetailPage({ params }: { params: { id: string }
 
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricDisplay label="Total Equity" value={formatCurrency(portfolio.total_equity)} icon={Wallet} />
-        <MetricDisplay label="Total P&L" value={formatCurrency(stats.total_pnl)} trend={toFiniteNumber(stats.total_pnl) >= 0 ? 'up' : 'down'} icon={Activity} />
-        <MetricDisplay label="Win Rate" value={`${formatFixed(stats.win_rate_pct, 1)}%`} icon={TrendingUp} />
+        <MetricDisplay label="Total Equity" value={formatCurrency(toFiniteNumber(portfolio.total_equity))} icon={Wallet} />
+        <MetricDisplay label="Total P&L" value={formatCurrency(toFiniteNumber(stats.total_pnl))} trend={toFiniteNumber(stats.total_pnl) >= 0 ? 'up' : 'down'} icon={Activity} />
+        <MetricDisplay label="Win Rate" value={`${formatFixed(toFiniteNumber(stats.win_rate_pct), 1)}%`} icon={TrendingUp} />
         <MetricDisplay label="Total Trades" value={String(toFiniteNumber(stats.total_trades, 0))} icon={TrendingUp} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Risk Context */}
         <div className="lg:col-span-1">
-          <RiskContextDisplay riskContext={portfolio.risk_context ?? undefined} />
+          <RiskContextDisplay riskContext={portfolio.risk_context} />
         </div>
 
         {/* Right Column: Equity Curve */}
@@ -102,17 +102,15 @@ export default function PortfolioDetailPage({ params }: { params: { id: string }
             <tbody className="divide-y divide-border-secondary">
               {trades.slice(0, 10).map(trade => {
                 const pnl = trade.pnl;
-                const hasPnl = pnl != null && Number.isFinite(Number(pnl));
+                const hasPnl = pnl != null;
                 return (
                 <tr key={trade.id}>
                   <td className="px-6 py-4 font-mono text-primary-teal">{trade.symbol}</td>
                   <td className={`px-6 py-4 font-semibold ${trade.side === 'BUY' ? 'text-success' : 'text-danger'}`}>{trade.side}</td>
-                  <td className="px-6 py-4 font-mono">{trade.size != null ? trade.size : '—'}</td>
-                  <td className="px-6 py-4 font-mono">
-                    {trade.entry_price != null ? formatCurrency(trade.entry_price) : '—'}
-                  </td>
+                  <td className="px-6 py-4 font-mono">{formatFixed(trade.size, 4, '—')}</td>
+                  <td className="px-6 py-4 font-mono">{formatCurrency(trade.entry_price, '—')}</td>
                   <td className={`px-6 py-4 font-mono ${!hasPnl ? 'text-text-secondary' : toFiniteNumber(pnl) >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {hasPnl ? formatCurrency(pnl) : '—'}
+                    {formatCurrency(pnl, '—')}
                   </td>
                   <td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-gray-700 text-gray-300">{trade.status}</span></td>
                 </tr>

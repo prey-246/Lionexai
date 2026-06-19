@@ -90,7 +90,12 @@ export interface Trade {
   entry_price: number;
   exit_price?: number;
   status: 'OPEN' | 'CLOSED' | 'REJECTED';
-  pnl: number;
+  pnl: number | null;
+  exchange?: string | null;
+  execution_latency_ms?: number | null;
+  strategy_name?: string | null;
+  rejection_reason?: string | null;
+  trade_source?: string | null;
   created_at: string;
   closed_at?: string;
 }

@@ -1,9 +1,10 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Dict, Any
 
 from sqlalchemy import (
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -119,8 +120,13 @@ class Trade(Base):
     quantity: Mapped[float] = mapped_column(Float)
     entry_price: Mapped[float] = mapped_column(Float)
     exit_price: Mapped[float] = mapped_column(Float, nullable=True)
-    status: Mapped[str] = mapped_column(String, default="OPEN")  # 'OPEN', 'CLOSED'
+    status: Mapped[str] = mapped_column(String, default="OPEN")  # OPEN, CLOSED, REJECTED
     pnl: Mapped[float] = mapped_column(Float, nullable=True)
+    exchange: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    execution_latency_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    strategy_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    trade_source: Mapped[str] = mapped_column(String, default="MANUAL", index=True)  # AUTONOMOUS, MANUAL, SEED
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     closed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     portfolio: Mapped["Portfolio"] = relationship("Portfolio", foreign_keys=[portfolio_id], back_populates="trades")
@@ -163,6 +169,82 @@ class Report(Base):
     performance_metrics: Mapped[Dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     portfolio: Mapped["Portfolio"] = relationship("Portfolio", foreign_keys=[portfolio_id], back_populates="reports")
+
+class ValidationSnapshot(Base):
+    __tablename__ = "validation_snapshots"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    snapshot_key: Mapped[str] = mapped_column(String, unique=True, index=True)
+    snapshot_type: Mapped[str] = mapped_column(String, index=True)  # GLOBAL, PORTFOLIO, STRATEGY
+    period: Mapped[str] = mapped_column(String, index=True)
+    scope_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+
+    total_trades: Mapped[int] = mapped_column(Integer, default=0)
+    total_orders: Mapped[int] = mapped_column(Integer, default=0)
+    filled_orders: Mapped[int] = mapped_column(Integer, default=0)
+    rejected_orders: Mapped[int] = mapped_column(Integer, default=0)
+    best_portfolio: Mapped[str | None] = mapped_column(String, nullable=True)
+    worst_portfolio: Mapped[str | None] = mapped_column(String, nullable=True)
+    best_strategy: Mapped[str | None] = mapped_column(String, nullable=True)
+    worst_strategy: Mapped[str | None] = mapped_column(String, nullable=True)
+    exchange_distribution: Mapped[Dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    winning_trades: Mapped[int] = mapped_column(Integer, default=0)
+    losing_trades: Mapped[int] = mapped_column(Integer, default=0)
+    win_rate_pct: Mapped[float] = mapped_column(Float, default=0.0)
+
+    total_pnl: Mapped[float] = mapped_column(Float, default=0.0)
+    profit_factor: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sharpe_ratio: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_drawdown_pct: Mapped[float] = mapped_column(Float, default=0.0)
+
+    avg_return_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    largest_win: Mapped[float] = mapped_column(Float, default=0.0)
+    largest_loss: Mapped[float] = mapped_column(Float, default=0.0)
+
+    avg_latency_ms: Mapped[float] = mapped_column(Float, default=0.0)
+    fill_rate_pct: Mapped[float] = mapped_column(Float, default=0.0)
+
+    chart_data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+
+
+class ValidationSnapshotHistory(Base):
+    """Append-only daily archive of validation snapshots for time-series analysis."""
+    __tablename__ = "validation_snapshot_history"
+    pk_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    archive_date: Mapped[date] = mapped_column(Date, index=True)
+    snapshot_key: Mapped[str] = mapped_column(String, index=True)
+    snapshot_type: Mapped[str] = mapped_column(String, index=True)
+    period: Mapped[str] = mapped_column(String, index=True)
+    scope_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+
+    total_trades: Mapped[int] = mapped_column(Integer, default=0)
+    total_orders: Mapped[int] = mapped_column(Integer, default=0)
+    filled_orders: Mapped[int] = mapped_column(Integer, default=0)
+    rejected_orders: Mapped[int] = mapped_column(Integer, default=0)
+    best_portfolio: Mapped[str | None] = mapped_column(String, nullable=True)
+    worst_portfolio: Mapped[str | None] = mapped_column(String, nullable=True)
+    best_strategy: Mapped[str | None] = mapped_column(String, nullable=True)
+    worst_strategy: Mapped[str | None] = mapped_column(String, nullable=True)
+    exchange_distribution: Mapped[Dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+
+    winning_trades: Mapped[int] = mapped_column(Integer, default=0)
+    losing_trades: Mapped[int] = mapped_column(Integer, default=0)
+    win_rate_pct: Mapped[float] = mapped_column(Float, default=0.0)
+
+    total_pnl: Mapped[float] = mapped_column(Float, default=0.0)
+    profit_factor: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sharpe_ratio: Mapped[float | None] = mapped_column(Float, nullable=True)
+    max_drawdown_pct: Mapped[float] = mapped_column(Float, default=0.0)
+
+    avg_return_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    largest_win: Mapped[float] = mapped_column(Float, default=0.0)
+    largest_loss: Mapped[float] = mapped_column(Float, default=0.0)
+
+    avg_latency_ms: Mapped[float] = mapped_column(Float, default=0.0)
+    fill_rate_pct: Mapped[float] = mapped_column(Float, default=0.0)
+
+    chart_data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
+    archived_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
 class AuditLog(Base):
     __tablename__ = "audit_logs"

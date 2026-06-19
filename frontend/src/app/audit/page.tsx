@@ -23,19 +23,24 @@ export default function AuditTrailPage() {
   const [totalLogs, setTotalLogs] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterType, setFilterType] = useState('');
+  const [search, setSearch] = useState('');
+  const [exchange, setExchange] = useState('');
   const logsPerPage = 20;
 
   useEffect(() => {
     setLoading(true);
     const offset = (currentPage - 1) * logsPerPage;
-    auditAPI.getLogs(filterType || undefined, logsPerPage, offset)
+    auditAPI.getLogs(filterType || undefined, logsPerPage, offset, {
+      search: search || undefined,
+      exchange: exchange || undefined,
+    })
       .then(data => {
         setLogs(data?.logs || []);
         setTotalLogs(data?.total || 0);
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
-  }, [currentPage, filterType]);
+  }, [currentPage, filterType, search, exchange]);
 
   const totalPages = Math.ceil(totalLogs / logsPerPage);
 
@@ -56,27 +61,33 @@ export default function AuditTrailPage() {
     <div className="space-y-8">
       <PageHeader title="Audit Trail" subtitle="An immutable log of all critical system events and user actions." />
       
-      <div className="flex justify-between items-center">
-        <div>
-          <label htmlFor="action-type-filter" className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted mr-2">Filter by Action:</label>
-          <select
-            id="action-type-filter"
-            value={filterType}
-            onChange={handleFilterChange}
-            className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px] focus:outline-none focus:border-primary-blue transition-colors"
-          >
-            <option value="">All Actions</option>
-            <option value="USER_LOGIN">User Login</option>
-            <option value="MANDATE_CREATE">Mandate Create</option>
-            <option value="MANDATE_UPDATE">Mandate Update</option>
-            <option value="REPORT_GENERATE">Report Generate</option>
-            <option value="RISK_REJECTION">Risk Rejection</option>
-            <option value="KILL_SWITCH_TRIGGERED">Kill Switch Triggered</option>
-            <option value="KILL_SWITCH_RESET">Kill Switch Reset</option>
-            <option value="SETTINGS_UPDATE">Settings Update</option>
-            <option value="STRATEGY_CREATE">Strategy Create</option>
-            <option value="STRATEGY_UPDATE">Strategy Update</option>
-          </select>
+      <div className="flex flex-wrap gap-4 justify-between items-end">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label htmlFor="action-type-filter" className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted block mb-1">Action</label>
+            <select id="action-type-filter" value={filterType} onChange={handleFilterChange} className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px]">
+              <option value="">All Actions</option>
+              <option value="AUTONOMOUS_TRADE_EXECUTED_BINANCE">Autonomous Binance</option>
+              <option value="AUTONOMOUS_TRADE_EXECUTED_BYBIT">Autonomous Bybit</option>
+              <option value="RISK_REJECTION">Risk Rejection</option>
+              <option value="ORDER_REJECTED">Order Rejected</option>
+              <option value="USER_LOGIN">User Login</option>
+              <option value="REPORT_GENERATE">Report Generate</option>
+              <option value="KILL_SWITCH_TRIGGERED">Kill Switch</option>
+            </select>
+          </div>
+          <div>
+            <label className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted block mb-1">Exchange</label>
+            <select value={exchange} onChange={e => { setExchange(e.target.value); setCurrentPage(1); }} className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px]">
+              <option value="">All</option>
+              <option value="binance">Binance</option>
+              <option value="bybit">Bybit</option>
+            </select>
+          </div>
+          <div>
+            <label className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted block mb-1">Search</label>
+            <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Description or action..." className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px] w-48" />
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-text-muted">
