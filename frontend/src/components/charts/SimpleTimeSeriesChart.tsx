@@ -9,7 +9,7 @@ interface ChartProps {
   lineColor?: string;
 }
 
-export function SimpleTimeSeriesChart({ data, lineColor = '#D4AF37' }: ChartProps) {
+export function SimpleTimeSeriesChart({ data, lineColor = '#CFA43B' }: ChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Area'> | null>(null);
@@ -19,24 +19,28 @@ export function SimpleTimeSeriesChart({ data, lineColor = '#D4AF37' }: ChartProp
 
     if (!chartRef.current) {
       chartRef.current = createChart(chartContainerRef.current, {
-        width: chartContainerRef.current.clientWidth,
-        height: 300,
+        autoSize: true,
+        height: 320,
         layout: {
           background: { color: 'transparent' },
-          textColor: '#A0A0A0',
+          textColor: '#8A94A6',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
         },
         grid: {
-          vertLines: { color: '#2A2A2A' },
-          horzLines: { color: '#2A2A2A' },
+          vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+          horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        },
+        crosshair: {
+          vertLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
+          horzLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
         },
         timeScale: {
-          borderColor: '#4A4A4A',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
           timeVisible: true,
           secondsVisible: false,
         },
-        rightPriceScale: {
-          borderColor: '#4A4A4A',
-        },
+        rightPriceScale: { borderColor: 'rgba(255, 255, 255, 0.08)' },
       });
 
       seriesRef.current = chartRef.current.addAreaSeries({
@@ -44,6 +48,7 @@ export function SimpleTimeSeriesChart({ data, lineColor = '#D4AF37' }: ChartProp
         topColor: `${lineColor}40`,
         bottomColor: `${lineColor}00`,
         lineWidth: 2,
+        priceLineVisible: false,
       });
     }
 
@@ -57,5 +62,5 @@ export function SimpleTimeSeriesChart({ data, lineColor = '#D4AF37' }: ChartProp
 
   }, [data, lineColor]);
 
-  return <div ref={chartContainerRef} className="w-full h-[300px]" />;
+  return <div ref={chartContainerRef} className="w-full h-[320px]" />;
 }

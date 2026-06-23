@@ -73,7 +73,7 @@ export default function StressTestPage() {
     <div className="space-y-8 pb-10">
       <PageHeader 
         title="Risk Validation Suite" 
-        subtitle="Simulate and validate the NEXA Risk Engine's response to adverse market conditions and critical parameter breaches." 
+        subtitle="Simulate and validate the LionexAI Risk Engine's response to adverse market conditions and critical parameter breaches." 
       />
 
       <div className="flex items-start gap-3 bg-system-warning/10 border border-system-warning/20 p-4 rounded-[3px] mb-6">

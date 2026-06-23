@@ -9,19 +9,19 @@ interface RiskContextDisplayProps {
 }
 
 const RiskMetric = ({ label, value, icon: Icon, className = '' }: { label: string, value: string | number, icon: React.ElementType, className?: string }) => (
-  <div className="flex items-center justify-between p-3 bg-background-panel-2 rounded-md">
-    <div className="flex items-center gap-3">
-      <Icon className="w-5 h-5 text-text-muted" />
-      <span className="text-sm text-text-muted">{label}</span>
+  <div className="flex items-center justify-between gap-3 p-3 bg-background-panel border border-border-subtle rounded-lg hover:border-border-default transition-colors">
+    <div className="flex items-center gap-2.5 min-w-0">
+      <Icon className="w-4 h-4 text-text-muted shrink-0" />
+      <span className="text-[13px] text-text-muted truncate">{label}</span>
     </div>
-    <span className={`font-mono text-sm font-semibold ${className}`}>{value}</span>
+    <span className={`font-mono text-[14px] font-bold tabular-nums shrink-0 ${className || 'text-text-primary'}`}>{value}</span>
   </div>
 );
 
 export const RiskContextDisplay = ({ riskContext }: RiskContextDisplayProps) => {
   if (!riskContext || typeof riskContext !== 'object') {
     return (
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 text-sm text-text-muted">
+      <div className="card text-[13px] text-text-muted">
         Risk context unavailable for this portfolio.
       </div>
     );
@@ -44,8 +44,8 @@ export const RiskContextDisplay = ({ riskContext }: RiskContextDisplayProps) => 
   const drawdownColor = currentDrawdown > 0 ? (isDrawdownHigh ? 'text-danger' : 'text-warning') : 'text-success';
 
   return (
-    <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-      <h3 className="text-md font-semibold text-text-primary mb-4 flex items-center gap-2">
+    <div className="card">
+      <h3 className="text-[15px] font-semibold text-text-primary mb-4 flex items-center gap-2">
         <ShieldAlert className="w-5 h-5 text-primary-blue" />
         Live Risk Context
       </h3>

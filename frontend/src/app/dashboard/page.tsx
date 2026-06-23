@@ -107,9 +107,9 @@ export default function ClientDashboard() {
               else if (sentiment.score < -0.2) { tagClass = "red"; sentimentLabel = "BEARISH"; }
             }
             return (
-              <div key={symbol} className="card py-2 px-3 flex items-center gap-3 text-[11px] font-mono shadow-sm">
-                <span className="text-text-secondary">{symbol}</span>
-                <span className="text-primary-emerald font-bold text-[12px]">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <div key={symbol} className="card shrink-0 py-2.5 px-4 flex items-center gap-3 font-mono">
+                <span className="text-[12px] text-text-secondary font-semibold">{symbol}</span>
+                <span className="text-primary-emerald-bright font-bold text-[15px] tabular-nums">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 {sentiment && (
                   <span className={`tag ${tagClass}`} title={`AI Score: ${sentiment.score}`}>
                     {sentimentLabel}
@@ -148,12 +148,12 @@ export default function ClientDashboard() {
           <h3 className="sec-head">Top Performers</h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted flex items-center gap-2"><Star className="w-4 h-4 text-primary-gold"/>BEST PORTFOLIO</span>
-              <span className="font-mono text-[12px] font-bold text-primary-gold">{summary.best_performing_id || 'N/A'}</span>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-text-muted flex items-center gap-2"><Star className="w-4 h-4 text-primary-gold"/>BEST PORTFOLIO</span>
+              <span className="font-mono text-[14px] font-bold text-primary-gold-bright">{summary.best_performing_id || 'N/A'}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted flex items-center gap-2"><TrendingUp className="w-4 h-4 text-danger transform scale-y-[-1]"/>WORST PORTFOLIO</span>
-              <span className="font-mono text-[12px] font-bold text-danger">{summary.worst_performing_id || 'N/A'}</span>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-text-muted flex items-center gap-2"><TrendingUp className="w-4 h-4 text-danger transform scale-y-[-1]"/>WORST PORTFOLIO</span>
+              <span className="font-mono text-[14px] font-bold text-danger">{summary.worst_performing_id || 'N/A'}</span>
             </div>
           </div>
         </div>

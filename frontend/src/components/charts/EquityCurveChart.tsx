@@ -20,25 +20,28 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#D1D5DB',
+        textColor: '#8A94A6',
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 11,
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
         horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
       },
-      timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+      crosshair: {
+        vertLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
+        horzLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
       },
-      rightPriceScale: {
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-      },
+      timeScale: { borderColor: 'rgba(255, 255, 255, 0.08)' },
+      rightPriceScale: { borderColor: 'rgba(255, 255, 255, 0.08)' },
     });
 
     const areaSeries = chart.addAreaSeries({
-      lineColor: '#00C896',
-      topColor: 'rgba(0, 200, 150, 0.4)',
-      bottomColor: 'rgba(0, 200, 150, 0.0)',
+      lineColor: '#1ED6C0',
+      topColor: 'rgba(15, 168, 154, 0.35)',
+      bottomColor: 'rgba(15, 168, 154, 0.0)',
       lineWidth: 2,
+      priceLineVisible: false,
     });
 
     // Format, deduplicate, and sort the data for the chart:
@@ -87,8 +90,8 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
   }, [data]);
 
   if (!data || data.length === 0) {
-    return <div className="flex justify-center items-center h-[300px] w-full border border-border-default rounded-[3px] text-text-muted text-[13px] font-sans italic">No equity data available for this portfolio yet.</div>;
+    return <div className="flex justify-center items-center h-[340px] w-full card text-text-muted text-[13px] font-sans italic">No equity data available for this portfolio yet.</div>;
   }
 
-  return <div ref={chartContainerRef} className="w-full h-[300px] card gold p-4" />;
+  return <div ref={chartContainerRef} className="w-full h-[340px] card gold" />;
 }

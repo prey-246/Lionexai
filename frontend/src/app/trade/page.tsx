@@ -83,7 +83,7 @@ export default function ExecutionTerminal() {
     <div className="space-y-8">
       <PageHeader
         title="Execution Terminal"
-        subtitle="Simulated paper orders passing through the NEXA Risk Gatekeeper"
+        subtitle="Simulated paper orders passing through the LionexAI Risk Gatekeeper"
       />
 
       <div className="g212 items-start">
@@ -92,10 +92,10 @@ export default function ExecutionTerminal() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Asset</label>
+                <label className="block font-mono text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Asset</label>
                 <select 
-                  className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" 
-                  value={form.symbol} 
+                className="w-full rounded-lg px-3 py-2.5 font-sans text-[14px]" 
+                value={form.symbol} 
                   onChange={(e) => setForm({...form, symbol: e.target.value})}
                 >
                   <option value="BTC/USDT" className="bg-background-panel text-text-primary">BTC/USDT</option>
@@ -104,9 +104,9 @@ export default function ExecutionTerminal() {
                 </select>
               </div>
               <div>
-                <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Side</label>
+                <label className="block font-mono text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Side</label>
                 <select 
-                  className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
+                  className="w-full rounded-lg px-3 py-2.5 font-sans text-[14px]"
                   value={form.side} 
                   onChange={(e) => setForm({...form, side: e.target.value})}
                 >
@@ -117,12 +117,12 @@ export default function ExecutionTerminal() {
             </div>
 
             <div>
-              <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Quantity</label>
+              <label className="block font-mono text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Quantity</label>
               <input 
                 type="number" 
                 step="0.1" 
                 placeholder="0.00"
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
+                className="w-full rounded-lg px-3 py-2.5 font-sans text-[14px]"
                 value={form.size} 
                 onChange={(e) => {
                   const val = e.target.value;
@@ -132,12 +132,12 @@ export default function ExecutionTerminal() {
             </div>
 
             <div>
-              <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Stop Loss Price</label>
+              <label className="block font-mono text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Stop Loss Price</label>
               <input
                 type="number"
                 step="0.01"
                 placeholder="e.g. 64000.00"
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
+                className="w-full rounded-lg px-3 py-2.5 font-sans text-[14px]"
                 value={form.stop_loss}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -172,9 +172,9 @@ export default function ExecutionTerminal() {
           <h2 className="sec-head">Portfolio Status</h2>
           {allPortfolios.length > 1 && (
             <div className="card">
-              <label className="block font-mono text-[8.5px] font-bold text-text-muted uppercase tracking-wider mb-2">SELECT PORTFOLIO</label>
+              <label className="block font-mono text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2">SELECT PORTFOLIO</label>
               <select
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
+                className="w-full rounded-lg px-3 py-2.5 font-sans text-[14px]"
                 value={portfolio?.id || ''}
                 onChange={(e) => {
                   const selected = allPortfolios.find(p => p.id === e.target.value);
@@ -186,24 +186,24 @@ export default function ExecutionTerminal() {
             </div>
           )}
           <div className="card space-y-1 shadow-lg">
-            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Total Equity</p>
-            <p className="font-serif text-[26px] font-bold text-primary-gold">${portfolio ? portfolio.total_equity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted">Total Equity</p>
+            <p className="font-display text-[26px] font-bold text-primary-gold-bright tabular-nums">${portfolio ? portfolio.total_equity.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
           </div>
           <div className="card space-y-1 shadow-lg">
-            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Available Margin</p>
-            <p className="font-serif text-[26px] font-bold text-text-primary">${portfolio ? portfolio.available_margin.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted">Available Margin</p>
+            <p className="font-display text-[26px] font-bold text-text-primary tabular-nums">${portfolio ? portfolio.available_margin.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}</p>
           </div>
           <div className="card space-y-1 shadow-lg">
-            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Capital At Risk</p>
-            <p className="font-serif text-[26px] font-bold text-danger">${portfolio?.risk_context?.capital_at_risk?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted">Capital At Risk</p>
+            <p className="font-display text-[26px] font-bold text-danger tabular-nums">${portfolio?.risk_context?.capital_at_risk?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</p>
           </div>
           <div className="card space-y-1 shadow-lg">
-            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Current Drawdown</p>
-            <p className="font-serif text-[26px] font-bold text-danger">{portfolio?.current_drawdown_pct?.toFixed(2) || '0.00'}%</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted">Current Drawdown</p>
+            <p className="font-display text-[26px] font-bold text-danger tabular-nums">{portfolio?.current_drawdown_pct?.toFixed(2) || '0.00'}%</p>
           </div>
           <div className="card space-y-1 shadow-lg">
-            <p className="font-mono text-[8.5px] font-bold uppercase tracking-wider text-text-muted">Active Mandate</p>
-            <p className="font-mono text-[12px] text-primary-blue font-bold mt-1">{portfolio ? portfolio.mandate_id : 'N/A'}</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted">Active Mandate</p>
+            <p className="font-mono text-[14px] text-primary-blue font-bold mt-1">{portfolio ? portfolio.mandate_id : 'N/A'}</p>
           </div>
         </div>
       </div>

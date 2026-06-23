@@ -78,43 +78,46 @@ export default function PortfolioDetailPage({ params }: { params: { id: string }
         </div>
 
         {/* Right Column: Equity Curve */}
-        <div className="lg:col-span-2 bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-           <h3 className="text-md font-semibold text-text-primary mb-2">Equity Curve</h3>
+        <div className="lg:col-span-2 card">
+           <h3 className="text-[15px] font-semibold text-text-primary mb-3">Equity Curve</h3>
            <EquityCurveChart data={equityCurve} />
         </div>
       </div>
 
       {/* Recent Trades Table */}
       <div>
-        <h3 className="text-lg font-semibold text-text-primary mb-4">Recent Trades</h3>
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-background-panel-2">
+        <h3 className="sec-head">Recent Trades</h3>
+        <div className="card p-0 overflow-x-auto">
+          <table className="nexa-table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 font-medium text-text-muted">Symbol</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Side</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Size</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Entry Price</th>
-                <th className="px-6 py-3 font-medium text-text-muted">P&L</th>
-                <th className="px-6 py-3 font-medium text-text-muted">Status</th>
+                <th>Symbol</th>
+                <th>Side</th>
+                <th>Size</th>
+                <th>Entry Price</th>
+                <th>P&L</th>
+                <th>Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border-secondary">
+            <tbody>
               {trades.slice(0, 10).map(trade => {
                 const pnl = trade.pnl;
                 const hasPnl = pnl != null;
                 return (
                 <tr key={trade.id}>
-                  <td className="px-6 py-4 font-mono text-primary-teal">{trade.symbol}</td>
-                  <td className={`px-6 py-4 font-semibold ${trade.side === 'BUY' ? 'text-success' : 'text-danger'}`}>{trade.side}</td>
-                  <td className="px-6 py-4 font-mono">{formatFixed(trade.size, 4, '—')}</td>
-                  <td className="px-6 py-4 font-mono">{formatCurrency(trade.entry_price, '—')}</td>
-                  <td className={`px-6 py-4 font-mono ${!hasPnl ? 'text-text-secondary' : toFiniteNumber(pnl) >= 0 ? 'text-success' : 'text-danger'}`}>
+                  <td className="font-mono font-bold text-primary-emerald-bright">{trade.symbol}</td>
+                  <td><span className={`tag ${trade.side === 'BUY' ? 'teal' : 'red'}`}>{trade.side}</span></td>
+                  <td className="font-mono">{formatFixed(trade.size, 4, '—')}</td>
+                  <td className="font-mono">{formatCurrency(trade.entry_price, '—')}</td>
+                  <td className={`font-mono font-bold ${!hasPnl ? 'text-text-secondary' : toFiniteNumber(pnl) >= 0 ? 'text-success' : 'text-danger'}`}>
                     {formatCurrency(pnl, '—')}
                   </td>
-                  <td className="px-6 py-4"><span className="px-2 py-1 text-xs rounded-full bg-gray-700 text-gray-300">{trade.status}</span></td>
+                  <td><span className="tag grey">{trade.status}</span></td>
                 </tr>
               );})}
+              {trades.length === 0 && (
+                <tr><td colSpan={6} className="text-center py-8 text-text-muted">No trades yet for this portfolio.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

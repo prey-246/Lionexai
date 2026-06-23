@@ -66,75 +66,80 @@ export default function PortfoliosPage() {
       <PageHeader title="Portfolio Management" subtitle="Create and manage your trading portfolios" />
 
       {/* Create Portfolio Form */}
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
+      <div className="card">
+        <h3 className="text-[15px] font-semibold text-text-primary mb-5 flex items-center gap-2">
           <PlusCircle className="w-5 h-5 text-primary-blue" />
           Create New Portfolio
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Portfolio ID</label>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Portfolio ID</label>
             <input 
               type="text" 
               value={newPortfolioId}
               onChange={(e) => setNewPortfolioId(e.target.value)}
-              className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+              className="w-full px-3 py-2.5 text-[14px] rounded-lg"
               placeholder="e.g., my-algo-portfolio"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Risk Mandate</label>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Risk Mandate</label>
             <select
               value={selectedMandate}
               onChange={(e) => setSelectedMandate(e.target.value)}
-              className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+              className="w-full px-3 py-2.5 text-[14px] rounded-lg"
             >
               {mandates.map(m => <option key={m.pk_id} value={m.pk_id}>{m.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Initial Capital</label>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Initial Capital</label>
             <input 
               type="number" 
               value={initialEquity}
               onChange={(e) => setInitialEquity(Number(e.target.value))}
-              className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+              className="w-full px-3 py-2.5 text-[14px] rounded-lg"
               step={10000}
               min={1000}
             />
           </div>
-          <button onClick={handleCreate} className="w-full flex items-center justify-center gap-2 bg-primary-blue hover:bg-primary-blue/80 text-white font-semibold py-2 px-4 rounded-md transition-colors">
-            Create Portfolio
+          <button onClick={handleCreate} className="btn primary btn-full">
+            <PlusCircle className="w-4 h-4" /> Create Portfolio
           </button>
         </div>
       </div>
 
       {/* Portfolio List */}
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
-        <ul className="divide-y divide-border-secondary">
+      <div>
+        <h3 className="sec-head">All Portfolios</h3>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {portfolios.length > 0 ? portfolios.map(p => (
-            <li key={p.id}>
-              <Link href={`/portfolios/${p.id}`} className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors group">
+            <div key={p.id} className="card group relative flex flex-col gap-3">
+              <Link href={`/portfolios/${p.id}`} className="absolute inset-0 z-0" aria-label={`Open portfolio ${p.id}`} />
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid place-items-center w-9 h-9 rounded-lg bg-system-gBg border border-system-gBd text-primary-gold-bright">
+                    <Wallet className="w-4 h-4" />
+                  </span>
+                  <span className="font-mono text-[14px] font-bold text-primary-gold-bright group-hover:text-primary-emerald-bright transition-colors">{p.id}</span>
+                </div>
+                <button onClick={(e) => { e.preventDefault(); handleDelete(p.id); }} className="relative z-10 text-text-muted hover:text-danger transition-colors" aria-label={`Delete ${p.id}`}>
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <MandateBadge mandateId={p.mandate_id} />
+              <div className="flex items-end justify-between pt-2 border-t border-border-subtle">
                 <div>
-                  <p className="font-mono text-primary-gold group-hover:text-primary-teal">{p.id}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <MandateBadge mandateId={p.mandate_id} />
-                    <span className="text-xs text-text-muted">|</span>
-                    <p className="text-xs text-text-muted">Equity: ${p.total_equity.toLocaleString()}</p>
-                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-text-muted">Equity</div>
+                  <div className="font-display text-[22px] font-bold text-text-primary tabular-nums">${p.total_equity.toLocaleString()}</div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <button onClick={(e) => { e.preventDefault(); handleDelete(p.id); }} className="text-danger/50 hover:text-danger transition-colors z-10">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <ArrowRight className="w-4 h-4 text-text-muted group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
-            </li>
+                <ArrowRight className="w-4 h-4 text-text-muted group-hover:translate-x-1 group-hover:text-primary-emerald-bright transition-all" />
+              </div>
+            </div>
           )) : (
-            <li className="p-4 text-center text-text-muted">No portfolios found. Create one to get started.</li>
+            <div className="card text-center text-text-muted col-span-full py-10">No portfolios found. Create one to get started.</div>
           )}
-        </ul>
+        </div>
       </div>
     </div>
   );

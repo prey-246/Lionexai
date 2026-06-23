@@ -64,37 +64,57 @@ export default function DashboardPage() {
       <div className="g21">
         <div>
           <h3 className="sec-head">Recent System Activity</h3>
-          <div className="card shadow-lg p-6 space-y-4">
+          <div className="card space-y-1">
             {activity?.length > 0 ? activity.map(log => (
-              <div key={log.id} className="flex items-start gap-3 pb-3 border-b border-border-default last:border-0 last:pb-0">
-                <Clock className="w-4 h-4 text-text-muted mt-0.5 shrink-0" />
-                <div>
+              <div key={log.id} className="flex items-start gap-3 py-3 border-b border-border-subtle last:border-0">
+                <span className="grid place-items-center w-8 h-8 rounded-lg bg-background-panel border border-border-subtle text-text-muted shrink-0">
+                  <Clock className="w-4 h-4" />
+                </span>
+                <div className="min-w-0">
                   <p className="font-sans text-[13px] text-text-primary">{log.description}</p>
-                  <p className="font-mono text-[9px] text-text-muted mt-1">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                  <p className="font-mono text-[11px] text-text-muted mt-1">{new Date(log.timestamp).toLocaleTimeString()}</p>
                 </div>
               </div>
-            )) : <p className="font-sans text-[13px] text-text-muted text-center p-4">No recent activity.</p>}
+            )) : <p className="font-sans text-[13px] text-text-muted text-center py-8">No recent activity.</p>}
           </div>
         </div>
         <div>
           <h3 className="sec-head">Recent Trade Rejections</h3>
-          <div className="card red shadow-lg p-6 space-y-4">
+          <div className="card red space-y-1">
             {rejections?.length > 0 ? rejections.map(log => (
-              <div key={log.id} className="flex items-start gap-3 pb-3 border-b border-border-default last:border-0 last:pb-0">
-                <Ban className="w-4 h-4 text-danger mt-0.5 shrink-0" />
-                <div>
+              <div key={log.id} className="flex items-start gap-3 py-3 border-b border-border-subtle last:border-0">
+                <span className="grid place-items-center w-8 h-8 rounded-lg bg-system-rBg border border-system-rBd text-danger shrink-0">
+                  <Ban className="w-4 h-4" />
+                </span>
+                <div className="min-w-0">
                   <p className="font-sans text-[13px] text-danger">{log.description}</p>
-                  <p className="font-mono text-[9px] text-text-muted mt-1">{new Date(log.timestamp).toLocaleTimeString()}</p>
+                  <p className="font-mono text-[11px] text-text-muted mt-1">{new Date(log.timestamp).toLocaleTimeString()}</p>
                 </div>
               </div>
-            )) : <p className="font-sans text-[13px] text-text-muted text-center p-4">No rejections today.</p>}
+            )) : <p className="font-sans text-[13px] text-text-muted text-center py-8">No rejections today.</p>}
           </div>
         </div>
       </div>
 
       <div className="g21">
-        <div className="card blue p-6 text-center shadow-lg"><Server className="w-8 h-8 mx-auto text-primary-blue mb-3" /><h4 className="font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Trades Today</h4><p className="font-serif text-[26px] font-bold text-text-primary">{health?.trades_today || 0}</p></div>
-        <div className="card teal p-6 text-center shadow-lg"><Users className="w-8 h-8 mx-auto text-primary-emerald mb-3" /><h4 className="font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Registered Users</h4><p className="font-serif text-[26px] font-bold text-text-primary">{health?.active_users || 0}</p></div>
+        <div className="card blue flex items-center gap-5">
+          <span className="grid place-items-center w-14 h-14 rounded-xl bg-system-bBg border border-system-bBd text-primary-blue shrink-0">
+            <Server className="w-7 h-7" />
+          </span>
+          <div>
+            <h4 className="font-mono text-[11px] uppercase tracking-[0.12em] text-text-muted mb-1">Trades Today</h4>
+            <p className="font-display text-[32px] leading-none font-bold text-text-primary tabular-nums">{health?.trades_today || 0}</p>
+          </div>
+        </div>
+        <div className="card teal flex items-center gap-5">
+          <span className="grid place-items-center w-14 h-14 rounded-xl bg-system-tBg border border-system-tBd text-primary-emerald-bright shrink-0">
+            <Users className="w-7 h-7" />
+          </span>
+          <div>
+            <h4 className="font-mono text-[11px] uppercase tracking-[0.12em] text-text-muted mb-1">Registered Users</h4>
+            <p className="font-display text-[32px] leading-none font-bold text-text-primary tabular-nums">{health?.active_users || 0}</p>
+          </div>
+        </div>
       </div>
     </div>
   );

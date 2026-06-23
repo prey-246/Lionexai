@@ -10,7 +10,7 @@ interface ChartProps {
   negativeColor?: string;
 }
 
-export function HistogramChart({ data, positiveColor = '#22c55e', negativeColor = '#ef4444' }: ChartProps) {
+export function HistogramChart({ data, positiveColor = '#1ED6A6', negativeColor = '#FF4D67' }: ChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
@@ -20,24 +20,28 @@ export function HistogramChart({ data, positiveColor = '#22c55e', negativeColor 
 
     if (!chartRef.current) {
       chartRef.current = createChart(chartContainerRef.current, {
-        width: chartContainerRef.current.clientWidth,
-        height: 300,
+        autoSize: true,
+        height: 320,
         layout: {
           background: { color: 'transparent' },
-          textColor: '#A0A0A0',
+          textColor: '#8A94A6',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
         },
         grid: {
-          vertLines: { color: '#2A2A2A' },
-          horzLines: { color: '#2A2A2A' },
+          vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+          horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        },
+        crosshair: {
+          vertLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
+          horzLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
         },
         timeScale: {
-          borderColor: '#4A4A4A',
+          borderColor: 'rgba(255, 255, 255, 0.08)',
           timeVisible: true,
           secondsVisible: false,
         },
-        rightPriceScale: {
-          borderColor: '#4A4A4A',
-        },
+        rightPriceScale: { borderColor: 'rgba(255, 255, 255, 0.08)' },
       });
 
       seriesRef.current = chartRef.current.addHistogramSeries({
@@ -59,5 +63,5 @@ export function HistogramChart({ data, positiveColor = '#22c55e', negativeColor 
 
   }, [data, positiveColor, negativeColor]);
 
-  return <div ref={chartContainerRef} className="w-full h-[300px]" />;
+  return <div ref={chartContainerRef} className="w-full h-[320px]" />;
 }

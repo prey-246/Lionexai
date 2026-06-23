@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import Cookies from 'js-cookie';
 import { authAPI } from '@/lib/api';
 
 interface User {
@@ -22,8 +23,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     authAPI.getMe()
-      .then(setUser)
-      .catch(() => setUser(null)) // If token is invalid or expired, user is null
+      .then((profile) => {
+        setUser(profile);
+        Cookies.set('user_role', profile.role_tier, { expires: 1 });
+      })
+      .catch(() => setUser(null))
       .finally(() => setIsLoading(false));
   }, []);
 

@@ -157,7 +157,7 @@ export default function ExecutiveDashboard() {
       <div className="card grey mt-8 p-6 text-center">
         <h2 className="font-serif text-[24px] font-light text-text-primary mb-2">System Operational</h2>
         <p className="font-sans text-[13px] text-text-secondary">
-          The UnifyX NEXA ecosystem is fully synchronized. Autonomous engines are active, and risk governance is strictly enforced.
+          The LionexAI ecosystem is fully synchronized. Autonomous engines are active, and risk governance is strictly enforced.
         </p>
       </div>
     </div>

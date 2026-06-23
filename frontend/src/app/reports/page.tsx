@@ -124,7 +124,7 @@ export default function ReportsPage() {
                       <p className="text-xs text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
                     </div>
                     <button 
-                      onClick={() => reportsAPI.downloadReport(report.id, `NEXA_${selectedPortfolio}_${report.report_type}.pdf`)}
+                      onClick={() => reportsAPI.downloadReport(report.id, `LionexAI_${selectedPortfolio}_${report.report_type}.pdf`)}
                       className="p-2 bg-background-panel-2 hover:bg-primary-blue/20 text-primary-blue border border-border-secondary hover:border-primary-blue/30 rounded-md transition-colors"
                       title="Download PDF"
                     >

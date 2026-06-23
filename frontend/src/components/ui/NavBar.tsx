@@ -41,7 +41,7 @@ const NavBar = () => {
   return (
     <aside className="w-64 bg-background-panel-1 border-r border-border-secondary p-6 flex-col hidden md:flex">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-primary-gold font-serif">NEXA</h1>
+        <h1 className="text-2xl font-bold text-primary-gold font-serif">LionexAI</h1>
         <p className="text-xs text-text-muted font-mono">QUANT PLATFORM</p>
       </div>
       <nav className="flex flex-col space-y-2">

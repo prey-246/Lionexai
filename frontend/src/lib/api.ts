@@ -227,7 +227,7 @@ export const reportsAPI = {
     return apiFetch(url, { cache: 'no-store' });
   },
 
-  downloadReport: (reportId: string, filename: string = "NEXA_Report.pdf"): Promise<void> => {
+  downloadReport: (reportId: string, filename: string = "LionexAI_Report.pdf"): Promise<void> => {
     return downloadBlob(`/api/reports/${reportId}/download`, filename);
   }
 };
@@ -266,10 +266,10 @@ export const authAPI = {
     // Automatically set tokens and fetch role so the middleware knows who we are
     if (typeof window !== "undefined") {
       const Cookies = (await import("js-cookie")).default;
-      Cookies.set("auth_token", data.access_token);
+      Cookies.set("auth_token", data.access_token, { expires: 1 });
       try {
         const profile = await authAPI.getMe();
-        Cookies.set("user_role", profile.role_tier);
+        Cookies.set("user_role", profile.role_tier, { expires: 1 });
       } catch (e) {
         console.error("Could not fetch user role during login", e);
       }
@@ -286,7 +286,7 @@ export const authAPI = {
   },
 
   getMe: async (): Promise<{ id: string, email: string, role_tier: 'client' | 'operator' | 'risk_manager' | 'admin' }> => {
-    return apiFetch(`${API_BASE_URL}/api/users/me`);
+    return apiFetch(`${API_BASE_URL}/api/auth/me`);
   },
 
   logout: async (): Promise<void> => {

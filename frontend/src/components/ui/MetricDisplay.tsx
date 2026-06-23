@@ -1,4 +1,4 @@
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 
 interface MetricDisplayProps {
   label: string;
@@ -7,6 +7,7 @@ interface MetricDisplayProps {
   trendValue?: string;
   change?: number;
   icon?: LucideIcon;
+  accent?: 'gold' | 'teal' | 'red' | 'blue';
 }
 
 export function MetricDisplay({
@@ -15,7 +16,8 @@ export function MetricDisplay({
   trend,
   trendValue,
   change,
-  icon: Icon
+  icon: Icon,
+  accent,
 }: MetricDisplayProps) {
   const displayTrend = change !== undefined
     ? change > 0 ? 'up' : change < 0 ? 'down' : 'neutral'
@@ -25,21 +27,33 @@ export function MetricDisplay({
     ? `${change > 0 ? '+' : ''}${change.toFixed(2)}%`
     : trendValue;
 
+  const TrendIcon = displayTrend === 'up' ? ArrowUpRight : displayTrend === 'down' ? ArrowDownRight : Minus;
+  const trendColor = displayTrend === 'up'
+    ? 'text-primary-emerald-bright'
+    : displayTrend === 'down'
+      ? 'text-danger'
+      : 'text-text-muted';
+
   return (
-    <div className="card flex flex-col gap-1.5" style={{ padding: '14px 16px' }}>
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted">
+    <div className={`card ${accent ?? ''} group`}>
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted">
           {label}
         </span>
-        {Icon && <Icon className="w-4 h-4 text-text-muted" />}
+        {Icon && (
+          <span className="shrink-0 grid place-items-center w-8 h-8 rounded-lg bg-background-panel border border-border-subtle text-text-muted group-hover:text-primary-gold-bright transition-colors">
+            <Icon className="w-4 h-4" />
+          </span>
+        )}
       </div>
-      <div className="flex items-baseline gap-3">
-        <span className="font-serif text-[26px] font-bold text-text-primary">
+      <div className="mt-3 flex items-end justify-between gap-3 flex-wrap">
+        <span className="font-display font-bold text-[30px] leading-none text-text-primary tabular-nums tracking-tight">
           {value}
         </span>
         {displayTrend && displayTrendValue && (
-          <span className={`tag ${displayTrend === 'up' ? 'teal' : displayTrend === 'down' ? 'red' : 'grey'}`}>
-            {displayTrend === 'up' ? '↗' : displayTrend === 'down' ? '↘' : '→'} {displayTrendValue}
+          <span className={`inline-flex items-center gap-1 font-mono text-[12px] font-bold ${trendColor}`}>
+            <TrendIcon className="w-3.5 h-3.5" />
+            {displayTrendValue}
           </span>
         )}
       </div>

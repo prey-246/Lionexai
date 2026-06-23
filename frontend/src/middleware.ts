@@ -1,48 +1,96 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+type Role = 'client' | 'operator' | 'risk_manager' | 'admin';
+
+function normalizeRole(raw: string | undefined): Role {
+  if (raw === 'admin' || raw === 'operator' || raw === 'risk_manager' || raw === 'client') {
+    return raw;
+  }
+  return 'client';
+}
+
+function defaultRouteFor(role: Role): string {
+  switch (role) {
+    case 'admin':
+    case 'operator':
+      return '/';
+    case 'risk_manager':
+      return '/risk';
+    default:
+      return '/dashboard';
+  }
+}
+
+function pathMatches(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`);
+}
+
+/** Prefixes this role must not access (redirect to role home). */
+const ROLE_BLOCKED: Record<Role, string[]> = {
+  client: [
+    '/',
+    '/audit',
+    '/mandates',
+    '/executive',
+    '/treasury',
+    '/admin',
+    '/trade-explorer',
+    '/analytics',
+    '/execution-monitor',
+    '/execution-health',
+    '/validation',
+    '/stress-test',
+    '/strategies',
+    '/backtest',
+    '/reports',
+    '/risk',
+  ],
+  operator: ['/admin', '/executive', '/treasury'],
+  risk_manager: [
+    '/',
+    '/admin',
+    '/executive',
+    '/treasury',
+    '/dashboard',
+    '/funds',
+    '/lnx',
+    '/simulator',
+    '/trade',
+    '/backtest',
+    '/strategies',
+    '/execution-monitor',
+    '/execution-health',
+  ],
+  admin: [],
+};
+
+function isBlocked(role: Role, path: string): boolean {
+  return ROLE_BLOCKED[role].some((prefix) => pathMatches(path, prefix));
+}
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth_token')?.value;
-  const role = request.cookies.get('user_role')?.value || 'client'; // Default to client if not set
+  const role = normalizeRole(request.cookies.get('user_role')?.value);
   const path = request.nextUrl.pathname;
 
-  // 1. Define Public Paths
   const isPublicPath = path === '/login' || path === '/register';
 
-  // 2. Redirect Unauthenticated Users
   if (!token && !isPublicPath) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // 3. Smart Routing on Login
   if (token && isPublicPath) {
-    if (role === 'admin' || role === 'operator') {
-      return NextResponse.redirect(new URL('/', request.url)); // Route to Ops Dashboard
-    } else if (role === 'risk_manager') {
-      return NextResponse.redirect(new URL('/risk', request.url)); // Route to Risk Dashboard
-    } else {
-      return NextResponse.redirect(new URL('/dashboard', request.url)); // Route to Client Dashboard
-    }
+    return NextResponse.redirect(new URL(defaultRouteFor(role), request.url));
   }
 
-  // 4. RBAC Route Protection
-  if (token) {
-    // Clients cannot access System Ops (/), Mandates, or Audit pages
-    if (role === 'client' && (path === '/' || path.startsWith('/mandates') || path.startsWith('/audit'))) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-
-    // Risk Managers are restricted to Risk, Reports, Mandates, and Portfolios
-    if (role === 'risk_manager' && (path === '/' || path.startsWith('/audit') || path.startsWith('/trade'))) {
-      return NextResponse.redirect(new URL('/risk', request.url));
-    }
+  if (token && isBlocked(role, path)) {
+    return NextResponse.redirect(new URL(defaultRouteFor(role), request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|logo.png).*)'],
 };

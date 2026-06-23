@@ -24,16 +24,16 @@ export function PaginationControls({ totalItems, perPage }: PaginationControlsPr
   };
 
   return (
-    <div className="flex items-center justify-between mt-6">
-      <p className="text-sm text-text-muted">
-        Page {currentPage} of {totalPages}
+    <div className="flex items-center justify-between gap-4 mt-6 flex-wrap">
+      <p className="text-[13px] text-text-muted font-mono">
+        Page <span className="text-text-primary font-bold">{currentPage}</span> of <span className="text-text-primary font-bold">{totalPages || 1}</span>
       </p>
       <div className="flex items-center gap-2">
-        <button onClick={() => handleNav(currentPage - 1)} disabled={currentPage <= 1} className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border-secondary bg-background-panel-1 text-text-primary hover:bg-background-panel-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <button onClick={() => handleNav(currentPage - 1)} disabled={currentPage <= 1} className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-lg border border-border-default bg-background-panel text-text-secondary hover:bg-background-elevated hover:text-text-primary hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           <ChevronLeft className="w-4 h-4" />
           Previous
         </button>
-        <button onClick={() => handleNav(currentPage + 1)} disabled={currentPage >= totalPages} className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md border border-border-secondary bg-background-panel-1 text-text-primary hover:bg-background-panel-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <button onClick={() => handleNav(currentPage + 1)} disabled={currentPage >= totalPages} className="flex items-center gap-2 px-4 py-2 text-[13px] font-medium rounded-lg border border-border-default bg-background-panel text-text-secondary hover:bg-background-elevated hover:text-text-primary hover:border-border-strong disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           Next
           <ChevronRight className="w-4 h-4" />
         </button>

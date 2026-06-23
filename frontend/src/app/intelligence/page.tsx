@@ -65,7 +65,7 @@ export default function IntelligenceHubPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="NEXA Intelligence Hub" subtitle="AI-driven market sentiment and alternative data analysis." />
+      <PageHeader title="Intelligence Hub" subtitle="AI-driven market sentiment and alternative data analysis." />
 
       {/* AI Market Pulse Grid */}
       <div className="g3">

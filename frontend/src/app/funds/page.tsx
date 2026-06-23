@@ -71,7 +71,7 @@ export default function FundsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Lionex Funds" subtitle="Institutional-grade digital asset products powered by the NEXA Risk Engine." />
+      <PageHeader title="Lionex Funds" subtitle="Institutional-grade digital asset products powered by the LionexAI Risk Engine." />
       
       <div className="g3">
         {mandates.map(mandate => {

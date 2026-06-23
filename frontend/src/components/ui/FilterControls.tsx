@@ -33,7 +33,8 @@ export function FilterControls() {
   return (
     <select
       id="action-filter"
-      className="block w-full max-w-xs pl-3 pr-10 py-2 text-base border-border-secondary focus:outline-none focus:ring-primary-gold focus:border-primary-gold sm:text-sm rounded-md bg-background-panel-1 text-text-primary"
+      aria-label="Filter event types"
+      className="block w-full max-w-xs pl-3 pr-10 py-2.5 text-[13px] rounded-lg border border-border-default bg-background-panel text-text-primary"
       onChange={handleFilterChange}
       value={currentFilter}
     >

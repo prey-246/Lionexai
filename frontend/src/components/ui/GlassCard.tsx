@@ -14,22 +14,22 @@ interface GlassCardProps {
 
 export function GlassCard({ children, className, glowColor = 'none' }: GlassCardProps) {
   const glowMap = {
-    primary: 'before:bg-[#5EEAD4]/10',
-    accent: 'before:bg-[#22D3EE]/10',
-    danger: 'before:bg-[#EF4444]/10',
-    warning: 'before:bg-[#F59E0B]/10',
+    primary: 'before:bg-[#0FA89A]/12',
+    accent: 'before:bg-[#CFA43B]/12',
+    danger: 'before:bg-[#FF4D67]/12',
+    warning: 'before:bg-[#F5B23B]/12',
     none: '',
   };
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-2xl bg-[#0B1020]/80 backdrop-blur-xl",
-      "border border-white/[0.04] shadow-[0_8px_32px_0_rgba(0,0,0,0.36)]",
+      "relative overflow-hidden rounded-2xl bg-[#101216]/85 backdrop-blur-xl",
+      "border border-white/[0.06] shadow-[0_16px_44px_0_rgba(0,0,0,0.45)]",
       "before:absolute before:inset-0 before:-z-10 before:blur-2xl before:transition-all",
       glowMap[glowColor],
       className
     )}>
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.035] to-transparent pointer-events-none" />
       {children}
     </div>
   );

@@ -24,23 +24,23 @@ const MandateBadge = ({ mandateId }: MandateBadgeProps) => {
     return <span className="text-xs text-text-muted animate-pulse">Loading...</span>;
   }
 
-  let color = 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  let color = 'bg-background-panel text-text-muted border-border-default';
   let Icon = Shield;
 
   if (mandate.risk_tier === 'Low') {
-    color = 'bg-primary-teal/20 text-primary-teal border-primary-teal/30';
+    color = 'bg-system-tBg text-primary-emerald-bright border-system-tBd';
     Icon = Shield;
   } else if (mandate.risk_tier === 'Medium') {
-    color = 'bg-primary-blue/20 text-primary-blue border-primary-blue/30';
+    color = 'bg-system-bBg text-primary-blue border-system-bBd';
     Icon = Target;
   } else if (mandate.risk_tier === 'High') {
-    color = 'bg-primary-gold/20 text-primary-gold border-primary-gold/30';
+    color = 'bg-system-gBg text-primary-gold-bright border-system-gBd';
     Icon = Zap;
   }
 
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-semibold tracking-wide uppercase ${color}`}>
-      <Icon className="w-3 h-3" />
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold tracking-wide uppercase ${color}`}>
+      <Icon className="w-3 h-3 shrink-0" />
       {mandate.name} ({mandate.risk_tier})
     </div>
   );
