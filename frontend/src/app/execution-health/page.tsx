@@ -61,7 +61,7 @@ export default function ExecutionHealthPage() {
       />
 
       <section>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3">Exchange Status</h3>
+        <h3 className="sec-head">Exchange Status</h3>
         <div className="g4">
           {(stats.exchanges || []).map((ex: any) => (
             <div key={ex.exchange_id} className="card grey p-4">
@@ -81,7 +81,7 @@ export default function ExecutionHealthPage() {
       </section>
 
       <section>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3">Order Statistics (Today)</h3>
+        <h3 className="sec-head">Order Statistics (Today)</h3>
         <div className="g4">
           <MetricDisplay label="Orders Submitted" value={(stats.orders_today?.submitted ?? 0).toString()} icon={Zap} />
           <MetricDisplay label="Orders Filled" value={(stats.orders_today?.filled ?? 0).toString()} icon={CheckCircle2} trend="up" />
@@ -91,7 +91,7 @@ export default function ExecutionHealthPage() {
       </section>
 
       <section>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3">Risk Statistics (Today)</h3>
+        <h3 className="sec-head">Risk Statistics (Today)</h3>
         <div className="g4">
           <MetricDisplay label="Risk-Protected Orders" value={(stats.risk_stats?.risk_rejections ?? 0).toString()} icon={Shield} />
           <MetricDisplay label="AI Rejections" value={(stats.risk_stats?.ai_rejections ?? 0).toString()} icon={AlertTriangle} />
@@ -101,7 +101,7 @@ export default function ExecutionHealthPage() {
       </section>
 
       <section>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3">System Metrics</h3>
+        <h3 className="sec-head">System Metrics</h3>
         <div className="g4">
           <MetricDisplay label="Avg Order Latency" value={`${stats.latency?.avg_order_latency_ms ?? stats.avg_placement_latency_ms} ms`} icon={Clock} />
           <MetricDisplay label="Fastest Fill" value={stats.latency?.fastest_fill_ms != null ? `${stats.latency.fastest_fill_ms} ms` : 'N/A'} icon={Timer} />
@@ -111,32 +111,35 @@ export default function ExecutionHealthPage() {
       </section>
 
       <section>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3">Recent Activity</h3>
-        <div className="card grey overflow-x-auto">
-          <table className="w-full text-[12px]">
+        <h3 className="sec-head">Recent Activity</h3>
+        <div className="card p-0 overflow-x-auto">
+          <table className="nexa-table">
             <thead>
-              <tr className="text-text-muted border-b border-border-subtle">
-                <th className="text-left p-3">Time</th>
-                <th className="text-left p-3">Exchange</th>
-                <th className="text-left p-3">Portfolio</th>
-                <th className="text-left p-3">Symbol</th>
-                <th className="text-left p-3">Action</th>
-                <th className="text-left p-3">Result</th>
-                <th className="text-left p-3">Latency</th>
+              <tr>
+                <th>Time</th>
+                <th>Exchange</th>
+                <th>Portfolio</th>
+                <th>Symbol</th>
+                <th>Action</th>
+                <th>Result</th>
+                <th>Latency</th>
               </tr>
             </thead>
             <tbody>
               {(stats.recent_activity || []).map((row: any, i: number) => (
-                <tr key={i} className="border-b border-border-subtle/50 hover:bg-background-panel/50">
-                  <td className="p-3">{new Date(row.timestamp).toLocaleString()}</td>
-                  <td className="p-3 capitalize">{row.exchange || '—'}</td>
-                  <td className="p-3">{row.portfolio || '—'}</td>
-                  <td className="p-3">{row.symbol || '—'}</td>
-                  <td className="p-3 font-mono text-[10px]">{row.action}</td>
-                  <td className="p-3">{row.result}</td>
-                  <td className="p-3">{row.latency_ms != null ? `${row.latency_ms} ms` : '—'}</td>
+                <tr key={i}>
+                  <td className="whitespace-nowrap font-mono">{new Date(row.timestamp).toLocaleString()}</td>
+                  <td className="capitalize">{row.exchange || '—'}</td>
+                  <td className="font-mono">{row.portfolio || '—'}</td>
+                  <td className="font-mono">{row.symbol || '—'}</td>
+                  <td className="font-mono text-[11px]">{row.action}</td>
+                  <td>{row.result}</td>
+                  <td className="font-mono">{row.latency_ms != null ? `${row.latency_ms} ms` : '—'}</td>
                 </tr>
               ))}
+              {(!stats.recent_activity || stats.recent_activity.length === 0) && (
+                <tr><td colSpan={7} className="text-center py-8 text-text-muted">No recent activity.</td></tr>
+              )}
             </tbody>
           </table>
         </div>

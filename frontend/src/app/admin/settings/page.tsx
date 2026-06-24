@@ -67,11 +67,11 @@ export default function AdminSettingsPage() {
           
           <div className="space-y-4">
             <div>
-              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Operating Environment</label>
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Operating Environment</label>
               <select 
                 value={form.environment_state}
                 onChange={(e) => setForm({ ...form, environment_state: e.target.value as any })}
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
+                className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
               >
                 <option value="PAPER">PAPER (Simulated Trading)</option>
                 <option value="BACKTEST">BACKTEST (Historical Engine)</option>
@@ -81,25 +81,25 @@ export default function AdminSettingsPage() {
               <p className="font-sans text-[11px] text-text-muted mt-2">Changes the UI state and environment banner across the entire platform.</p>
             </div>
             <div>
-              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Extreme Bearish Threshold (AI Score)</label>
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Extreme Bearish Threshold (AI Score)</label>
               <input 
                 type="number" 
                 value={form.extreme_bearish_threshold} 
                 onChange={(e) => setForm({ ...form, extreme_bearish_threshold: parseFloat(e.target.value) })}
                 step="0.1"
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
+                className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
               />
               <p className="font-sans text-[11px] text-text-muted mt-2">If the NLP engine scores an asset below this threshold, all BUY orders will be blocked by the Risk Engine.</p>
             </div>
             
             <div>
-              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Global Maximum Leverage (x)</label>
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Global Maximum Leverage (x)</label>
               <input 
                 type="number" 
                 value={form.global_max_leverage} 
                 onChange={(e) => setForm({ ...form, global_max_leverage: parseFloat(e.target.value) })}
                 step="0.5"
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
+                className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold"
               />
               <p className="font-sans text-[11px] text-text-muted mt-2">Absolute ceiling for leverage across all mandates. Individual mandates cannot exceed this value.</p>
             </div>
@@ -115,24 +115,24 @@ export default function AdminSettingsPage() {
           
           <div className="space-y-4">
             <div>
-              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Default Commission Rate (%)</label>
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Default Commission Rate (%)</label>
               <input 
                 type="number" 
                 value={form.default_commission_pct} 
                 onChange={(e) => setForm({ ...form, default_commission_pct: parseFloat(e.target.value) })}
                 step="0.01"
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-emerald"
+                className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-emerald"
               />
             </div>
             
             <div>
-              <label className="block font-mono text-[8.5px] uppercase tracking-wider text-text-muted mb-1.5">Default Slippage Impact (%)</label>
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Default Slippage Impact (%)</label>
               <input 
                 type="number" 
                 value={form.default_slippage_pct} 
                 onChange={(e) => setForm({ ...form, default_slippage_pct: parseFloat(e.target.value) })}
                 step="0.01"
-                className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-emerald"
+                className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-emerald"
               />
             </div>
           </div>

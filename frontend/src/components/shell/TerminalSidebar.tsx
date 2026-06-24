@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database, TrendingUp, ShieldCheck, Server, HeartPulse, Search, GitCompare, FileText, Menu, X } from 'lucide-react';
+import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database, TrendingUp, ShieldCheck, Server, HeartPulse, Search, GitCompare, FileText, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import clsx from 'clsx';
 import Cookies from 'js-cookie';
 import { useUser } from '@/contexts/UserContext';
@@ -19,6 +19,22 @@ export function TerminalSidebar() {
   const router = useRouter();
   const { user } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Restore the persisted collapsed state on mount
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem('lionex_sidebar_collapsed') === '1');
+    } catch { /* ignore */ }
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try { localStorage.setItem('lionex_sidebar_collapsed', next ? '1' : '0'); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   // Close the mobile drawer whenever the route changes
   useEffect(() => {
@@ -94,38 +110,62 @@ export function TerminalSidebar() {
     workspaceName = 'Admin Control';
   }
 
-  const SidebarContent = (
+  const renderSidebar = (isCollapsed: boolean, showCollapseToggle: boolean) => (
     <>
       {/* Brand */}
-      <div className="px-4 pt-5 pb-4 border-b border-border-subtle">
-        <Link href={role === 'client' ? '/dashboard' : '/'} className="flex items-center gap-2.5 group">
-          <img
-            src="/logo.png"
-            alt="LionexAI"
-            className="h-12 w-auto shrink-0 transition-transform duration-300 group-hover:scale-105"
-            style={{ filter: 'drop-shadow(0 0 10px rgba(207,164,59,0.35)) drop-shadow(0 0 18px rgba(15,168,154,0.22))' }}
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
-          <div className="leading-tight min-w-0">
-            <div className="font-display font-extrabold text-[17px] tracking-tight">
-              <span className="text-text-primary">Lionex</span><span className="text-gradient-gold">AI</span>
-            </div>
-            <div className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-text-muted truncate">
-              {workspaceName}
-            </div>
-          </div>
-        </Link>
-        <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-system-tBg border border-system-tBd px-2.5 py-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary-emerald-bright animate-pulse" />
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-primary-emerald-bright">
-            {ROLE_LABEL[role] ?? role}
-          </span>
+      <div className={clsx('pt-5 pb-4 border-b border-border-subtle', isCollapsed ? 'px-2' : 'px-4')}>
+        <div className={clsx('flex items-center', isCollapsed ? 'justify-center' : 'justify-between gap-2')}>
+          <Link href={role === 'client' ? '/dashboard' : '/'} className={clsx('flex items-center group min-w-0', isCollapsed ? '' : 'gap-2.5')} title="LionexAI">
+            <img
+              src="/logo.png"
+              alt="LionexAI"
+              className={clsx('w-auto shrink-0 transition-transform duration-300 group-hover:scale-105', isCollapsed ? 'h-9' : 'h-12')}
+              style={{ filter: 'drop-shadow(0 0 10px rgba(207,164,59,0.35)) drop-shadow(0 0 18px rgba(15,168,154,0.22))' }}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+            {!isCollapsed && (
+              <div className="leading-tight min-w-0">
+                <div className="font-display font-extrabold text-[17px] tracking-tight">
+                  <span className="text-text-primary">Lionex</span><span className="text-gradient-gold">AI</span>
+                </div>
+                <div className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-text-muted truncate">
+                  {workspaceName}
+                </div>
+              </div>
+            )}
+          </Link>
+          {showCollapseToggle && !isCollapsed && (
+            <button
+              onClick={toggleCollapsed}
+              aria-label="Collapse sidebar"
+              className="shrink-0 p-1.5 rounded-lg text-text-muted hover:bg-background-panel hover:text-text-primary transition-colors"
+            >
+              <PanelLeftClose className="w-[18px] h-[18px]" />
+            </button>
+          )}
         </div>
+        {showCollapseToggle && isCollapsed && (
+          <button
+            onClick={toggleCollapsed}
+            aria-label="Expand sidebar"
+            className="mt-3 w-full grid place-items-center p-2 rounded-lg text-text-muted hover:bg-background-panel hover:text-text-primary transition-colors"
+          >
+            <PanelLeftOpen className="w-[18px] h-[18px]" />
+          </button>
+        )}
+        {!isCollapsed && (
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-system-tBg border border-system-tBd px-2.5 py-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-emerald-bright animate-pulse" />
+            <span className="font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-primary-emerald-bright">
+              {ROLE_LABEL[role] ?? role}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
-        <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-text-muted px-3 pb-2">Navigation</div>
+      <nav className={clsx('flex-1 overflow-y-auto py-3 scrollbar-hide', isCollapsed ? 'px-2' : 'px-2')}>
+        {!isCollapsed && <div className="font-mono text-[9px] tracking-[0.18em] uppercase text-text-muted px-3 pb-2">Navigation</div>}
         <div className="flex flex-col gap-0.5">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -134,8 +174,10 @@ export function TerminalSidebar() {
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? 'page' : undefined}
+                title={isCollapsed ? item.label : undefined}
                 className={clsx(
-                  'group relative flex items-center gap-3 pl-3 pr-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-150',
+                  'group relative flex items-center rounded-lg text-[13px] font-medium transition-all duration-150',
+                  isCollapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
                   {
                     'text-primary-gold-bright bg-system-gBg': isActive,
                     'text-text-secondary hover:bg-background-panel hover:text-text-primary': !isActive,
@@ -146,7 +188,7 @@ export function TerminalSidebar() {
                   <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full bg-grad-gold" aria-hidden="true" />
                 )}
                 <item.icon className={clsx('w-[16px] h-[16px] shrink-0 transition-colors', isActive ? 'text-primary-gold-bright' : 'text-text-muted group-hover:text-text-primary')} />
-                <span className="truncate">{item.label}</span>
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
@@ -154,8 +196,8 @@ export function TerminalSidebar() {
       </nav>
 
       {/* Footer / user + logout */}
-      <div className="border-t border-border-subtle p-3">
-        {user?.email && (
+      <div className={clsx('border-t border-border-subtle', isCollapsed ? 'p-2' : 'p-3')}>
+        {!isCollapsed && user?.email && (
           <div className="px-2 pb-2 min-w-0">
             <div className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-text-muted">Signed in as</div>
             <div className="text-[12px] text-text-secondary truncate" title={user.email}>{user.email}</div>
@@ -163,10 +205,14 @@ export function TerminalSidebar() {
         )}
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-text-muted hover:bg-system-rBg hover:text-danger transition-colors"
+          title={isCollapsed ? 'Sign Out' : undefined}
+          className={clsx(
+            'w-full flex items-center rounded-lg text-[13px] font-medium text-text-muted hover:bg-system-rBg hover:text-danger transition-colors',
+            isCollapsed ? 'justify-center py-2.5' : 'gap-3 px-3 py-2.5'
+          )}
         >
           <LogOut className="w-[16px] h-[16px] shrink-0" />
-          <span>Sign Out</span>
+          {!isCollapsed && <span>Sign Out</span>}
         </button>
       </div>
     </>
@@ -210,13 +256,18 @@ export function TerminalSidebar() {
           >
             <X className="w-5 h-5" />
           </button>
-          {SidebarContent}
+          {renderSidebar(false, false)}
         </aside>
       </div>
 
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-[248px] shrink-0 bg-background-base border-r border-border-default flex-col h-full overflow-hidden">
-        {SidebarContent}
+      {/* Desktop sidebar (collapsible) */}
+      <aside
+        className={clsx(
+          'hidden md:flex shrink-0 bg-background-base border-r border-border-default flex-col h-full overflow-hidden transition-[width] duration-300 ease-out',
+          collapsed ? 'w-[72px]' : 'w-[248px]'
+        )}
+      >
+        {renderSidebar(collapsed, true)}
       </aside>
     </>
   );

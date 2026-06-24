@@ -144,24 +144,6 @@ def get_validation_report_pdf(period: str = "30D", db: Session = Depends(get_db)
     )
 
 
-@router.get("/report/pdf/weekly", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
-def get_weekly_validation_report_pdf(db: Session = Depends(get_db)):
-    pdf_bytes, filename = _render_validation_pdf(db, "7D")
-    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
-
-
-@router.get("/report/pdf/monthly", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
-def get_monthly_validation_report_pdf(db: Session = Depends(get_db)):
-    pdf_bytes, filename = _render_validation_pdf(db, "30D")
-    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
-
-
-@router.get("/report/pdf/30-day", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
-def get_30_day_validation_report_pdf(db: Session = Depends(get_db)):
-    pdf_bytes, filename = _render_validation_pdf(db, "30D")
-    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
-
-
 class ExchangeDistribution(BaseModel):
     binance: int = 0
     bybit: int = 0
@@ -203,36 +185,10 @@ class ValidationSnapshotResponse(BaseModel):
 
 
 def _snapshot_to_response(snapshot: domain.ValidationSnapshot) -> ValidationSnapshotResponse:
-    exchange_raw = snapshot.exchange_distribution or {}
-    return ValidationSnapshotResponse(
-        snapshot_key=snapshot.snapshot_key,
-        snapshot_type=snapshot.snapshot_type,
-        period=snapshot.period,
-        scope_id=snapshot.scope_id,
-        total_trades=snapshot.total_trades,
-        winning_trades=snapshot.winning_trades,
-        losing_trades=snapshot.losing_trades,
-        win_rate_pct=snapshot.win_rate_pct,
-        total_pnl=snapshot.total_pnl,
-        profit_factor=snapshot.profit_factor,
-        sharpe_ratio=snapshot.sharpe_ratio,
-        max_drawdown_pct=snapshot.max_drawdown_pct,
-        avg_return_pct=snapshot.avg_return_pct,
-        largest_win=snapshot.largest_win,
-        largest_loss=snapshot.largest_loss,
-        avg_latency_ms=snapshot.avg_latency_ms,
-        fill_rate_pct=snapshot.fill_rate_pct,
-        total_orders=snapshot.total_orders,
-        filled_orders=snapshot.filled_orders,
-        rejected_orders=snapshot.rejected_orders,
-        best_portfolio=snapshot.best_portfolio,
-        worst_portfolio=snapshot.worst_portfolio,
-        best_strategy=snapshot.best_strategy,
-        worst_strategy=snapshot.worst_strategy,
-        exchange_distribution=ExchangeDistribution(**exchange_raw) if exchange_raw else None,
-        chart_data=snapshot.chart_data or None,
-        updated_at=snapshot.updated_at,
-    )
+    # Use Pydantic's model_validate (from_orm in v1) to directly map the ORM object
+    # to the response model. This is cleaner and less error-prone.
+    # The `from_attributes=True` in the model's Config enables this.
+    return ValidationSnapshotResponse.model_validate(snapshot)
 
 @router.post("/snapshots/refresh", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
 def refresh_validation_snapshots(db: Session = Depends(get_db)):
@@ -333,10 +289,7 @@ def _history_to_response(row: domain.ValidationSnapshotHistory) -> ValidationHis
 
 
 def _computed_to_response(data: dict[str, Any]) -> ValidationSnapshotResponse:
-    raw_chart = data.get("chart_data") or {}
-    meta = raw_chart.get("meta", {})
-    chart_data = {k: v for k, v in raw_chart.items() if k != "meta"}
-    exchange_raw = meta.get("exchange_distribution") or {}
+    exchange_raw = data.get("exchange_distribution") or {}
     return ValidationSnapshotResponse(
         snapshot_key=data["snapshot_key"],
         snapshot_type=data["snapshot_type"],
@@ -355,15 +308,15 @@ def _computed_to_response(data: dict[str, Any]) -> ValidationSnapshotResponse:
         largest_loss=data["largest_loss"],
         avg_latency_ms=data["avg_latency_ms"],
         fill_rate_pct=data["fill_rate_pct"],
-        total_orders=meta.get("total_orders", 0),
-        filled_orders=meta.get("filled_orders", 0),
-        rejected_orders=meta.get("rejected_orders", 0),
-        best_portfolio=meta.get("best_portfolio"),
-        worst_portfolio=meta.get("worst_portfolio"),
-        best_strategy=meta.get("best_strategy"),
-        worst_strategy=meta.get("worst_strategy"),
+        total_orders=data.get("total_orders", 0),
+        filled_orders=data.get("filled_orders", 0),
+        rejected_orders=data.get("rejected_orders", 0),
+        best_portfolio=data.get("best_portfolio"),
+        worst_portfolio=data.get("worst_portfolio"),
+        best_strategy=data.get("best_strategy"),
+        worst_strategy=data.get("worst_strategy"),
         exchange_distribution=ExchangeDistribution(**exchange_raw) if exchange_raw else None,
-        chart_data=chart_data or None,
+        chart_data=data.get("chart_data") or None,
         updated_at=datetime.utcnow(),
     )
 

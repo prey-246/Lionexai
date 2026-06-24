@@ -3,3 +3,9 @@ node_modules
 
 # Ignore Next.js build artifacts and cache
 .next
+
+# pnpm-workspace.yaml is only used by local pnpm v10 to approve native builds.
+# The Docker image pins pnpm@9, which treats this file as a (broken) workspace
+# definition and fails `pnpm build` with "packages field missing or empty".
+# Keep it out of the build context so the container never sees it.
+pnpm-workspace.yaml

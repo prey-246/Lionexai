@@ -288,11 +288,10 @@ def _system_health_summary(db: Session, start_date: datetime | None, snapshot: d
     leverage_rejections = sum(1 for log in risk_logs if "leverage" in (log.description or "").lower())
     kill_switch_rejections = sum(1 for log in risk_logs if "kill switch" in (log.description or "").lower())
 
-    meta = (snapshot.chart_data or {}).get("meta", {})
-    exchange = meta.get("exchange_distribution") or {}
+    exchange = snapshot.exchange_distribution or {}
 
     return {
-        "total_orders": filled + rejected,
+        "total_orders": snapshot.total_orders,
         "filled_orders": filled,
         "rejected_orders": rejected,
         "fill_rate_pct": snapshot.fill_rate_pct,
@@ -308,9 +307,7 @@ def _system_health_summary(db: Session, start_date: datetime | None, snapshot: d
 
 
 def _snapshot_dict(snapshot: domain.ValidationSnapshot) -> dict[str, Any]:
-    raw_chart = snapshot.chart_data or {}
-    meta = raw_chart.get("meta", {})
-    return {
+    return { # type: ignore
         "total_pnl": snapshot.total_pnl,
         "win_rate_pct": snapshot.win_rate_pct,
         "profit_factor": snapshot.profit_factor,
@@ -325,10 +322,10 @@ def _snapshot_dict(snapshot: domain.ValidationSnapshot) -> dict[str, Any]:
         "avg_latency_ms": snapshot.avg_latency_ms,
         "fill_rate_pct": snapshot.fill_rate_pct,
         "updated_at": snapshot.updated_at.strftime("%Y-%m-%d %H:%M UTC") if snapshot.updated_at else "—",
-        "best_portfolio": meta.get("best_portfolio"),
-        "worst_portfolio": meta.get("worst_portfolio"),
-        "best_strategy": meta.get("best_strategy"),
-        "worst_strategy": meta.get("worst_strategy"),
+        "best_portfolio": snapshot.best_portfolio,
+        "worst_portfolio": snapshot.worst_portfolio,
+        "best_strategy": snapshot.best_strategy,
+        "worst_strategy": snapshot.worst_strategy,
     }
 
 
@@ -396,10 +393,8 @@ def build_validation_report_context(db: Session, period: str = "30D") -> dict[st
 
     start_date = _period_start(period_spec)
     closed_trades = _paper_trades_query(db, start_date, closed_only=True).all()
-    raw_chart = snapshot.chart_data or {}
-    meta = raw_chart.get("meta", {})
-    chart_data = {k: v for k, v in raw_chart.items() if k != "meta"}
-    exchange_meta = meta.get("exchange_distribution") or {}
+    chart_data = snapshot.chart_data or {}
+    exchange_meta = snapshot.exchange_distribution or {}
 
     trade_pnls = [float(t.pnl) for t in closed_trades if t.pnl is not None]
     charts = generate_validation_chart_images(chart_data)

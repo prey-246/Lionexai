@@ -58,7 +58,7 @@ export default function AnalyticsComparePage() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-semibold rounded-md capitalize ${tab === t ? 'bg-primary-gold text-background-dark' : 'bg-background-panel-2 text-text-secondary'}`}
+            className={`px-4 py-2 text-[13px] font-semibold rounded-lg border capitalize transition-colors ${tab === t ? 'bg-system-gBg border-system-gBd text-primary-gold-bright' : 'bg-background-panel border-border-default text-text-secondary hover:text-text-primary'}`}
           >
             {t}
           </button>
@@ -73,7 +73,7 @@ export default function AnalyticsComparePage() {
               <button
                 key={p.id}
                 onClick={() => togglePortfolio(p.id)}
-                className={`px-3 py-1.5 text-sm rounded-md border ${selectedPortfolios.includes(p.id) ? 'border-primary-gold bg-primary-gold/10 text-primary-gold' : 'border-border-secondary'}`}
+                className={`px-3 py-1.5 text-[13px] rounded-lg border transition-colors ${selectedPortfolios.includes(p.id) ? 'border-system-gBd bg-system-gBg text-primary-gold-bright' : 'border-border-default text-text-secondary hover:text-text-primary'}`}
               >
                 {p.id}
               </button>
@@ -89,7 +89,7 @@ export default function AnalyticsComparePage() {
                 <button
                   key={s.strategy_name}
                   onClick={() => toggleStrategy(s.strategy_name)}
-                  className={`px-3 py-1.5 text-sm rounded-md border ${selectedStrategies.includes(s.strategy_name) ? 'border-primary-gold bg-primary-gold/10 text-primary-gold' : 'border-border-secondary'}`}
+                  className={`px-3 py-1.5 text-[13px] rounded-lg border transition-colors ${selectedStrategies.includes(s.strategy_name) ? 'border-system-gBd bg-system-gBg text-primary-gold-bright' : 'border-border-default text-text-secondary hover:text-text-primary'}`}
                 >
                   {s.strategy_name}
                 </button>
@@ -108,8 +108,8 @@ export default function AnalyticsComparePage() {
 
       {portfolioResults.length >= 2 && tab === 'portfolios' && (
         <>
-          <div className="overflow-x-auto bg-background-panel-1 border border-border-secondary rounded-lg">
-            <table className="nexa-table w-full text-sm">
+          <div className="overflow-x-auto card p-0">
+            <table className="nexa-table w-full">
               <thead>
                 <tr>
                   <th>Portfolio</th><th>Equity</th><th>Trades</th><th>Win Rate</th><th>Total P&L</th><th>Drawdown</th>
@@ -118,7 +118,7 @@ export default function AnalyticsComparePage() {
               <tbody>
                 {portfolioResults.map(r => (
                   <tr key={r.portfolio_id}>
-                    <td className="font-semibold">{r.portfolio_id}</td>
+                    <td className="font-semibold font-mono text-primary-gold-bright">{r.portfolio_id}</td>
                     <td>{formatCurrency(r.total_equity)}</td>
                     <td>{r.total_trades}</td>
                     <td>{formatFixed(r.win_rate_pct, 1)}%</td>
@@ -130,8 +130,8 @@ export default function AnalyticsComparePage() {
             </table>
           </div>
           {portfolioResults.map(r => r.equity_curve.length >= 2 ? (
-            <div key={r.portfolio_id} className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-              <h3 className="text-sm font-semibold mb-2">{r.portfolio_id} Equity Curve</h3>
+            <div key={r.portfolio_id} className="card p-4">
+              <h3 className="text-[15px] font-semibold mb-3">{r.portfolio_id} Equity Curve</h3>
               <SimpleTimeSeriesChart
                 data={r.equity_curve.map(p => ({ time: Math.floor(new Date(p.timestamp).getTime() / 1000), value: p.equity }))}
               />
@@ -141,8 +141,8 @@ export default function AnalyticsComparePage() {
       )}
 
       {strategyResults.length >= 2 && tab === 'strategies' && (
-        <div className="overflow-x-auto bg-background-panel-1 border border-border-secondary rounded-lg">
-          <table className="nexa-table w-full text-sm">
+        <div className="overflow-x-auto card p-0">
+          <table className="nexa-table w-full">
             <thead>
               <tr>
                 <th>Strategy</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Total P&L</th><th>Avg P&L</th>
@@ -151,7 +151,7 @@ export default function AnalyticsComparePage() {
             <tbody>
               {strategyResults.map(r => (
                 <tr key={r.strategy_name}>
-                  <td className="font-semibold">{r.strategy_name}</td>
+                  <td className="font-semibold text-primary-gold-bright">{r.strategy_name}</td>
                   <td>{r.total_trades}</td>
                   <td>{r.winning_trades}</td>
                   <td>{r.losing_trades}</td>

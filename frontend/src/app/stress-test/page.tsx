@@ -76,8 +76,8 @@ export default function StressTestPage() {
         subtitle="Simulate and validate the LionexAI Risk Engine's response to adverse market conditions and critical parameter breaches." 
       />
 
-      <div className="flex items-start gap-3 bg-system-warning/10 border border-system-warning/20 p-4 rounded-[3px] mb-6">
-        <AlertTriangle className="w-5 h-5 text-primary-gold mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 bg-system-gBg border border-system-gBd p-4 rounded-xl mb-6">
+        <AlertTriangle className="w-5 h-5 text-primary-gold-bright mt-0.5 shrink-0" />
         <div>
           <h4 className="font-sans text-[13px] font-bold text-text-primary mb-1">Institutional Proof of Execution</h4>
           <p className="font-sans text-[12px] text-text-secondary leading-relaxed">
@@ -92,27 +92,27 @@ export default function StressTestPage() {
           const result = results[scenario.id];
           
           return (
-            <div key={scenario.id} className="card grey p-6 shadow-md border-l-4 border-l-primary-blue">
+            <div key={scenario.id} className="card p-6 shadow-md border-l-4 border-l-primary-gold">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="space-y-4 flex-1">
                   <div>
-                    <h3 className="font-serif text-[20px] text-text-primary mb-1">{scenario.title}</h3>
+                    <h3 className="font-display text-[20px] font-bold text-text-primary mb-1">{scenario.title}</h3>
                     <p className="font-sans text-[13px] text-text-secondary">{scenario.description}</p>
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-background-base p-3 rounded-[3px] border border-border-default">
-                      <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Trigger Event</span>
+                    <div className="bg-background-base p-3 rounded-lg border border-border-default">
+                      <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Trigger Event</span>
                       <span className="font-sans text-[13px] text-text-primary">{scenario.trigger}</span>
                     </div>
-                    <div className="bg-background-base p-3 rounded-[3px] border border-border-default">
-                      <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Expected Engine Response</span>
-                      <span className="font-sans text-[13px] text-primary-emerald">{scenario.expectedOutcome}</span>
+                    <div className="bg-background-base p-3 rounded-lg border border-border-default">
+                      <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Expected Engine Response</span>
+                      <span className="font-sans text-[13px] text-primary-emerald-bright">{scenario.expectedOutcome}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="shrink-0 flex flex-col items-center justify-center w-full md:w-48 space-y-3 bg-background-base p-4 rounded-[3px] border border-border-default">
+                <div className="shrink-0 flex flex-col items-center justify-center w-full md:w-48 space-y-3 bg-background-base p-4 rounded-lg border border-border-default">
                   <button 
                     onClick={() => runScenario(scenario.id)}
                     disabled={status === 'RUNNING' || status === 'PASSED'}
@@ -128,10 +128,10 @@ export default function StressTestPage() {
 
               {/* Simulated Output Terminal */}
               {result && (
-                <div className="mt-6 bg-[#0D1117] border border-[#1F2937] rounded-[3px] overflow-hidden">
-                  <div className="bg-[#1F2937] px-4 py-2 flex items-center gap-2">
+                <div className="mt-6 bg-background-base border border-border-default rounded-lg overflow-hidden">
+                  <div className="bg-background-panel px-4 py-2 flex items-center gap-2 border-b border-border-default">
                     <TerminalIcon className="w-4 h-4 text-text-muted" />
-                    <span className="font-mono text-[10px] text-text-muted uppercase tracking-wider">Engine Response</span>
+                    <span className="font-mono text-[11px] text-text-muted uppercase tracking-wider">Engine Response</span>
                   </div>
                   <div className="p-4 overflow-x-auto">
                     <pre className={`font-mono text-[11px] leading-relaxed ${result.passed ? 'text-primary-emerald' : 'text-danger'}`}>

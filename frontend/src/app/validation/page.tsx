@@ -105,7 +105,7 @@ export default function LongTermValidationPage() {
     }
     if (error || !snapshot) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 text-danger bg-background-panel-1 border border-border-secondary rounded-lg p-4">
+        <div className="flex flex-col items-center justify-center h-64 text-danger card p-4">
           <AlertTriangle className="w-12 h-12 mb-4" />
           <h2 className="text-xl font-semibold">Failed to load validation data</h2>
           <p className="text-sm text-center">{error || 'Could not fetch snapshot details.'}</p>
@@ -137,7 +137,7 @@ export default function LongTermValidationPage() {
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
+        <div className="card p-4">
           <h3 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
             <Activity className="w-4 h-4" /> Order Flow
           </h3>
@@ -157,7 +157,7 @@ export default function LongTermValidationPage() {
           </div>
         </div>
 
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
+        <div className="card p-4">
           <h3 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
             <Layers className="w-4 h-4" /> Best / Worst
           </h3>
@@ -181,7 +181,7 @@ export default function LongTermValidationPage() {
           </dl>
         </div>
 
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
+        <div className="card p-4">
           <h3 className="text-sm font-semibold text-text-secondary mb-3">Exchange Distribution</h3>
           {exchange ? (
             <div className="space-y-3">
@@ -216,31 +216,31 @@ export default function LongTermValidationPage() {
     if (!summary) return null;
 
     return (
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 mt-8">
-        <h3 className="text-md font-semibold text-text-primary mb-4">3-Day Execution Summary</h3>
+      <div className="card p-4 mt-8">
+        <h3 className="text-[15px] font-semibold text-text-primary mb-4">3-Day Execution Summary</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="nexa-table w-full">
             <thead>
-              <tr className="text-text-secondary border-b border-border-secondary">
-                <th className="text-left py-2 pr-4">Day</th>
-                <th className="text-right py-2 px-4">Trades Executed</th>
-                <th className="text-right py-2 px-4">Success Rate</th>
-                <th className="text-right py-2 pl-4">Risk Rejections</th>
+              <tr>
+                <th>Day</th>
+                <th className="text-right">Trades Executed</th>
+                <th className="text-right">Success Rate</th>
+                <th className="text-right">Risk Rejections</th>
               </tr>
             </thead>
             <tbody>
               {summary.daily_stats.map(stat => (
-                <tr key={stat.day} className="border-b border-border-secondary/50">
-                  <td className="py-2 pr-4">{stat.day}</td>
-                  <td className="text-right py-2 px-4">{stat.trades_executed}</td>
-                  <td className="text-right py-2 px-4">{formatFixed(stat.success_rate, 1)}%</td>
-                  <td className="text-right py-2 pl-4">{stat.risk_rejections}</td>
+                <tr key={stat.day}>
+                  <td className="font-mono">{stat.day}</td>
+                  <td className="text-right">{stat.trades_executed}</td>
+                  <td className="text-right">{formatFixed(stat.success_rate, 1)}%</td>
+                  <td className="text-right">{stat.risk_rejections}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 pt-4 border-t border-border-secondary text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 pt-4 border-t border-border-default text-sm">
           <div>
             <p className="text-text-secondary">Total Orders (3D)</p>
             <p className="font-semibold">{summary.aggregated.total_orders}</p>
@@ -279,62 +279,62 @@ export default function LongTermValidationPage() {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
         {pnlSeries && pnlSeries.length >= 2 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Cumulative P&L ({periodLabel})</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Cumulative P&L ({periodLabel})</h3>
             <SimpleTimeSeriesChart data={pnlSeries} />
           </div>
         ) : null}
         {daily_pnl && daily_pnl.length >= 1 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Daily P&L</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Daily P&L</h3>
             <HistogramChart data={daily_pnl} />
           </div>
         ) : null}
         {daily_trades && daily_trades.length >= 1 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Daily Trades</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Daily Trades</h3>
             <HistogramChart data={daily_trades} />
           </div>
         ) : null}
         {daily_returns && daily_returns.length >= 2 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Daily Returns (%)</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Daily Returns (%)</h3>
             <SimpleTimeSeriesChart data={daily_returns} />
           </div>
         ) : null}
         {rolling_win_rate && rolling_win_rate.length >= 2 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Rolling Win Rate (7D)</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Rolling Win Rate (7D)</h3>
             <SimpleTimeSeriesChart data={rolling_win_rate} lineColor="#22c55e" />
           </div>
         ) : null}
         {weekly_pnl && weekly_pnl.length >= 1 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Weekly P&L</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Weekly P&L</h3>
             <HistogramChart data={weekly_pnl} />
           </div>
         ) : null}
         {monthly_pnl && monthly_pnl.length >= 1 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Monthly P&L</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Monthly P&L</h3>
             <HistogramChart data={monthly_pnl} />
           </div>
         ) : null}
         {drawdown_series && drawdown_series.length >= 2 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Drawdown (%)</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Drawdown (%)</h3>
             <SimpleTimeSeriesChart data={drawdown_series} lineColor="#ef4444" />
           </div>
         ) : null}
         {rolling_drawdown && rolling_drawdown.length >= 2 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Rolling Drawdown (7D)</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Rolling Drawdown (7D)</h3>
             <SimpleTimeSeriesChart data={rolling_drawdown} lineColor="#f97316" />
           </div>
         ) : null}
         {historicalWinRate && historicalWinRate.series.length >= 2 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Historical Win Rate (Daily Archive)</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Historical Win Rate (Daily Archive)</h3>
             <SimpleTimeSeriesChart
               data={historicalWinRate.series.map(p => ({ time: p.time, value: p.value ?? 0 }))}
               lineColor="#22c55e"
@@ -342,8 +342,8 @@ export default function LongTermValidationPage() {
           </div>
         ) : null}
         {historicalDrawdown && historicalDrawdown.series.length >= 2 ? (
-          <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4">
-            <h3 className="text-md font-semibold text-text-primary mb-2">Historical Max Drawdown (Daily Archive)</h3>
+          <div className="card p-4">
+            <h3 className="text-[15px] font-semibold text-text-primary mb-3">Historical Max Drawdown (Daily Archive)</h3>
             <SimpleTimeSeriesChart
               data={historicalDrawdown.series.map(p => ({ time: p.time, value: p.value ?? 0 }))}
               lineColor="#ef4444"
@@ -365,7 +365,7 @@ export default function LongTermValidationPage() {
           <button
             onClick={() => handleDownloadPdf(selectedPeriod)}
             disabled={downloading || loading}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-primary-gold text-background-dark hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="btn gold flex items-center gap-2"
           >
             {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             PDF ({PERIOD_LABELS[selectedPeriod]})
@@ -373,14 +373,14 @@ export default function LongTermValidationPage() {
           <button
             onClick={() => handleDownloadPdf('7D')}
             disabled={downloading || loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-md bg-background-panel-2 text-text-secondary border border-border-secondary hover:bg-border-secondary disabled:opacity-50 transition-colors"
+            className="btn grey flex items-center gap-2"
           >
             Weekly PDF
           </button>
           <button
             onClick={() => handleDownloadPdf('30D')}
             disabled={downloading || loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-md bg-background-panel-2 text-text-secondary border border-border-secondary hover:bg-border-secondary disabled:opacity-50 transition-colors"
+            className="btn grey flex items-center gap-2"
           >
             Monthly PDF
           </button>
@@ -392,10 +392,10 @@ export default function LongTermValidationPage() {
           <button
             key={period}
             onClick={() => setSelectedPeriod(period)}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${
+            className={`px-4 py-2 text-[13px] font-semibold rounded-lg border transition-colors ${
               selectedPeriod === period
-                ? 'bg-primary-gold text-background-dark'
-                : 'bg-background-panel-2 text-text-secondary hover:bg-border-secondary'
+                ? 'bg-system-gBg border-system-gBd text-primary-gold-bright'
+                : 'bg-background-panel border-border-default text-text-secondary hover:bg-background-elevated hover:text-text-primary'
             }`}
           >
             {PERIOD_LABELS[period]}

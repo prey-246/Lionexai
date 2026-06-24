@@ -23,50 +23,53 @@ function defaultRouteFor(role: Role): string {
 }
 
 function pathMatches(path: string, prefix: string): boolean {
+  if (prefix === '/') return path === '/';
   return path === prefix || path.startsWith(`${prefix}/`);
 }
 
-/** Prefixes this role must not access (redirect to role home). */
-const ROLE_BLOCKED: Record<Role, string[]> = {
+/**
+ * Deny-by-default allow-list. Each role may ONLY reach the prefixes listed here,
+ * which mirror that role's sidebar navigation exactly. Any route not listed is
+ * redirected to the role's home, so new pages are private until explicitly granted.
+ * `admin` is granted full access and is handled as a special case below.
+ */
+const ROLE_ALLOWED: Record<Exclude<Role, 'admin'>, string[]> = {
   client: [
+    '/dashboard',
+    '/portfolios',
+    '/funds',
+    '/trade',
+    '/intelligence',
+    '/lnx',
+    '/simulator',
+  ],
+  operator: [
     '/',
     '/audit',
-    '/mandates',
-    '/executive',
-    '/treasury',
-    '/admin',
     '/trade-explorer',
     '/analytics',
+    '/backtest',
+    '/strategies',
     '/execution-monitor',
     '/execution-health',
     '/validation',
-    '/stress-test',
-    '/strategies',
-    '/backtest',
     '/reports',
-    '/risk',
+    '/intelligence',
   ],
-  operator: ['/admin', '/executive', '/treasury'],
   risk_manager: [
-    '/',
-    '/admin',
-    '/executive',
-    '/treasury',
-    '/dashboard',
-    '/funds',
-    '/lnx',
-    '/simulator',
-    '/trade',
-    '/backtest',
-    '/strategies',
-    '/execution-monitor',
-    '/execution-health',
+    '/risk',
+    '/mandates',
+    '/audit',
+    '/intelligence',
+    '/stress-test',
+    '/validation',
+    '/portfolios',
   ],
-  admin: [],
 };
 
-function isBlocked(role: Role, path: string): boolean {
-  return ROLE_BLOCKED[role].some((prefix) => pathMatches(path, prefix));
+function isAllowed(role: Role, path: string): boolean {
+  if (role === 'admin') return true;
+  return ROLE_ALLOWED[role].some((prefix) => pathMatches(path, prefix));
 }
 
 export function middleware(request: NextRequest) {
@@ -84,7 +87,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(defaultRouteFor(role), request.url));
   }
 
-  if (token && isBlocked(role, path)) {
+  if (token && !isAllowed(role, path)) {
     return NextResponse.redirect(new URL(defaultRouteFor(role), request.url));
   }
 

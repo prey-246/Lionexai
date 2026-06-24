@@ -63,17 +63,24 @@ export default function ExecutionMonitorPage() {
       chartRef.current = createChart(chartContainerRef.current, {
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#6B7280',
+          textColor: '#8A94A6',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
         },
-        grid: { vertLines: { color: '#1F2937' }, horzLines: { color: '#1F2937' } },
-        height: 150,
+        grid: { vertLines: { color: 'rgba(255, 255, 255, 0.04)' }, horzLines: { color: 'rgba(255, 255, 255, 0.05)' } },
+        height: 160,
         rightPriceScale: { borderVisible: false },
         timeScale: { borderVisible: false, timeVisible: true, secondsVisible: true },
+        crosshair: {
+          vertLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
+          horzLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
+        },
       });
 
       seriesRef.current = chartRef.current.addLineSeries({
-        color: '#D4AF37',
+        color: '#CFA43B',
         lineWidth: 2,
+        priceLineVisible: false,
       });
     }
 
@@ -168,53 +175,53 @@ export default function ExecutionMonitorPage() {
         </div>
 
         {/* Latency Chart */}
-        <div className="card grey p-5">
-          <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-4">Real-time API Latency (ms)</h3>
+        <div className="card p-5">
+          <h3 className="sec-head">Real-time API Latency (ms)</h3>
           <div ref={chartContainerRef} className="w-full" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Balances */}
-          <div className="lg:col-span-1 card grey p-5">
-            <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-4">{data.exchange_id.toUpperCase()} Testnet Balances</h3>
+          <div className="lg:col-span-1 card p-5">
+            <h3 className="sec-head">{data.exchange_id.toUpperCase()} Testnet Balances</h3>
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {balances.length > 0 ? balances.map((bal: any) => (
-                <div key={bal.asset} className="flex justify-between items-center text-sm border-b border-border-subtle pb-2">
+                <div key={bal.asset} className="flex justify-between items-center text-[13px] border-b border-border-subtle pb-2">
                   <span className="font-mono text-text-primary">{bal.asset}</span>
                   <span className="font-mono text-text-secondary">{(Number(bal.total) || 0).toFixed(6)}</span>
                 </div>
               )) : (
-                <p className="text-sm text-text-muted text-center py-4">No balances found.</p>
+                <p className="text-[13px] text-text-muted text-center py-4">No balances found.</p>
               )}
             </div>
           </div>
 
           {/* Open Orders */}
-          <div className="lg:col-span-2 card grey p-0">
-            <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted p-5 border-b border-border-default">Live Open Orders on {data.exchange_id.toUpperCase()}</h3>
+          <div className="lg:col-span-2 card p-0">
+            <h3 className="sec-head px-5 pt-5 pb-4 border-b border-border-default">Live Open Orders on {data.exchange_id.toUpperCase()}</h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="font-mono text-[9px] uppercase tracking-wider text-text-muted">
+              <table className="nexa-table">
+                <thead>
                   <tr>
-                    <th className="p-3">Timestamp</th>
-                    <th className="p-3">Symbol</th>
-                    <th className="p-3">Side</th>
-                    <th className="p-3">Amount</th>
-                    <th className="p-3">Price</th>
-                    <th className="p-3">Filled</th>
-                    <th className="p-3 text-right">Actions</th>
+                    <th>Timestamp</th>
+                    <th>Symbol</th>
+                    <th>Side</th>
+                    <th>Amount</th>
+                    <th>Price</th>
+                    <th>Filled</th>
+                    <th className="text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="font-sans text-[12px] text-text-secondary">
+                <tbody>
                   {data.open_orders.length > 0 ? data.open_orders.map((order: any) => (
-                    <tr key={order.id} className="border-t border-border-default hover:bg-background-panel">
-                      <td className="p-3 font-mono">{format(new Date(order.timestamp), 'HH:mm:ss.SSS')}</td>
-                      <td className="p-3 font-mono text-primary-gold">{order.symbol}</td>
-                      <td className={`p-3 font-bold ${order.side === 'buy' ? 'text-primary-emerald' : 'text-danger'}`}>{order.side.toUpperCase()}</td>
-                      <td className="p-3 font-mono">{order.amount}</td>
-                      <td className="p-3 font-mono">{order.price ? `$${order.price.toFixed(2)}` : 'Market'}</td>
-                      <td className="p-3 font-mono">{((order.filled / order.amount) * 100).toFixed(0)}%</td>
-                      <td className="p-3 text-right">
+                    <tr key={order.id}>
+                      <td className="font-mono whitespace-nowrap">{format(new Date(order.timestamp), 'HH:mm:ss.SSS')}</td>
+                      <td className="font-mono text-primary-gold-bright">{order.symbol}</td>
+                      <td className={`font-bold ${order.side === 'buy' ? 'text-primary-emerald' : 'text-danger'}`}>{order.side.toUpperCase()}</td>
+                      <td className="font-mono">{order.amount}</td>
+                      <td className="font-mono">{order.price ? `$${order.price.toFixed(2)}` : 'Market'}</td>
+                      <td className="font-mono">{((order.filled / order.amount) * 100).toFixed(0)}%</td>
+                      <td className="text-right">
                         <button 
                           onClick={() => handleCancelOrder(order.id, order.symbol)}
                           disabled={cancellingOrder === order.id}
@@ -239,33 +246,33 @@ export default function ExecutionMonitorPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Trade History */}
-            <div className="card grey p-0">
-                <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted p-5 border-b border-border-default">Recent Trade History on {data.exchange_id.toUpperCase()}</h3>
+            <div className="card p-0">
+                <h3 className="sec-head px-5 pt-5 pb-4 border-b border-border-default">Recent Trade History on {data.exchange_id.toUpperCase()}</h3>
                 <div className="overflow-x-auto max-h-96">
-                    <table className="w-full text-left">
-                        <thead className="font-mono text-[9px] uppercase tracking-wider text-text-muted">
+                    <table className="nexa-table">
+                        <thead>
                           <tr>
-                            <th className="p-3">Time</th>
-                            <th className="p-3">Symbol</th>
-                            <th className="p-3">Side</th>
-                            <th className="p-3">Price</th>
-                            <th className="p-3">Amount</th>
-                            <th className="p-3">Cost</th>
+                            <th>Time</th>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Price</th>
+                            <th>Amount</th>
+                            <th>Cost</th>
                           </tr>
                         </thead>
-                        <tbody className="font-sans text-[12px] text-text-secondary">
+                        <tbody>
                             {tradeHistory.length > 0 ? tradeHistory.map((trade: any) => (
-                                <tr key={trade.id} className="border-t border-border-default hover:bg-background-panel">
-                                  <td className="p-3 font-mono">{format(new Date(trade.timestamp), 'HH:mm:ss')}</td>
-                                  <td className="p-3 font-mono text-primary-gold">{trade.symbol}</td>
-                                  <td className={`p-3 font-bold ${trade.side === 'buy' ? 'text-primary-emerald' : 'text-danger'}`}>{trade.side.toUpperCase()}</td>
-                                  <td className="p-3 font-mono">${trade.price?.toFixed(2) ?? 'N/A'}</td>
-                                  <td className="p-3 font-mono">{trade.amount}</td>
-                                  <td className="p-3 font-mono">${trade.cost?.toFixed(2) ?? 'N/A'}</td>
+                                <tr key={trade.id}>
+                                  <td className="font-mono whitespace-nowrap">{format(new Date(trade.timestamp), 'HH:mm:ss')}</td>
+                                  <td className="font-mono text-primary-gold-bright">{trade.symbol}</td>
+                                  <td className={`font-bold ${trade.side === 'buy' ? 'text-primary-emerald' : 'text-danger'}`}>{trade.side.toUpperCase()}</td>
+                                  <td className="font-mono">${trade.price?.toFixed(2) ?? 'N/A'}</td>
+                                  <td className="font-mono">{trade.amount}</td>
+                                  <td className="font-mono">${trade.cost?.toFixed(2) ?? 'N/A'}</td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={6} className="text-center p-8 text-text-muted">No recent trades found.</td>
+                                    <td colSpan={6} className="text-center py-8 text-text-muted">No recent trades found.</td>
                                 </tr>
                             )}
                         </tbody>
@@ -274,29 +281,29 @@ export default function ExecutionMonitorPage() {
             </div>
 
             {/* Positions */}
-            <div className="card grey p-0">
-                <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted p-5 border-b border-border-default">Live Positions on {data.exchange_id.toUpperCase()}</h3>
+            <div className="card p-0">
+                <h3 className="sec-head px-5 pt-5 pb-4 border-b border-border-default">Live Positions on {data.exchange_id.toUpperCase()}</h3>
                 <div className="overflow-x-auto max-h-96">
-                    <table className="w-full text-left">
-                        <thead className="font-mono text-[9px] uppercase tracking-wider text-text-muted">
+                    <table className="nexa-table">
+                        <thead>
                           <tr>
-                            <th className="p-3">Symbol</th>
-                            <th className="p-3">Size</th>
-                            <th className="p-3">Entry Price</th>
-                            <th className="p-3">Unrealized PNL</th>
+                            <th>Symbol</th>
+                            <th>Size</th>
+                            <th>Entry Price</th>
+                            <th>Unrealized PNL</th>
                           </tr>
                         </thead>
-                        <tbody className="font-sans text-[12px] text-text-secondary">
+                        <tbody>
                             {positions.length > 0 ? positions.map((pos: any) => (
-                                <tr key={pos.symbol} className="border-t border-border-default hover:bg-background-panel">
-                                  <td className="p-3 font-mono text-primary-gold">{pos.symbol}</td>
-                                  <td className="p-3 font-mono">{pos.contracts}</td>
-                                  <td className="p-3 font-mono">${pos.entryPrice?.toFixed(2)}</td>
-                                  <td className={`p-3 font-mono ${pos.unrealizedPnl > 0 ? 'text-primary-emerald' : 'text-danger'}`}>{pos.unrealizedPnl?.toFixed(2)}</td>
+                                <tr key={pos.symbol}>
+                                  <td className="font-mono text-primary-gold-bright">{pos.symbol}</td>
+                                  <td className="font-mono">{pos.contracts}</td>
+                                  <td className="font-mono">${pos.entryPrice?.toFixed(2)}</td>
+                                  <td className={`font-mono ${pos.unrealizedPnl > 0 ? 'text-primary-emerald' : 'text-danger'}`}>{pos.unrealizedPnl?.toFixed(2)}</td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={4} className="text-center p-8 text-text-muted">No open positions found. (Note: Spot balances act as positions)</td>
+                                    <td colSpan={4} className="text-center py-8 text-text-muted">No open positions found. (Note: Spot balances act as positions)</td>
                                 </tr>
                             )}
                         </tbody>
@@ -318,7 +325,7 @@ export default function ExecutionMonitorPage() {
           <select 
             value={selectedExchange}
             onChange={(e) => setSelectedExchange(e.target.value)}
-            className="block w-full px-3 py-2 bg-background-base border border-border-default rounded-[3px] text-text-primary text-[14px] focus:outline-none focus:border-primary-gold"
+            className="block w-full px-3 py-2 bg-background-base border border-border-default rounded-lg text-text-primary text-[14px] focus:outline-none focus:border-primary-gold"
           >
             <option value="binance">Binance Testnet</option>
             <option value="bybit">Bybit Testnet</option>

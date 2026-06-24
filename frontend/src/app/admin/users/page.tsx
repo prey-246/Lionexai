@@ -74,7 +74,7 @@ export default function UserManagementPage() {
                       value={user.role_tier}
                       onChange={(e) => handleRoleChange(user.id, e.target.value)}
                       disabled={user.role_tier === 'admin'} // Protect admin role from self-demotion
-                      className="w-full border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px] focus:outline-none focus:border-primary-blue transition-colors disabled:opacity-50"
+                      className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base focus:outline-none focus:border-primary-gold transition-colors disabled:opacity-50"
                     >
                       <option value="client">Client</option>
                       <option value="operator">Operator</option>

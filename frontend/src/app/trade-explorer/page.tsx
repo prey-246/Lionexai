@@ -67,18 +67,18 @@ export default function TradeExplorerPage() {
         subtitle="Search and filter historical trades across portfolios, strategies, and exchanges."
       />
 
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="card p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div className="md:col-span-2 relative">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-text-muted" />
           <input
             placeholder="Search symbol, strategy, trade ID..."
-            className="w-full pl-9 pr-3 py-2 text-sm bg-background-panel-2 border border-border-secondary rounded-md"
+            className="w-full pl-9 pr-3 py-2 text-[13px] bg-background-base border border-border-default rounded-lg focus:outline-none focus:border-primary-gold"
             value={filters.search}
             onChange={e => { setFilters(f => ({ ...f, search: e.target.value })); setPage(1); }}
           />
         </div>
         <select
-          className="text-sm bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2"
+          className="text-[13px] bg-background-base border border-border-default rounded-lg px-3 py-2 focus:outline-none focus:border-primary-gold"
           value={filters.portfolio_id}
           onChange={e => { setFilters(f => ({ ...f, portfolio_id: e.target.value })); setPage(1); }}
         >
@@ -86,7 +86,7 @@ export default function TradeExplorerPage() {
           {portfolios.map(p => <option key={p.id} value={p.id}>{p.id}</option>)}
         </select>
         <select
-          className="text-sm bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2"
+          className="text-[13px] bg-background-base border border-border-default rounded-lg px-3 py-2 focus:outline-none focus:border-primary-gold"
           value={filters.trade_source}
           onChange={e => { setFilters(f => ({ ...f, trade_source: e.target.value })); setPage(1); }}
         >
@@ -97,18 +97,18 @@ export default function TradeExplorerPage() {
         </select>
         <input
           placeholder="Symbol"
-          className="text-sm bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2"
+          className="text-[13px] bg-background-base border border-border-default rounded-lg px-3 py-2 focus:outline-none focus:border-primary-gold"
           value={filters.symbol}
           onChange={e => { setFilters(f => ({ ...f, symbol: e.target.value })); setPage(1); }}
         />
         <input
           placeholder="Strategy"
-          className="text-sm bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2"
+          className="text-[13px] bg-background-base border border-border-default rounded-lg px-3 py-2 focus:outline-none focus:border-primary-gold"
           value={filters.strategy_name}
           onChange={e => { setFilters(f => ({ ...f, strategy_name: e.target.value })); setPage(1); }}
         />
         <select
-          className="text-sm bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2"
+          className="text-[13px] bg-background-base border border-border-default rounded-lg px-3 py-2 focus:outline-none focus:border-primary-gold"
           value={filters.exchange}
           onChange={e => { setFilters(f => ({ ...f, exchange: e.target.value })); setPage(1); }}
         >
@@ -117,7 +117,7 @@ export default function TradeExplorerPage() {
           <option value="bybit">Bybit</option>
         </select>
         <select
-          className="text-sm bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2"
+          className="text-[13px] bg-background-base border border-border-default rounded-lg px-3 py-2 focus:outline-none focus:border-primary-gold"
           value={filters.status}
           onChange={e => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1); }}
         >
@@ -140,8 +140,8 @@ export default function TradeExplorerPage() {
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary-gold" /></div>
       ) : (
-        <div className="overflow-x-auto bg-background-panel-1 border border-border-secondary rounded-lg">
-          <table className="nexa-table w-full text-sm">
+        <div className="overflow-x-auto card p-0">
+          <table className="nexa-table w-full">
             <thead>
               <tr>
                 <th>Time</th><th>Portfolio</th><th>Symbol</th><th>Side</th><th>Status</th>
@@ -155,9 +155,9 @@ export default function TradeExplorerPage() {
                 <tr key={t.id}>
                   <td className="font-mono whitespace-nowrap">{new Date(t.created_at).toLocaleString()}</td>
                   <td>{t.portfolio_id}</td>
-                  <td className="font-semibold">{t.symbol}</td>
-                  <td>{t.side}</td>
-                  <td>{t.status}</td>
+                  <td className="font-semibold font-mono text-primary-gold-bright">{t.symbol}</td>
+                  <td><span className={`tag ${t.side === 'BUY' ? 'teal' : t.side === 'SELL' ? 'red' : 'grey'}`}>{t.side}</span></td>
+                  <td><span className={`tag ${t.status === 'CLOSED' ? 'teal' : t.status === 'REJECTED' ? 'red' : 'gold'}`}>{t.status}</span></td>
                   <td>{t.trade_source}</td>
                   <td>{t.exchange ?? '—'}</td>
                   <td>{t.strategy_name ?? '—'}</td>

@@ -71,22 +71,22 @@ export default function ReportsPage() {
       {/* Controls */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
         <div className="md:col-span-1">
-          <label className="block text-xs font-medium text-text-muted mb-1">Select Portfolio</label>
+          <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Select Portfolio</label>
           <select
             value={selectedPortfolio}
             onChange={(e) => setSelectedPortfolio(e.target.value)}
-            className="w-full bg-background-panel-2 border border-border-secondary rounded-md px-3 py-2 text-sm focus:outline-none focus:border-primary-blue transition-colors"
+            className="w-full bg-background-base border border-border-default rounded-lg px-3 py-2.5 text-[14px] focus:outline-none focus:border-primary-gold transition-colors"
             disabled={loading}
           >
             {portfolios.map(p => <option key={p.id} value={p.id}>{p.id}</option>)}
           </select>
         </div>
         <div className="md:col-span-2 flex gap-4">
-          <button onClick={() => handleGenerateReport('WEEKLY')} disabled={generating || !selectedPortfolio} className="w-full flex items-center justify-center gap-2 bg-primary-blue/10 hover:bg-primary-blue/20 text-primary-blue border border-primary-blue/20 font-semibold py-2 px-4 rounded-md transition-colors disabled:opacity-50">
+          <button onClick={() => handleGenerateReport('WEEKLY')} disabled={generating || !selectedPortfolio} className="btn blue btn-full flex items-center justify-center gap-2">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
             Generate Weekly
           </button>
-          <button onClick={() => handleGenerateReport('MONTHLY')} disabled={generating || !selectedPortfolio} className="w-full flex items-center justify-center gap-2 bg-primary-teal/10 hover:bg-primary-teal/20 text-primary-teal border border-primary-teal/20 font-semibold py-2 px-4 rounded-md transition-colors disabled:opacity-50">
+          <button onClick={() => handleGenerateReport('MONTHLY')} disabled={generating || !selectedPortfolio} className="btn teal btn-full flex items-center justify-center gap-2">
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart2 className="w-4 h-4" />}
             Generate Monthly
           </button>
@@ -94,9 +94,9 @@ export default function ReportsPage() {
       </div>
 
       {/* Report List */}
-      <div className="bg-background-panel-1 border border-border-secondary rounded-lg">
-        <div className="p-4 border-b border-border-secondary">
-          <h3 className="text-lg font-semibold text-text-primary">Generated Reports</h3>
+      <div className="card p-0 overflow-hidden">
+        <div className="p-5 border-b border-border-default">
+          <h3 className="sec-head mb-0">Generated Reports</h3>
         </div>
         {loading && <div className="p-8 text-center text-text-muted">Loading reports...</div>}
         {!loading && reports.length === 0 && (
@@ -106,26 +106,31 @@ export default function ReportsPage() {
           </div>
         )}
         {!loading && reports.length > 0 && (
-          <ul className="divide-y divide-border-secondary">
+          <ul className="divide-y divide-border-subtle">
             {reports.map(report => (
-              <li key={report.id} className="p-4 hover:bg-white/5 transition-colors">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold text-text-primary">{report.report_type} Report</p>
-                    <p className="text-xs text-text-muted font-mono">
-                      {new Date(report.period_start).toLocaleDateString()} - {new Date(report.period_end).toLocaleDateString()}
-                    </p>
+              <li key={report.id} className="p-5 hover:bg-background-panel/60 transition-colors">
+                <div className="flex justify-between items-center gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-system-gBg border border-system-gBd shrink-0">
+                      <FileText className="w-5 h-5 text-primary-gold-bright" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-text-primary text-[15px]">{report.report_type} Report</p>
+                      <p className="text-[12px] text-text-muted font-mono">
+                        {new Date(report.period_start).toLocaleDateString()} - {new Date(report.period_end).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right flex items-center gap-4">
+                  <div className="text-right flex items-center gap-4 shrink-0">
                     <div>
-                      <p className={`font-mono font-semibold text-lg ${report.performance_metrics?.total_pnl >= 0 ? 'text-status-success' : 'text-status-danger'}`}>
+                      <p className={`font-mono font-bold text-[18px] ${report.performance_metrics?.total_pnl >= 0 ? 'text-success' : 'text-danger'}`}>
                         {report.performance_metrics?.total_pnl >= 0 ? '+' : ''}${report.performance_metrics?.total_pnl?.toLocaleString() ?? '0.00'}
                       </p>
-                      <p className="text-xs text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
+                      <p className="text-[12px] text-text-muted">{report.performance_metrics?.win_rate_pct ?? 0}% Win Rate</p>
                     </div>
                     <button 
                       onClick={() => reportsAPI.downloadReport(report.id, `LionexAI_${selectedPortfolio}_${report.report_type}.pdf`)}
-                      className="p-2 bg-background-panel-2 hover:bg-primary-blue/20 text-primary-blue border border-border-secondary hover:border-primary-blue/30 rounded-md transition-colors"
+                      className="p-2.5 bg-background-panel hover:bg-system-gBg text-primary-gold-bright border border-border-default hover:border-system-gBd rounded-lg transition-colors"
                       title="Download PDF"
                     >
                       <Download className="w-5 h-5" />

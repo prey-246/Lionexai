@@ -64,8 +64,8 @@ export default function AuditTrailPage() {
       <div className="flex flex-wrap gap-4 justify-between items-end">
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label htmlFor="action-type-filter" className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted block mb-1">Action</label>
-            <select id="action-type-filter" value={filterType} onChange={handleFilterChange} className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px]">
+            <label htmlFor="action-type-filter" className="font-mono text-[11px] uppercase tracking-wider text-text-muted block mb-1.5">Action</label>
+            <select id="action-type-filter" value={filterType} onChange={handleFilterChange} className="border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base focus:outline-none focus:border-primary-gold">
               <option value="">All Actions</option>
               <option value="AUTONOMOUS_TRADE_EXECUTED_BINANCE">Autonomous Binance</option>
               <option value="AUTONOMOUS_TRADE_EXECUTED_BYBIT">Autonomous Bybit</option>
@@ -77,16 +77,16 @@ export default function AuditTrailPage() {
             </select>
           </div>
           <div>
-            <label className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted block mb-1">Exchange</label>
-            <select value={exchange} onChange={e => { setExchange(e.target.value); setCurrentPage(1); }} className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px]">
+            <label className="font-mono text-[11px] uppercase tracking-wider text-text-muted block mb-1.5">Exchange</label>
+            <select value={exchange} onChange={e => { setExchange(e.target.value); setCurrentPage(1); }} className="border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base focus:outline-none focus:border-primary-gold">
               <option value="">All</option>
               <option value="binance">Binance</option>
               <option value="bybit">Bybit</option>
             </select>
           </div>
           <div>
-            <label className="font-mono text-[8.5px] uppercase tracking-wider text-text-muted block mb-1">Search</label>
-            <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Description or action..." className="border border-border-default rounded-[3px] px-3 py-1.5 font-sans text-[13px] w-48" />
+            <label className="font-mono text-[11px] uppercase tracking-wider text-text-muted block mb-1.5">Search</label>
+            <input value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Description or action..." className="border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] w-48 bg-background-base focus:outline-none focus:border-primary-gold" />
           </div>
         </div>
         <div className="flex items-center gap-4">

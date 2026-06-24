@@ -85,12 +85,12 @@ export default function FundsPage() {
             <div key={mandate.id} className={`card ${marketing.color} shadow-lg flex flex-col justify-between`}>
               <div>
                 <div className="flex items-center gap-3 mb-6 border-b border-border-default pb-4">
-                  <div className="p-3 bg-background-base rounded-[3px] border border-border-default">
+                  <div className="p-3 bg-background-base rounded-xl border border-border-default">
                     <Icon className={`w-6 h-6 ${iconColorClass}`} />
                   </div>
                   <div>
-                    <h3 className="font-serif text-[24px] font-bold text-text-primary leading-none">{marketing.name}</h3>
-                    <span className="font-mono text-[9px] text-text-muted uppercase tracking-wider mt-1 block">Powered by: {mandate.id}</span>
+                    <h3 className="font-display text-[22px] font-bold text-text-primary leading-tight">{marketing.name}</h3>
+                    <span className="font-mono text-[10px] text-text-muted uppercase tracking-wider mt-1 block">Powered by: {mandate.id}</span>
                   </div>
                 </div>
                 
@@ -129,16 +129,16 @@ export default function FundsPage() {
       {/* Allocation Modal Overlay */}
       {allocateModal.isOpen && allocateModal.mandate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-           <div className="card gold w-full max-w-lg shadow-2xl">
-              <h3 className="font-serif text-[24px] text-text-primary mb-2">Allocate Capital</h3>
-              <p className="font-sans text-[13px] text-text-secondary mb-6">You are creating a new portfolio governed by the <strong>{allocateModal.mandate.id}</strong> mandate.</p>
+           <div className="card gold w-full max-w-lg shadow-2xl animate-fade-in-up">
+              <h3 className="font-display text-[22px] font-bold text-text-primary mb-2">Allocate Capital</h3>
+              <p className="font-sans text-[13px] text-text-secondary mb-6">You are creating a new portfolio governed by the <strong className="text-primary-gold-bright">{allocateModal.mandate.id}</strong> mandate.</p>
               
               {!allocatedPortfolioId ? (
                 <>
                   <div className="space-y-4">
                     <div>
-                      <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Initial Capital Deposit ($)</label>
-                      <input type="number" step="10000" min="1000" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={allocateModal.amount} onChange={e => setAllocateModal({...allocateModal, amount: Number(e.target.value)})} />
+                      <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Initial Capital Deposit ($)</label>
+                      <input type="number" step="10000" min="1000" className="w-full rounded-lg px-3 py-2.5 font-sans text-[14px]" value={allocateModal.amount} onChange={e => setAllocateModal({...allocateModal, amount: Number(e.target.value)})} />
                     </div>
                   </div>
                   <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-border-default">
@@ -148,11 +148,11 @@ export default function FundsPage() {
                 </>
               ) : (
                 <div className="text-center py-6">
-                  <div className="w-16 h-16 bg-system-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Shield className="w-8 h-8 text-primary-emerald" />
+                  <div className="w-16 h-16 bg-system-tBg border border-system-tBd rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Shield className="w-8 h-8 text-primary-emerald-bright" />
                   </div>
                   <h4 className="text-[18px] text-text-primary font-bold mb-2">Capital Deployed Successfully</h4>
-                  <p className="text-[13px] text-text-secondary mb-6">New Portfolio <span className="font-mono text-primary-gold">{allocatedPortfolioId}</span> has been created and funded.</p>
+                  <p className="text-[13px] text-text-secondary mb-6">New Portfolio <span className="font-mono text-primary-gold-bright">{allocatedPortfolioId}</span> has been created and funded.</p>
                   <div className="flex justify-center gap-3">
                     <button onClick={closeAllocateModal} className="btn grey">Close</button>
                     <Link href={`/portfolios`} className="btn gold">View Portfolio</Link>

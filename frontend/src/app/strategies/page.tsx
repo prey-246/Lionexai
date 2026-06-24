@@ -71,9 +71,9 @@ export default function StrategyRegistryPage() {
       <PageHeader title="Strategy Registry" subtitle="Repository of quantitative models and algorithmic parameters for review and deployment." />
 
       {liveAnalytics.length > 0 && (
-        <div className="bg-background-panel-1 border border-border-secondary rounded-lg p-4 overflow-x-auto">
-          <h3 className="text-sm font-semibold text-text-primary mb-3">Live Autonomous Strategy Performance</h3>
-          <table className="nexa-table w-full text-sm">
+        <div className="card p-0 overflow-x-auto">
+          <h3 className="sec-head px-5 pt-5 pb-4 border-b border-border-default">Live Autonomous Strategy Performance</h3>
+          <table className="nexa-table w-full">
             <thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>Total P&L</th><th>Avg P&L</th></tr></thead>
             <tbody>
               {liveAnalytics.map(a => (
@@ -105,12 +105,12 @@ export default function StrategyRegistryPage() {
             <div key={strategy.id} className="card grey shadow-lg flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-4 border-b border-border-default pb-4">
-                  <div className="p-2 bg-background-base rounded-[3px] border border-border-default">
+                  <div className="p-2 bg-background-base rounded-lg border border-border-default">
                     <Database className="w-5 h-5 text-primary-gold" />
                   </div>
                   <div>
                     <h3 className="font-serif text-[20px] font-bold text-text-primary leading-none">{strategy.name}</h3>
-                    <span className="font-mono text-[9px] text-text-muted uppercase tracking-wider mt-1 block">ID: {strategy.id}</span>
+                    <span className="font-mono text-[11px] text-text-muted uppercase tracking-wider mt-1 block">ID: {strategy.id}</span>
                   </div>
                 </div>
                 
@@ -142,8 +142,8 @@ export default function StrategyRegistryPage() {
                 </div>
                 
                 <div className="mb-6">
-                   <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-2">Key Parameters</span>
-                   <div className="bg-background-base border border-border-subtle rounded-[3px] p-3 overflow-x-auto">
+                   <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-2">Key Parameters</span>
+                   <div className="bg-background-base border border-border-subtle rounded-lg p-3 overflow-x-auto">
                      <pre className="font-mono text-[10px] text-text-secondary whitespace-pre-wrap">
                        {JSON.stringify(Object.keys(strategy.parameters || {}).filter(k => !['strategy_type', 'assigned_portfolio_id', 'execution_exchange'].includes(k)).reduce((obj, key) => { obj[key] = strategy.parameters[key]; return obj; }, {} as any), null, 2)}
                      </pre>
@@ -165,13 +165,13 @@ export default function StrategyRegistryPage() {
       {isAssignModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
            <div className="card gold w-full max-w-lg shadow-2xl">
-              <h3 className="font-serif text-[24px] text-text-primary mb-6">Assign Strategy to Portfolio</h3>
+              <h3 className="font-display text-[22px] font-bold text-text-primary mb-6">Assign Strategy to Portfolio</h3>
               <p className="font-sans text-[13px] text-text-secondary mb-6">Link this quantitative strategy to an active paper trading portfolio to begin simulated autonomous execution.</p>
               <div className="space-y-4">
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Execution Exchange</label>
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Execution Exchange</label>
                   <select 
-                    className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" 
+                    className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" 
                     value={assignForm.executionExchange} 
                     onChange={e => setAssignForm({...assignForm, executionExchange: e.target.value})}
                   >
@@ -180,8 +180,8 @@ export default function StrategyRegistryPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Select Target Portfolio</label>
-                  <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={assignForm.portfolioId} onChange={e => setAssignForm({...assignForm, portfolioId: e.target.value})}>
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Select Target Portfolio</label>
+                  <select className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={assignForm.portfolioId} onChange={e => setAssignForm({...assignForm, portfolioId: e.target.value})}>
                     <option value="">-- Choose Portfolio --</option>
                     {portfolios.map(p => <option key={p.id} value={p.id}>{p.id} (Equity: ${p.total_equity?.toLocaleString()})</option>)}
                   </select>

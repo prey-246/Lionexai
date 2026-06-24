@@ -151,48 +151,48 @@ export default function MandatesPage() {
                   <div className="space-y-4 animate-in fade-in">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
-                        <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Mandate Name</label>
-                        <input type="text" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                        <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Mandate Name</label>
+                        <input type="text" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
                       </div>
                       <div className="md:col-span-2">
-                        <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Description</label>
-                        <textarea className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} rows={2} />
+                        <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Description</label>
+                        <textarea className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} rows={2} />
                       </div>
                       <div>
-                        <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Risk Tier</label>
-                        <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.risk_tier} onChange={e => setEditForm({...editForm, risk_tier: e.target.value})}>
+                        <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Risk Tier</label>
+                        <select className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.risk_tier} onChange={e => setEditForm({...editForm, risk_tier: e.target.value})}>
                           <option value="Low">Low</option>
                           <option value="Medium">Medium</option>
                           <option value="High">High</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Max Leverage (x)</label>
-                        <input type="number" step="0.1" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_leverage} onChange={e => setEditForm({...editForm, max_leverage: parseFloat(e.target.value)})} />
+                        <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Max Leverage (x)</label>
+                        <input type="number" step="0.1" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_leverage} onChange={e => setEditForm({...editForm, max_leverage: parseFloat(e.target.value)})} />
                       </div>
                       <div>
-                        <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Daily Loss Limit (%)</label>
-                        <input type="number" step="0.1" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.daily_loss_limit_pct} onChange={e => setEditForm({...editForm, daily_loss_limit_pct: parseFloat(e.target.value)})} />
+                        <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Daily Loss Limit (%)</label>
+                        <input type="number" step="0.1" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.daily_loss_limit_pct} onChange={e => setEditForm({...editForm, daily_loss_limit_pct: parseFloat(e.target.value)})} />
                       </div>
                       <div>
-                        <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Max Drawdown (%)</label>
-                        <input type="number" step="0.1" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_drawdown_pct} onChange={e => setEditForm({...editForm, max_drawdown_pct: parseFloat(e.target.value)})} />
+                        <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Max Drawdown (%)</label>
+                        <input type="number" step="0.1" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_drawdown_pct} onChange={e => setEditForm({...editForm, max_drawdown_pct: parseFloat(e.target.value)})} />
                       </div>
                       <div>
-                        <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Max Position Size (%)</label>
-                        <input type="number" step="0.1" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_position_size_pct} onChange={e => setEditForm({...editForm, max_position_size_pct: parseFloat(e.target.value)})} />
+                        <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Max Position Size (%)</label>
+                        <input type="number" step="0.1" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_position_size_pct} onChange={e => setEditForm({...editForm, max_position_size_pct: parseFloat(e.target.value)})} />
                       </div>
                   <div>
-                    <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Max Open Positions</label>
-                    <input type="number" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_open_positions} onChange={e => setEditForm({...editForm, max_open_positions: parseInt(e.target.value)})} />
+                    <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Max Open Positions</label>
+                    <input type="number" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_open_positions} onChange={e => setEditForm({...editForm, max_open_positions: parseInt(e.target.value)})} />
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Max Portfolio Exposure (%)</label>
-                    <input type="number" step="0.1" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_portfolio_exposure_pct} onChange={e => setEditForm({...editForm, max_portfolio_exposure_pct: parseFloat(e.target.value)})} />
+                    <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Max Portfolio Exposure (%)</label>
+                    <input type="number" step="0.1" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-blue" value={editForm.max_portfolio_exposure_pct} onChange={e => setEditForm({...editForm, max_portfolio_exposure_pct: parseFloat(e.target.value)})} />
                   </div>
                   <div className="flex items-center gap-2 mt-4">
                     <input type="checkbox" id="kill_switch" className="w-4 h-4 accent-primary-blue" checked={editForm.kill_switch_enabled} onChange={e => setEditForm({...editForm, kill_switch_enabled: e.target.checked})} />
-                    <label htmlFor="kill_switch" className="font-mono text-[9px] uppercase tracking-wider text-text-muted cursor-pointer">Enable Automated Kill Switch</label>
+                    <label htmlFor="kill_switch" className="font-mono text-[11px] uppercase tracking-wider text-text-muted cursor-pointer">Enable Automated Kill Switch</label>
                   </div>
                     </div>
                     
@@ -208,21 +208,21 @@ export default function MandatesPage() {
                 ) : (
                   <div className="space-y-6">
                     <div className="flex items-center gap-6 mb-6 pb-6 border-b border-border-default">
-                      <div className="font-mono text-[9px] uppercase tracking-wider text-text-muted"><span className="text-text-secondary font-bold">Created By:</span> {(mandate as any).created_by_id || 'System Genesis'}</div>
-                      <div className="font-mono text-[9px] uppercase tracking-wider text-text-muted"><span className="text-text-secondary font-bold">Approved By:</span> {(mandate as any).approved_by_id || 'Auto-Approved'}</div>
-                      <div className="font-mono text-[9px] uppercase tracking-wider text-text-muted"><span className="text-text-secondary font-bold">Effective:</span> {(mandate as any).effective_date ? new Date((mandate as any).effective_date).toLocaleDateString() : new Date(mandate.created_at).toLocaleDateString()}</div>
+                      <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted"><span className="text-text-secondary font-bold">Created By:</span> {(mandate as any).created_by_id || 'System Genesis'}</div>
+                      <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted"><span className="text-text-secondary font-bold">Approved By:</span> {(mandate as any).approved_by_id || 'Auto-Approved'}</div>
+                      <div className="font-mono text-[11px] uppercase tracking-wider text-text-muted"><span className="text-text-secondary font-bold">Effective:</span> {(mandate as any).effective_date ? new Date((mandate as any).effective_date).toLocaleDateString() : new Date(mandate.created_at).toLocaleDateString()}</div>
                     </div>
                     
                     <p className="font-sans text-[13px] text-text-muted">{mandate.description}</p>
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4">
-                      <div><p className="font-mono text-[8.5px] text-text-muted mb-1 uppercase tracking-wider">Max Leverage</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_leverage.toFixed(1)}x</p></div>
-                      <div><p className="font-mono text-[8.5px] text-text-muted mb-1 uppercase tracking-wider">Daily Loss Limit</p><p className="font-serif text-[26px] font-bold text-danger">{mandate.daily_loss_limit_pct.toFixed(1)}%</p></div>
-                      <div><p className="font-mono text-[8.5px] text-text-muted mb-1 uppercase tracking-wider">Max Drawdown</p><p className="font-serif text-[26px] font-bold text-danger">{mandate.max_drawdown_pct.toFixed(1)}%</p></div>
-                      <div><p className="font-mono text-[8.5px] text-text-muted mb-1 uppercase tracking-wider">Position Limit</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_position_size_pct.toFixed(1)}%</p></div>
-                      <div><p className="font-mono text-[8.5px] text-text-muted mb-1 uppercase tracking-wider">Open Positions</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_open_positions}</p></div>
-                      <div><p className="font-mono text-[8.5px] text-text-muted mb-1 uppercase tracking-wider">Max Exposure</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_portfolio_exposure_pct?.toFixed(1)}%</p></div>
-                      <div><p className="font-mono text-[8.5px] text-text-muted mb-1 uppercase tracking-wider">Auto Kill-Switch</p><p className={`font-serif text-[26px] font-bold ${mandate.kill_switch_enabled ? 'text-success' : 'text-text-muted'}`}>{mandate.kill_switch_enabled ? 'Enabled' : 'Disabled'}</p></div>
+                      <div><p className="font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Max Leverage</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_leverage.toFixed(1)}x</p></div>
+                      <div><p className="font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Daily Loss Limit</p><p className="font-serif text-[26px] font-bold text-danger">{mandate.daily_loss_limit_pct.toFixed(1)}%</p></div>
+                      <div><p className="font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Max Drawdown</p><p className="font-serif text-[26px] font-bold text-danger">{mandate.max_drawdown_pct.toFixed(1)}%</p></div>
+                      <div><p className="font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Position Limit</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_position_size_pct.toFixed(1)}%</p></div>
+                      <div><p className="font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Open Positions</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_open_positions}</p></div>
+                      <div><p className="font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Max Exposure</p><p className="font-serif text-[26px] font-bold text-text-primary">{mandate.max_portfolio_exposure_pct?.toFixed(1)}%</p></div>
+                      <div><p className="font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Auto Kill-Switch</p><p className={`font-serif text-[26px] font-bold ${mandate.kill_switch_enabled ? 'text-success' : 'text-text-muted'}`}>{mandate.kill_switch_enabled ? 'Enabled' : 'Disabled'}</p></div>
                     </div>
                   </div>
                 )}
@@ -244,10 +244,10 @@ export default function MandatesPage() {
                             </span>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs mb-2">
-                            <div><span className="block font-mono text-[7.5px] text-text-muted mb-1 uppercase tracking-wider">Max Leverage</span><span className="font-serif text-[16px] font-bold text-text-primary">{hist.max_leverage.toFixed(1)}x</span></div>
-                            <div><span className="block font-mono text-[7.5px] text-text-muted mb-1 uppercase tracking-wider">Daily Loss</span><span className="font-serif text-[16px] font-bold text-danger">{hist.daily_loss_limit_pct.toFixed(1)}%</span></div>
-                            <div><span className="block font-mono text-[7.5px] text-text-muted mb-1 uppercase tracking-wider">Max Drawdown</span><span className="font-serif text-[16px] font-bold text-danger">{hist.max_drawdown_pct.toFixed(1)}%</span></div>
-                            <div><span className="block font-mono text-[7.5px] text-text-muted mb-1 uppercase tracking-wider">Position Limit</span><span className="font-serif text-[16px] font-bold text-text-primary">{hist.max_position_size_pct.toFixed(1)}%</span></div>
+                            <div><span className="block font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Max Leverage</span><span className="font-serif text-[16px] font-bold text-text-primary">{hist.max_leverage.toFixed(1)}x</span></div>
+                            <div><span className="block font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Daily Loss</span><span className="font-serif text-[16px] font-bold text-danger">{hist.daily_loss_limit_pct.toFixed(1)}%</span></div>
+                            <div><span className="block font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Max Drawdown</span><span className="font-serif text-[16px] font-bold text-danger">{hist.max_drawdown_pct.toFixed(1)}%</span></div>
+                            <div><span className="block font-mono text-[10px] text-text-muted mb-1 uppercase tracking-wider">Position Limit</span><span className="font-serif text-[16px] font-bold text-text-primary">{hist.max_position_size_pct.toFixed(1)}%</span></div>
                           </div>
                           <div className="text-[10px] text-text-muted flex justify-between">
                             <span className="font-sans text-[11px]">{hist.description}</span>

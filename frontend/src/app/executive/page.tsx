@@ -93,7 +93,7 @@ export default function ExecutiveDashboard() {
 
       {/* Financial Health */}
       <div>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3 pl-1">Capital & Ecosystem Metrics</h3>
+        <h3 className="sec-head pl-1">Capital & Ecosystem Metrics</h3>
         <div className="g4">
           <MetricDisplay label="Platform AUM (Client)" value={`$${metrics.platformAUM.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={Wallet} />
           <MetricDisplay label="Corporate Treasury NAV" value={`$${metrics.corporateTreasuryNAV.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={Landmark} />
@@ -104,7 +104,7 @@ export default function ExecutiveDashboard() {
 
       {/* Autonomous Execution & Quant Engine */}
       <div>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3 pl-1">Autonomous Execution Engine</h3>
+        <h3 className="sec-head pl-1">Autonomous Execution Engine</h3>
         <div className="g4">
           <MetricDisplay label="Autonomous AUM" value={`$${metrics.autonomousAUM.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={Bot} />
           <MetricDisplay label="Active Auto-Strategies" value={metrics.autonomousStrategiesCount} icon={Cpu} />
@@ -115,7 +115,7 @@ export default function ExecutiveDashboard() {
 
       {/* Execution & Exchange Health */}
       <div>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3 pl-1">Execution & Exchange Health</h3>
+        <h3 className="sec-head pl-1">Execution & Exchange Health</h3>
         <div className="g4">
           <MetricDisplay label="Execution Fill Rate (1H)" value={`${metrics.executionFillRate}%`} icon={HeartPulse} trend="up" />
           <MetricDisplay label="Avg. Execution Latency" value={`${metrics.avgExecutionLatency} ms`} icon={Cpu} />
@@ -125,8 +125,8 @@ export default function ExecutiveDashboard() {
 
       {/* System Status */}
       <div>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3 pl-1">Background System Status</h3>
-        <div className="card grey p-5">
+        <h3 className="sec-head pl-1">Background System Status</h3>
+        <div className="card p-5">
           <div className="space-y-3">
             {taskStatuses.map((task: any) => (
               <div key={task.name} className="flex justify-between items-center text-sm border-b border-border-subtle pb-2 last:border-b-0">
@@ -146,7 +146,7 @@ export default function ExecutiveDashboard() {
 
       {/* Operations & Risk Health */}
       <div>
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-text-muted mb-3 pl-1">System Operations & Governance</h3>
+        <h3 className="sec-head pl-1">System Operations & Governance</h3>
         <div className="g4">
           <MetricDisplay label="Active Portfolios" value={metrics.activePortfolios} icon={Database} />
           <MetricDisplay label="Strategies in Registry" value={metrics.totalStrategies} icon={Play} />
@@ -154,8 +154,8 @@ export default function ExecutiveDashboard() {
         </div>
       </div>
 
-      <div className="card grey mt-8 p-6 text-center">
-        <h2 className="font-serif text-[24px] font-light text-text-primary mb-2">System Operational</h2>
+      <div className="card gold mt-8 p-6 text-center">
+        <h2 className="font-display text-[24px] font-bold text-text-primary mb-2">System Operational</h2>
         <p className="font-sans text-[13px] text-text-secondary">
           The LionexAI ecosystem is fully synchronized. Autonomous engines are active, and risk governance is strictly enforced.
         </p>

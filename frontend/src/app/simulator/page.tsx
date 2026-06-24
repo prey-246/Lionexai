@@ -52,26 +52,29 @@ export default function SimulatorPage() {
       chartRef.current = createChart(chartContainerRef.current, {
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#6B7280',
+          textColor: '#8A94A6',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
         },
         grid: {
-          vertLines: { color: '#1F2937' },
-          horzLines: { color: '#1F2937' },
+          vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+          horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
         },
         height: 350,
-        rightPriceScale: {
-          borderVisible: false,
+        crosshair: {
+          vertLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
+          horzLine: { color: 'rgba(207, 164, 59, 0.4)', labelBackgroundColor: '#CFA43B' },
         },
-        timeScale: {
-          borderVisible: false,
-        },
+        rightPriceScale: { borderVisible: false },
+        timeScale: { borderVisible: false },
       });
 
       seriesRef.current = chartRef.current.addAreaSeries({
-        lineColor: '#D4AF37', // primary-gold
-        topColor: 'rgba(212, 175, 55, 0.4)',
-        bottomColor: 'rgba(212, 175, 55, 0.0)',
+        lineColor: '#CFA43B',
+        topColor: 'rgba(207, 164, 59, 0.4)',
+        bottomColor: 'rgba(207, 164, 59, 0.0)',
         lineWidth: 2,
+        priceLineVisible: false,
       });
     }
 

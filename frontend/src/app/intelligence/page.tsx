@@ -89,16 +89,16 @@ export default function IntelligenceHubPage() {
                 <span className={`tag ${color}`}>{label}</span>
               </div>
               <div className="flex items-baseline gap-3">
-                <span className="font-serif text-[32px] font-bold text-text-primary">
+                <span className="font-display text-[32px] font-bold text-text-primary tabular-nums">
                   {score > 0 ? '+' : ''}{score.toFixed(2)}
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-wider text-text-muted">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
                   Sensitivity Score
                 </span>
               </div>
               
               <div className="mt-5 space-y-1.5">
-                <div className="flex justify-between items-center font-mono text-[8.5px] uppercase tracking-wider text-text-muted">
+                <div className="flex justify-between items-center font-mono text-[11px] uppercase tracking-wider text-text-muted">
                   <span>AI Confidence</span>
                   <span className="text-text-primary font-bold">{confidence}%</span>
                 </div>

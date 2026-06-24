@@ -176,7 +176,7 @@ export default function TreasuryDashboard() {
               <div className="p-8 text-center flex flex-col items-center justify-center min-h-[250px]">
                 <Activity className="w-8 h-8 text-text-muted mb-4 opacity-50" />
                 <p className="font-sans text-[13px] text-text-muted mb-2">No capital movement events yet.</p>
-                <p className="font-mono text-[9px] uppercase tracking-wider text-text-muted">Awaiting yield sweeps or rebalancing.</p>
+                <p className="font-mono text-[11px] uppercase tracking-wider text-text-muted">Awaiting yield sweeps or rebalancing.</p>
               </div>
             )}
           </div>
@@ -187,31 +187,31 @@ export default function TreasuryDashboard() {
       {isTransferModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
            <div className="card gold w-full max-w-lg shadow-2xl">
-              <h3 className="font-serif text-[24px] text-text-primary mb-6">Transfer Treasury Capital</h3>
+              <h3 className="font-display text-[22px] font-bold text-text-primary mb-6">Transfer Treasury Capital</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Source Pool</label>
-                    <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.source} onChange={e => setTransferForm({...transferForm, source: e.target.value})}>
+                    <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Source Pool</label>
+                    <select className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.source} onChange={e => setTransferForm({...transferForm, source: e.target.value})}>
                       <option value="">Select Source...</option>
                       {pools.map(p => <option key={`src-${p.id}`} value={p.id}>{p.id} (${p.balance.toLocaleString()})</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Target Pool</label>
-                    <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.target} onChange={e => setTransferForm({...transferForm, target: e.target.value})}>
+                    <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Target Pool</label>
+                    <select className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.target} onChange={e => setTransferForm({...transferForm, target: e.target.value})}>
                       <option value="">Select Target...</option>
                       {pools.map(p => <option key={`tgt-${p.id}`} value={p.id}>{p.id}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Transfer Amount ($)</label>
-                  <input type="number" step="1000" min="0" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.amount} onChange={e => setTransferForm({...transferForm, amount: e.target.value})} placeholder="e.g. 50000" />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Transfer Amount ($)</label>
+                  <input type="number" step="1000" min="0" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.amount} onChange={e => setTransferForm({...transferForm, amount: e.target.value})} placeholder="e.g. 50000" />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Description / Reason</label>
-                  <input type="text" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.description} onChange={e => setTransferForm({...transferForm, description: e.target.value})} placeholder="e.g. Rebalancing reserves" />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Description / Reason</label>
+                  <input type="text" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={transferForm.description} onChange={e => setTransferForm({...transferForm, description: e.target.value})} placeholder="e.g. Rebalancing reserves" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-border-default">

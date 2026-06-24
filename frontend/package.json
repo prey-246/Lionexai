@@ -8,6 +8,12 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "unrs-resolver"
+    ]
+  },
   "dependencies": {
     "@tanstack/react-query": "^5.50.1",
     "clsx": "^2.1.1",

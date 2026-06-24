@@ -226,6 +226,21 @@ input:-webkit-autofill {
   .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn-full { width: 100%; padding: 12px; font-size: 12px; }
 
+  /* Small button variant + standalone color helpers (used by some pages) */
+  .btn-sm {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    padding: 6px 10px; border-radius: var(--radius-sm); cursor: pointer;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+    border: 1px solid var(--border-default); background: var(--background-panel); color: var(--text-secondary);
+    transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+  }
+  .btn-sm:hover { transform: translateY(-1px); background: var(--background-elevated); color: var(--text-primary); }
+  .btn-sm.grey { background: var(--background-panel); border-color: var(--border-default); color: var(--text-secondary); }
+  .btn-sm.gold { background: var(--gBg); border-color: var(--gBd); color: var(--primary-gold-bright); }
+  .btn-sm.teal { background: var(--tBg); border-color: var(--tBd); color: var(--primary-emerald-bright); }
+  .btn-sm.red  { background: var(--rBg); border-color: var(--rBd); color: var(--danger); }
+
   /* ---------------- Section headings ---------------- */
   .sec-head {
     font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em;

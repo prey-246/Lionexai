@@ -97,23 +97,29 @@ export default function StrategyEnginePage() {
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#8A8D93',
-        fontFamily: 'Inter, sans-serif',
+        textColor: '#8A94A6',
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 11,
       },
       grid: {
-        vertLines: { color: '#1E232B' },
-        horzLines: { color: '#1E232B' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
       },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderVisible: false, timeVisible: true },
-      height: 192, // matching Tailwind's h-48 roughly
+      crosshair: {
+        vertLine: { color: 'rgba(30, 214, 166, 0.4)', labelBackgroundColor: '#1ED6A6' },
+        horzLine: { color: 'rgba(30, 214, 166, 0.4)', labelBackgroundColor: '#1ED6A6' },
+      },
+      height: 192,
     });
 
     const areaSeries = chart.addAreaSeries({
-      lineColor: '#25C26E',
-      topColor: 'rgba(37, 194, 110, 0.4)',
-      bottomColor: 'rgba(37, 194, 110, 0.0)',
+      lineColor: '#1ED6A6',
+      topColor: 'rgba(30, 214, 166, 0.35)',
+      bottomColor: 'rgba(30, 214, 166, 0.0)',
       lineWidth: 2,
+      priceLineVisible: false,
     });
 
     const dataMap = new Map<number, number>();
@@ -160,24 +166,24 @@ export default function StrategyEnginePage() {
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Asset Pair</label>
-                <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.symbol} onChange={e => setForm({...form, symbol: e.target.value})}>
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Asset Pair</label>
+                <select className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.symbol} onChange={e => setForm({...form, symbol: e.target.value})}>
                   <option value="BTC/USDT">BTC/USDT</option>
                   <option value="ETH/USDT">ETH/USDT</option>
                   <option value="SOL/USDT">SOL/USDT</option>
                 </select>
               </div>
               <div>
-                <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Timeframe</label>
-                <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.timeframe} onChange={e => setForm({...form, timeframe: e.target.value})}>
+                <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Timeframe</label>
+                <select className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.timeframe} onChange={e => setForm({...form, timeframe: e.target.value})}>
                   <option value="1d">1 Day (1d)</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Strategy Algorithm</label>
-              <select className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.strategy} onChange={e => setForm({...form, strategy: e.target.value})}>
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Strategy Algorithm</label>
+              <select className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.strategy} onChange={e => setForm({...form, strategy: e.target.value})}>
                 <option value="ma_crossover">Moving Average Crossover</option>
                 <option value="mean_reversion">Mean Reversion (RSI)</option>
               </select>
@@ -186,12 +192,12 @@ export default function StrategyEnginePage() {
             {form.strategy === 'ma_crossover' && (
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border-subtle">
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Fast MA Period</label>
-                  <input type="number" min="1" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.fast_ma} onChange={e => setForm({...form, fast_ma: Number(e.target.value)})} />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Fast MA Period</label>
+                  <input type="number" min="1" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.fast_ma} onChange={e => setForm({...form, fast_ma: Number(e.target.value)})} />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Slow MA Period</label>
-                  <input type="number" min="2" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.slow_ma} onChange={e => setForm({...form, slow_ma: Number(e.target.value)})} />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Slow MA Period</label>
+                  <input type="number" min="2" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.slow_ma} onChange={e => setForm({...form, slow_ma: Number(e.target.value)})} />
                 </div>
               </div>
             )}
@@ -199,23 +205,23 @@ export default function StrategyEnginePage() {
             {form.strategy === 'mean_reversion' && (
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border-subtle">
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">RSI Period</label>
-                  <input type="number" min="1" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.rsi_period} onChange={e => setForm({...form, rsi_period: Number(e.target.value)})} />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">RSI Period</label>
+                  <input type="number" min="1" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.rsi_period} onChange={e => setForm({...form, rsi_period: Number(e.target.value)})} />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Overbought</label>
-                  <input type="number" min="50" max="100" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.rsi_overbought} onChange={e => setForm({...form, rsi_overbought: Number(e.target.value)})} />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Overbought</label>
+                  <input type="number" min="50" max="100" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.rsi_overbought} onChange={e => setForm({...form, rsi_overbought: Number(e.target.value)})} />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Oversold</label>
-                  <input type="number" min="0" max="50" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.rsi_oversold} onChange={e => setForm({...form, rsi_oversold: Number(e.target.value)})} />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Oversold</label>
+                  <input type="number" min="0" max="50" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.rsi_oversold} onChange={e => setForm({...form, rsi_oversold: Number(e.target.value)})} />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Initial Capital ($)</label>
-              <input type="number" step="1000" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.initial_capital} onChange={e => setForm({...form, initial_capital: Number(e.target.value)})} />
+              <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Initial Capital ($)</label>
+              <input type="number" step="1000" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] bg-background-base text-text-primary focus:border-primary-gold focus:outline-none" value={form.initial_capital} onChange={e => setForm({...form, initial_capital: Number(e.target.value)})} />
             </div>
 
             <button onClick={handleRun} disabled={loading} className="btn gold btn-full mt-6 flex justify-center items-center gap-2">
@@ -224,7 +230,7 @@ export default function StrategyEnginePage() {
             </button>
             
             {error && (
-              <div className="mt-4 p-3 bg-red-900/20 border border-danger/50 rounded-[3px] text-danger text-[12px] font-sans flex gap-2">
+              <div className="mt-4 p-3 bg-red-900/20 border border-danger/50 rounded-lg text-danger text-[12px] font-sans flex gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <p>{error}</p>
               </div>
@@ -272,22 +278,22 @@ export default function StrategyEnginePage() {
 
               <div className="grid grid-cols-3 gap-4 border-t border-border-default pt-6">
                 <div>
-                  <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Final Capital</span>
+                  <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Final Capital</span>
                   <span className="font-sans font-bold text-text-primary">${result.metrics.final_capital.toLocaleString()}</span>
                 </div>
                 <div>
-                  <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Total Trades</span>
+                  <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Total Trades</span>
                   <span className="font-sans font-bold text-text-primary">{result.metrics.total_trades_simulated}</span>
                 </div>
                 <div>
-                  <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1">Fees & Slippage</span>
+                  <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1">Fees & Slippage</span>
                   <span className="font-sans font-bold text-danger">${(result.metrics.total_fees_paid + result.metrics.slippage_impact).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                 </div>
               </div>
 
               <div className="mt-8 pt-6 border-t border-border-default">
-                <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-4">Equity Curve (NAV)</span>
-                <div className="h-48 bg-background-base border border-border-subtle rounded-[3px] overflow-hidden flex items-center justify-center relative">
+                <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-4">Equity Curve (NAV)</span>
+                <div className="h-48 bg-background-base border border-border-subtle rounded-lg overflow-hidden flex items-center justify-center relative">
                    {result.equity_curve && result.equity_curve.length > 0 ? (
                      <div ref={chartContainerRef} className="w-full h-full" />
                    ) : (
@@ -303,7 +309,7 @@ export default function StrategyEnginePage() {
                 <div className="mt-8 pt-6 border-t border-border-default">
                   <div className="flex items-center gap-2 mb-4">
                     <History className="w-4 h-4 text-primary-gold" />
-                    <span className="block font-mono text-[9px] uppercase tracking-wider text-text-muted">Simulated Trade History</span>
+                    <span className="block font-mono text-[11px] uppercase tracking-wider text-text-muted">Simulated Trade History</span>
                   </div>
                   <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
                     <table className="nexa-table">
@@ -335,16 +341,16 @@ export default function StrategyEnginePage() {
       {isSaveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
            <div className="card gold w-full max-w-lg shadow-2xl">
-              <h3 className="font-serif text-[24px] text-text-primary mb-6">Promote To Strategy Registry</h3>
+              <h3 className="font-display text-[22px] font-bold text-text-primary mb-6">Promote To Strategy Registry</h3>
               <p className="font-sans text-[13px] text-text-secondary mb-6">Save this winning backtest to the Strategy Registry for future paper-trading or live assignment.</p>
               <div className="space-y-4">
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Strategy Name</label>
-                  <input type="text" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={saveForm.name} onChange={e => setSaveForm({...saveForm, name: e.target.value})} placeholder="e.g. BTC MA Crossover Optimal" />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Strategy Name</label>
+                  <input type="text" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={saveForm.name} onChange={e => setSaveForm({...saveForm, name: e.target.value})} placeholder="e.g. BTC MA Crossover Optimal" />
                 </div>
                 <div>
-                  <label className="block font-mono text-[9px] uppercase tracking-wider text-text-muted mb-1.5">Description</label>
-                  <input type="text" className="w-full border border-border-default rounded-[3px] px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={saveForm.description} onChange={e => setSaveForm({...saveForm, description: e.target.value})} placeholder="e.g. Optimized for 1D timeframe in bull markets" />
+                  <label className="block font-mono text-[11px] uppercase tracking-wider text-text-muted mb-1.5">Description</label>
+                  <input type="text" className="w-full border border-border-default rounded-lg px-3 py-2 font-sans text-[13px] focus:outline-none focus:border-primary-gold" value={saveForm.description} onChange={e => setSaveForm({...saveForm, description: e.target.value})} placeholder="e.g. Optimized for 1D timeframe in bull markets" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-border-default">
