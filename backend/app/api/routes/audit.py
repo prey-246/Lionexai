@@ -20,6 +20,7 @@ def get_audit_logs(
     skip: int = 0,
     limit: int = 100,
     action_type: Optional[str] = None,
+    category: Optional[str] = None,
     exchange: Optional[str] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -33,6 +34,8 @@ def get_audit_logs(
 
     if action_type:
         query = query.filter(domain.AuditLog.action_type == action_type)
+    if category:
+        query = query.filter(domain.AuditLog.metadata_json.op("->>")("category") == category)
     if exchange:
         query = query.filter(domain.AuditLog.metadata_json.op("->>")("exchange") == exchange.lower())
     if start_date:

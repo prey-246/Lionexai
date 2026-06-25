@@ -5,6 +5,7 @@ from typing import List
 from app.core.database import get_db
 from app.models import schemas, domain
 from app.api.deps import get_current_user
+from app.services.sentiment_service import resolve_sentiment, list_pulse_scores
 
 router = APIRouter()
 
@@ -26,14 +27,21 @@ def get_economic_events(
     """Fetch upcoming and past macro-economic events."""
     return db.query(domain.EconomicEvent).order_by(domain.EconomicEvent.timestamp.desc()).limit(limit).all()
 
+@router.get("/sentiment", response_model=List[schemas.MarketSensitivityScore])
+def list_market_sentiment(
+    limit: int = 12,
+    db: Session = Depends(get_db),
+    current_user: domain.User = Depends(get_current_user),
+):
+    """Batch sentiment for Intelligence Hub — avoids N+1 per-asset 404s."""
+    return list_pulse_scores(db, limit=limit)
+
+
 @router.get("/sentiment/{symbol:path}", response_model=schemas.MarketSensitivityScore)
 def get_market_sentiment(
     symbol: str, 
     db: Session = Depends(get_db),
     current_user: domain.User = Depends(get_current_user)
 ):
-    """Fetch the aggregated AI sentiment score for a specific asset."""
-    score = db.query(domain.MarketSensitivityScore).filter(domain.MarketSensitivityScore.symbol == symbol).order_by(domain.MarketSensitivityScore.timestamp.desc()).first()
-    if not score:
-        raise HTTPException(status_code=404, detail="No sentiment data available for this asset yet.")
-    return score
+    """Fetch AI sentiment — returns neutral with coverage metadata when no direct data."""
+    return resolve_sentiment(db, symbol)

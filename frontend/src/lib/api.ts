@@ -125,7 +125,7 @@ export const quantAPI = {
 
 export const portfolioAPI = {
   listPortfolios: (): Promise<Portfolio[]> => {
-    return apiFetch(`${API_BASE_URL}/api/portfolios`, { cache: 'no-store' });
+    return apiFetch(`${API_BASE_URL}/api/portfolios/`, { cache: 'no-store' });
   },
 
   getPortfolio: (id: string): Promise<Portfolio> => {
@@ -154,7 +154,7 @@ export const portfolioAPI = {
   },
 
   createPortfolio: (payload: { id: string, mandate_pk_id: string, total_equity: number }): Promise<Portfolio> => {
-    return apiFetch(`${API_BASE_URL}/api/portfolios`, {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -164,7 +164,20 @@ export const portfolioAPI = {
     return apiFetch(`${API_BASE_URL}/api/portfolios/${id}`, {
       method: 'DELETE',
     });
-  }
+  },
+
+  // Phase 4: autonomous allocation transparency
+  getAllocations: (id: string): Promise<AllocationItem[]> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/allocations`, { cache: 'no-store' });
+  },
+
+  getRebalances: (id: string, limit: number = 20): Promise<RebalanceEventItem[]> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/rebalances?limit=${limit}`, { cache: 'no-store' });
+  },
+
+  getSettlements: (id: string, limit: number = 20): Promise<ClientSettlementItem[]> => {
+    return apiFetch(`${API_BASE_URL}/api/portfolios/${id}/settlements?limit=${limit}`, { cache: 'no-store' });
+  },
 };
 
 export const tradeAPI = {
@@ -309,6 +322,9 @@ export const intelligenceAPI = {
   getNews: (limit: number = 5): Promise<MarketNewsArticle[]> => {
     return apiFetch(`${API_BASE_URL}/api/intelligence/news?limit=${limit}`, { cache: 'no-store' });
   },
+  getSentimentPulse: (limit: number = 12): Promise<MarketSensitivityScore[]> => {
+    return apiFetch(`${API_BASE_URL}/api/intelligence/sentiment?limit=${limit}`, { cache: 'no-store' });
+  },
   getSentiment: (symbol: string): Promise<MarketSensitivityScore> => {
     return apiFetch(`${API_BASE_URL}/api/intelligence/sentiment/${encodeURIComponent(symbol)}`, { cache: 'no-store' });
   },
@@ -360,6 +376,9 @@ export const treasuryAPI = {
   getPools: (): Promise<any[]> => {
     return apiFetch(`${API_BASE_URL}/api/treasury/pools`, { cache: 'no-store' });
   },
+  getPoolsSummary: (): Promise<{ total_nav: number; pools: Array<{ id: string; name: string; balance: number; target_allocation_pct: number }> }> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/pools/summary`, { cache: 'no-store' });
+  },
   getTransactions: (limit: number = 50): Promise<any[]> => {
     return apiFetch(`${API_BASE_URL}/api/treasury/transactions?limit=${limit}`, { cache: 'no-store' });
   },
@@ -374,5 +393,270 @@ export const treasuryAPI = {
   },
   sweepYield: (): Promise<any> => {
     return apiFetch(`${API_BASE_URL}/api/treasury/sweep`, { method: 'POST' });
-  }
+  },
+  getRouting: (limit: number = 50): Promise<any[]> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/routing?limit=${limit}`, { cache: 'no-store' });
+  },
+  getPoolAnalytics: (): Promise<TreasuryPoolAnalytics[]> => {
+    return apiFetch(`${API_BASE_URL}/api/treasury/pools/analytics`, { cache: 'no-store' });
+  },
+};
+
+export interface TreasuryPoolAnalytics {
+  pool_id: string;
+  name: string;
+  balance: number;
+  target_allocation_pct: number;
+  contributions: number;
+  withdrawals: number;
+  net_flow: number;
+  transaction_count: number;
+}
+
+// --- Phase 4: Multi-Asset Autonomous Fund Manager ---
+
+export interface AssetItem {
+  pk_id: number;
+  symbol: string;
+  display_name: string;
+  asset_class: string;
+  data_provider: string;
+  data_symbol: string;
+  execution_venue: string;
+  quote_currency: string;
+  is_active: boolean;
+  is_tradable: boolean;
+}
+
+export interface FundUniverseItem {
+  symbol: string;
+  display_name: string;
+  asset_class: string;
+  min_weight_pct: number;
+  max_weight_pct: number;
+}
+
+export interface FundProduct {
+  id: string;
+  name: string;
+  description?: string;
+  mandate_id?: string;
+  risk_label?: string;
+  target_return_label?: string;
+  target_weekly_return_pct?: number;
+  target_monthly_return_pct?: number;
+  actual_weekly_return_pct?: number | null;
+  actual_monthly_return_pct?: number | null;
+  actual_total_return_pct?: number | null;
+  total_aum?: number | null;
+  portfolio_count?: number | null;
+  data_provenance?: string | null;
+  allocation_policy?: Record<string, any>;
+  is_active: boolean;
+  asset_universe: FundUniverseItem[];
+}
+
+export interface AllocationItem {
+  symbol: string;
+  display_name?: string;
+  asset_class?: string;
+  target_weight_pct: number;
+  current_weight_pct: number;
+  updated_at?: string;
+}
+
+export interface RebalanceEventItem {
+  id: string;
+  portfolio_id: number;
+  trigger?: string;
+  regime?: string;
+  global_risk_score?: number;
+  decisions?: any;
+  created_at: string;
+}
+
+export interface ClientSettlementItem {
+  id: string;
+  portfolio_id: number;
+  iso_week_key: string;
+  period_start: string;
+  period_end: string;
+  opening_equity: number;
+  period_pnl: number;
+  target_return_pct: number;
+  client_entitlement: number;
+  excess_routed: number;
+  shortfall_topup: number;
+  uncovered: number;
+  status: string;
+  breakdown?: Record<string, unknown>;
+  created_at: string;
+  starting_nav?: number;
+  trading_pnl?: number;
+  target_yield?: number;
+  treasury_routed?: number;
+  shortfall_topups?: number;
+  lnx_contribution?: number;
+}
+
+export interface LNXIndexData {
+  nav: number;
+  treasury_health: number;
+  strategy_performance: number;
+  execution_quality: number;
+  aum_growth: number;
+  composite_index: number;
+  computed_at: string;
+  weekly_change_pct?: number | null;
+  monthly_change_pct?: number | null;
+  treasury_nav?: number;
+  aum?: number;
+  reserve_ratio?: number;
+}
+
+export interface GlobalMarketState {
+  global_risk_score: number;
+  market_regime: string;
+  risk_on_off: string;
+  asset_ranking?: Array<{ symbol: string; asset_class: string; score: number; momentum_3m: number; vol: number; rank: number }>;
+  macro_inputs?: Record<string, any>;
+  computed_at: string;
+}
+
+export interface MarketRegimeItem {
+  scope: string;
+  regime: string;
+  confidence: number;
+  indicators?: Record<string, any>;
+  detected_at: string;
+}
+
+export const fundsAPI = {
+  listFunds: (): Promise<FundProduct[]> => {
+    return apiFetch(`${API_BASE_URL}/api/funds/`, { cache: 'no-store' });
+  },
+  getFund: (id: string): Promise<FundProduct> => {
+    return apiFetch(`${API_BASE_URL}/api/funds/${id}`, { cache: 'no-store' });
+  },
+  invest: (fundId: string, amount: number, portfolioId?: string): Promise<Portfolio> => {
+    return apiFetch(`${API_BASE_URL}/api/funds/${fundId}/invest`, {
+      method: 'POST',
+      body: JSON.stringify({ amount, portfolio_id: portfolioId }),
+    });
+  },
+  getInstitutionalAnalytics: (fundId: string): Promise<Record<string, any>> => {
+    return apiFetch(`${API_BASE_URL}/api/funds/${fundId}/institutional`, { cache: 'no-store' });
+  },
+};
+
+export const validatedAPI = {
+  runStrategy: (payload: {
+    symbol: string;
+    strategy_key: string;
+    validation_type?: string;
+    initial_capital?: number;
+  }) => apiFetch(`${API_BASE_URL}/api/validated/strategy/run`, { method: 'POST', body: JSON.stringify(payload) }),
+  listRuns: (strategyKey?: string) =>
+    apiFetch(`${API_BASE_URL}/api/validated/strategy/runs${strategyKey ? `?strategy_key=${strategyKey}` : ''}`, { cache: 'no-store' }),
+  alphaEvidence: (targetMonthlyPct = 20) =>
+    apiFetch(`${API_BASE_URL}/api/validated/alpha/evidence`, {
+      method: 'POST',
+      body: JSON.stringify({ fund_id: 'ALPHA', target_monthly_pct: targetMonthlyPct }),
+    }),
+  getGlobalRisk: () => apiFetch(`${API_BASE_URL}/api/validated/global-risk`, { cache: 'no-store' }),
+  getPaperSnapshots: (period?: string) =>
+    apiFetch(`${API_BASE_URL}/api/validated/paper/snapshots${period ? `?period=${period}` : ''}`, { cache: 'no-store' }),
+  getAllocationAlerts: () => apiFetch(`${API_BASE_URL}/api/validated/allocation/alerts`, { cache: 'no-store' }),
+  runFundBacktest: (fundId: string, initialCapital = 1_000_000) =>
+    apiFetch(`${API_BASE_URL}/api/validated/fund/run`, {
+      method: 'POST',
+      body: JSON.stringify({ fund_id: fundId, initial_capital: initialCapital, persist: true }),
+    }),
+  runAllFundBacktests: (initialCapital = 1_000_000) =>
+    apiFetch(`${API_BASE_URL}/api/validated/fund/run-all`, {
+      method: 'POST',
+      body: JSON.stringify({ initial_capital: initialCapital, persist: true }),
+    }),
+  runOptimization: (payload?: { phase?: string; fund_id?: string; bar_limit?: number; regenerate?: boolean }) =>
+    apiFetch(`${API_BASE_URL}/api/validated/optimization/run`, {
+      method: 'POST',
+      body: JSON.stringify({ phase: 'all', persist: true, regenerate: true, ...payload }),
+    }),
+  listOptimizationExperiments: (fundId?: string) =>
+    apiFetch(`${API_BASE_URL}/api/validated/optimization/experiments${fundId ? `?fund_id=${fundId}` : ''}`, { cache: 'no-store' }),
+  getLatestFundBacktest: (fundId: string, includeDemo = false) =>
+    apiFetch(`${API_BASE_URL}/api/validated/fund/latest/${fundId}${includeDemo ? '?include_demo=true' : ''}`, { cache: 'no-store' }),
+  listFundRuns: (fundId?: string) =>
+    apiFetch(`${API_BASE_URL}/api/validated/fund/runs${fundId ? `?fund_id=${fundId}` : ''}`, { cache: 'no-store' }),
+};
+
+export const institutionalAPI = {
+  getFundAnalyticsV2: (fundId: string) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/performance/fund/${fundId}`, { cache: 'no-store' }),
+  getLiveValidation: (period?: string) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/live-validation/snapshots${period ? `?period=${period}` : ''}`, { cache: 'no-store' }),
+  refreshLiveValidation: () =>
+    apiFetch(`${API_BASE_URL}/api/institutional/live-validation/refresh`, { method: 'POST' }),
+  verifyTreasury: (persist = false) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/treasury/verify?persist=${persist}`, { cache: 'no-store' }),
+  getLnxAttribution: () =>
+    apiFetch(`${API_BASE_URL}/api/institutional/lnx/attribution`, { cache: 'no-store' }),
+  getLnxAttributionHistory: (limit = 30) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/lnx/attribution/history?limit=${limit}`, { cache: 'no-store' }),
+  traceExecution: (tradeId: string) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/execution/trace/${tradeId}`, { cache: 'no-store' }),
+  getMacroSnapshot: () =>
+    apiFetch(`${API_BASE_URL}/api/institutional/macro/snapshot`, { cache: 'no-store' }),
+  getAlphaEvidenceFull: (fundId = 'ALPHA', targetMonthlyPct = 20) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/alpha/evidence/full`, {
+      method: 'POST',
+      body: JSON.stringify({ fund_id: fundId, target_monthly_pct: targetMonthlyPct }),
+    }),
+  generateMonthlyReport: (fundId: string) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/reports/monthly-fund`, {
+      method: 'POST',
+      body: JSON.stringify({ fund_id: fundId }),
+    }),
+  listReports: (fundId?: string) =>
+    apiFetch(`${API_BASE_URL}/api/institutional/reports/institutional${fundId ? `?fund_id=${fundId}` : ''}`, { cache: 'no-store' }),
+  exportReportJson: (reportId: string) =>
+    downloadBlob(`/api/institutional/reports/institutional/${reportId}/export/json`, `${reportId}.json`),
+  exportReportCsv: (reportId: string) =>
+    downloadBlob(`/api/institutional/reports/institutional/${reportId}/export/csv`, `${reportId}.csv`),
+};
+
+export const assetsAPI = {
+  listAssets: (assetClass?: string): Promise<AssetItem[]> => {
+    const url = assetClass
+      ? `${API_BASE_URL}/api/assets/?asset_class=${encodeURIComponent(assetClass)}`
+      : `${API_BASE_URL}/api/assets/`;
+    return apiFetch(url, { cache: 'no-store' });
+  },
+};
+
+export const marketAPI = {
+  getGlobalState: (): Promise<GlobalMarketState | null> => {
+    return apiFetch(`${API_BASE_URL}/api/market/global-state`, { cache: 'no-store' });
+  },
+  getRegime: (scope: string = 'GLOBAL', history: number = 1): Promise<MarketRegimeItem[]> => {
+    return apiFetch(`${API_BASE_URL}/api/market/regime?scope=${encodeURIComponent(scope)}&history=${history}`, { cache: 'no-store' });
+  },
+  getAllRegimes: (): Promise<MarketRegimeItem[]> => {
+    return apiFetch(`${API_BASE_URL}/api/market/regime/all`, { cache: 'no-store' });
+  },
+};
+
+export const lnxAPI = {
+  getIndex: (): Promise<LNXIndexData> => {
+    return apiFetch(`${API_BASE_URL}/api/lnx/index`, { cache: 'no-store' });
+  },
+  getHistory: (limit: number = 90): Promise<LNXIndexData[]> => {
+    return apiFetch(`${API_BASE_URL}/api/lnx/history?limit=${limit}`, { cache: 'no-store' });
+  },
+};
+
+export const marketIntelligenceAPI = {
+  getDashboard: (): Promise<any> => {
+    return apiFetch(`${API_BASE_URL}/api/market-intelligence/dashboard`, { cache: 'no-store' });
+  },
 };

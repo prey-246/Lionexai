@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { validationAPI } from '@/lib/api/validation';
-import type { ValidationSnapshot, ValidationSummary, ValidationPeriod, MetricTimeseries } from '@/lib/types/validation';
+import { institutionalAPI } from '@/lib/api';
+import type { ValidationSnapshot, ValidationSummary, ValidationPeriod, MetricTimeseries, ValidationDataSource } from '@/lib/types/validation';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import {
@@ -18,8 +19,33 @@ const PERIOD_LABELS: Record<ValidationPeriod, string> = {
   '7D': 'Last 7 Days',
   '14D': 'Last 14 Days',
   '30D': 'Last 30 Days',
+  '90D': 'Last 90 Days',
+  '180D': 'Last 180 Days',
+  '365D': 'Last 365 Days',
   ALL: 'All Time',
 };
+
+function formatPctSafe(value: number | null | undefined, digits = 2, maxAbs = 500): string {
+  if (value == null) return '—';
+  const n = toFiniteNumber(value);
+  const clamped = Math.max(-maxAbs, Math.min(maxAbs, n));
+  return `${formatFixed(clamped, digits)}%`;
+}
+
+function formatDrawdownSafe(value: number | null | undefined): string {
+  if (value == null) return '—';
+  const n = Math.min(100, Math.max(0, toFiniteNumber(value)));
+  return `${formatFixed(n, 1)}%`;
+}
+
+function provenanceBadge(provenance: string) {
+  const map: Record<string, string> = {
+    VALIDATED_HISTORICAL: 'tag blue',
+    DEMO: 'tag red',
+    PAPER_LIVE: 'tag teal',
+  };
+  return map[provenance] || 'tag grey';
+}
 
 export default function LongTermValidationPage() {
   const [snapshot, setSnapshot] = useState<ValidationSnapshot | null>(null);
@@ -28,9 +54,12 @@ export default function LongTermValidationPage() {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<ValidationPeriod>('30D');
+  const [dataSource, setDataSource] = useState<ValidationDataSource>('validated');
   const [historicalWinRate, setHistoricalWinRate] = useState<MetricTimeseries | null>(null);
   const [historicalDrawdown, setHistoricalDrawdown] = useState<MetricTimeseries | null>(null);
+  const [liveProvenance, setLiveProvenance] = useState<string>('DEMO');
 
+  const isValidated = dataSource === 'validated';
   const historySnapshotKey = useMemo(() => `GLOBAL_${selectedPeriod}`, [selectedPeriod]);
 
   useEffect(() => {
@@ -38,22 +67,25 @@ export default function LongTermValidationPage() {
       try {
         setLoading(true);
         setError(null);
-        const [snapshots, summaryData] = await Promise.all([
-          validationAPI.getSnapshots(selectedPeriod),
-          validationAPI.getSummary(),
+        const [snapshots, summaryData, liveVal] = await Promise.all([
+          validationAPI.getSnapshots(selectedPeriod, undefined, undefined, dataSource),
+          isValidated ? Promise.resolve(null) : validationAPI.getSummary(),
+          isValidated ? Promise.resolve([]) : institutionalAPI.getLiveValidation(selectedPeriod).catch(() => []),
         ]);
+        const liveSnap = Array.isArray(liveVal) ? liveVal[0] : null;
+        setLiveProvenance(liveSnap?.provenance || 'DEMO');
         setSummary(summaryData);
 
         let globalSnapshot = snapshots.find(s => s.snapshot_type === 'GLOBAL');
-        if (!globalSnapshot) {
+        if (!globalSnapshot && !isValidated) {
           await validationAPI.refreshSnapshots();
-          const refreshed = await validationAPI.getSnapshots(selectedPeriod);
+          const refreshed = await validationAPI.getSnapshots(selectedPeriod, undefined, undefined, 'demo');
           globalSnapshot = refreshed.find(s => s.snapshot_type === 'GLOBAL');
         }
         if (globalSnapshot) {
           setSnapshot(globalSnapshot);
         } else {
-          setError(`No GLOBAL snapshot found for period: ${selectedPeriod}. Run paper trading to build history.`);
+          setError(`No GLOBAL snapshot found for period: ${selectedPeriod}.${isValidated ? ' Run validated backtests first.' : ' Run paper trading to build history.'}`);
           setSnapshot(null);
         }
       } catch (err: unknown) {
@@ -66,9 +98,14 @@ export default function LongTermValidationPage() {
     };
 
     fetchData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, dataSource]);
 
   useEffect(() => {
+    if (isValidated) {
+      setHistoricalWinRate(null);
+      setHistoricalDrawdown(null);
+      return;
+    }
     const fetchHistoricalMetrics = async () => {
       try {
         const [winRate, drawdown] = await Promise.all([
@@ -83,7 +120,7 @@ export default function LongTermValidationPage() {
       }
     };
     fetchHistoricalMetrics();
-  }, [historySnapshotKey]);
+  }, [historySnapshotKey, isValidated]);
 
   const handleDownloadPdf = async (period: string = selectedPeriod) => {
     try {
@@ -118,21 +155,44 @@ export default function LongTermValidationPage() {
         <MetricDisplay label="Win Rate" value={`${formatFixed(snapshot.win_rate_pct, 1)}%`} icon={TrendingUp} />
         <MetricDisplay label="Profit Factor" value={formatFixed(snapshot.profit_factor, 2)} icon={TrendingUp} />
         <MetricDisplay label="Sharpe Ratio" value={formatFixed(snapshot.sharpe_ratio, 2)} icon={TrendingUp} />
-        <MetricDisplay label="Avg Return" value={`${formatFixed(snapshot.avg_return_pct, 2)}%`} icon={TrendingUp} />
-        <MetricDisplay label="Max Drawdown" value={`${formatFixed(snapshot.max_drawdown_pct, 1)}%`} icon={TrendingDown} />
-        <MetricDisplay label="Total Trades" value={String(toFiniteNumber(snapshot.total_trades))} icon={Zap} />
-        <MetricDisplay label="Avg Latency" value={`${formatFixed(snapshot.avg_latency_ms, 0)} ms`} icon={Clock} />
-        <MetricDisplay label="Fill Rate" value={`${formatFixed(snapshot.fill_rate_pct, 1)}%`} icon={Target} />
-        <MetricDisplay label="Winning Trades" value={String(snapshot.winning_trades)} icon={CheckCircle} />
-        <MetricDisplay label="Losing Trades" value={String(snapshot.losing_trades)} icon={XCircle} />
-        <MetricDisplay label="Largest Win" value={formatCurrency(snapshot.largest_win)} trend="up" icon={ArrowUpRight} />
-        <MetricDisplay label="Largest Loss" value={formatCurrency(snapshot.largest_loss)} trend="down" icon={ArrowDownRight} />
+        <MetricDisplay label="Avg Return" value={formatPctSafe(snapshot.avg_return_pct)} icon={TrendingUp} />
+        <MetricDisplay label="Max Drawdown" value={formatDrawdownSafe(snapshot.max_drawdown_pct)} icon={TrendingDown} />
+        {!isValidated ? (
+          <>
+            <MetricDisplay label="Total Trades" value={String(toFiniteNumber(snapshot.total_trades))} icon={Zap} />
+            <MetricDisplay label="Avg Latency" value={`${formatFixed(snapshot.avg_latency_ms, 0)} ms`} icon={Clock} />
+            <MetricDisplay label="Fill Rate" value={`${formatFixed(snapshot.fill_rate_pct, 1)}%`} icon={Target} />
+            <MetricDisplay label="Winning Trades" value={String(snapshot.winning_trades)} icon={CheckCircle} />
+            <MetricDisplay label="Losing Trades" value={String(snapshot.losing_trades)} icon={XCircle} />
+            <MetricDisplay label="Largest Win" value={formatCurrency(snapshot.largest_win)} trend="up" icon={ArrowUpRight} />
+            <MetricDisplay label="Largest Loss" value={formatCurrency(snapshot.largest_loss)} trend="down" icon={ArrowDownRight} />
+          </>
+        ) : (
+          <MetricDisplay label="Positive Days" value={formatPctSafe(snapshot.win_rate_pct, 1)} icon={CheckCircle} />
+        )}
+      </div>
+    );
+  };
+
+  const renderPhase4Metrics = () => {
+    if (loading || !snapshot?.chart_data?.extended_metrics) return null;
+    const m = snapshot.chart_data.extended_metrics;
+    return (
+      <div className="mt-6">
+        <h3 className="sec-head">Phase 4 Fund & Treasury Metrics</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <MetricDisplay label="Client Yield Delivered" value={`${formatFixed(m.client_yield_delivery_pct, 1)}%`} icon={CheckCircle} trend="up" />
+          <MetricDisplay label="Fund Performance" value={`${formatFixed(m.fund_performance_pct, 1)}%`} icon={TrendingUp} />
+          <MetricDisplay label="Treasury Growth" value={`${formatFixed(m.treasury_growth_pct, 1)}%`} icon={Layers} />
+          <MetricDisplay label="LNX Growth" value={`${formatFixed(m.lnx_growth_pct, 1)}%`} icon={TrendingUp} />
+          <MetricDisplay label="Top Asset P&L" value={formatCurrency(m.asset_performance_pct)} icon={BarChart} />
+        </div>
       </div>
     );
   };
 
   const renderOrderAndRankingMetrics = () => {
-    if (loading || !snapshot) return null;
+    if (loading || !snapshot || isValidated) return null;
     const exchange = snapshot.exchange_distribution;
 
     return (
@@ -359,8 +419,60 @@ export default function LongTermValidationPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <PageHeader
           title="Long-Term Validation"
-          subtitle="Continuous performance monitoring of the live paper trading environment."
+          subtitle={
+            isValidated
+              ? 'Institutional performance from validated historical backtests (real market bars).'
+              : 'Operational paper-trading ledger metrics (demo environment).'
+          }
         />
+        <div className="card blue p-3 flex items-center gap-2 text-[12px]">
+          <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
+          <span className="text-text-secondary">
+            {isValidated ? (
+              <>
+                Showing <strong>VALIDATED_HISTORICAL</strong> backtests on aligned market data (PRESERVE + BALANCE + ALPHA).
+                Toggle to Demo for operational paper-trading metrics only.
+              </>
+            ) : (
+              <>
+                Showing <strong>DEMO</strong> operational snapshots from the paper-trading ledger.
+                These may include seeded demo trades — not for institutional reporting.
+              </>
+            )}
+          </span>
+        </div>
+        <div className="card p-3 flex flex-wrap items-center gap-3 text-[12px]">
+          <span className="text-text-muted">Data source:</span>
+          <div className="flex rounded-lg border border-border-default overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setDataSource('validated')}
+              className={`px-3 py-1.5 font-semibold transition-colors ${
+                isValidated ? 'bg-system-gBg text-primary-gold-bright' : 'text-text-secondary hover:bg-background-elevated'
+              }`}
+            >
+              Validated Historical
+            </button>
+            <button
+              type="button"
+              onClick={() => setDataSource('demo')}
+              className={`px-3 py-1.5 font-semibold transition-colors ${
+                !isValidated ? 'bg-system-gBg text-primary-gold-bright' : 'text-text-secondary hover:bg-background-elevated'
+              }`}
+            >
+              Demo Ledger
+            </button>
+          </div>
+          <span className={`tag ${provenanceBadge(snapshot?.data_provenance || (isValidated ? 'VALIDATED_HISTORICAL' : 'DEMO'))}`}>
+            {snapshot?.data_provenance || (isValidated ? 'VALIDATED_HISTORICAL' : 'DEMO')}
+          </span>
+          {!isValidated && (
+            <>
+              <span className="text-text-muted">Live provenance:</span>
+              <span className={`tag ${provenanceBadge(liveProvenance)}`}>{liveProvenance}</span>
+            </>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2 shrink-0">
           <button
             onClick={() => handleDownloadPdf(selectedPeriod)}
@@ -388,7 +500,7 @@ export default function LongTermValidationPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {(['TODAY', '7D', '14D', '30D', 'ALL'] as ValidationPeriod[]).map(period => (
+        {(['TODAY', '7D', '14D', '30D', '90D', '180D', '365D', 'ALL'] as ValidationPeriod[]).map(period => (
           <button
             key={period}
             onClick={() => setSelectedPeriod(period)}
@@ -404,9 +516,10 @@ export default function LongTermValidationPage() {
       </div>
 
       {renderCoreMetrics()}
+      {renderPhase4Metrics()}
       {renderOrderAndRankingMetrics()}
       {renderCharts()}
-      {renderLegacySummary()}
+      {!isValidated && renderLegacySummary()}
     </div>
   );
 }

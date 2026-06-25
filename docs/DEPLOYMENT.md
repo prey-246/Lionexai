@@ -144,6 +144,9 @@ Nginx will act as a reverse proxy to route traffic to your frontend and backend 
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
         }
     }
     ```
@@ -189,14 +192,19 @@ It is critical to back up your PostgreSQL database regularly.
 
     ```bash
     #!/bin/bash
+    set -euo pipefail # Exit on error, undefined variable, or pipe failure
+
     BACKUP_DIR="/opt/nexa_backups"
     DATE=$(date +%Y-%m-%d_%H-%M-%S)
     CONTAINER_NAME="nexa_db_prod"
-    DB_NAME="nexa_mvp"
-    DB_USER="nexa_admin"
+
+    # Read from the .env file in the project directory to get DB credentials
+    # IMPORTANT: Replace '/path/to/your/Lionexai' with the absolute path to your project root
+    DB_USER=$(grep POSTGRES_USER /path/to/your/Lionexai/.env | cut -d '=' -f2)
+    DB_NAME=$(grep POSTGRES_DB /path/to/your/Lionexai/.env | cut -d '=' -f2)
 
     # Dump the database
-    docker exec $CONTAINER_NAME pg_dump -U $DB_USER -d $DB_NAME | gzip > $BACKUP_DIR/nexa_backup_$DATE.sql.gz
+    docker exec "$CONTAINER_NAME" pg_dump -U "$DB_USER" -d "$DB_NAME" | gzip > "$BACKUP_DIR/nexa_backup_$DATE.sql.gz"
 
     # Optional: Clean up old backups (older than 7 days)
     find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +7 -delete

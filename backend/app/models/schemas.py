@@ -78,6 +78,8 @@ class PortfolioResponse(PortfolioBase):
     user_id: str
     mandate_id: str | None = None
     mandate_pk_id: int
+    auto_managed: bool = False
+    fund_pk_id: int | None = None
     risk_context: PortfolioRiskContext | None = None
 
     class Config:
@@ -265,6 +267,177 @@ class GlobalSettingsUpdate(BaseModel):
 class GlobalSettings(GlobalSettingsBase):
     id: str
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- Phase 4: Multi-Asset Autonomous Fund Manager Schemas ---
+
+class Asset(BaseModel):
+    pk_id: int
+    symbol: str
+    display_name: str
+    asset_class: str
+    data_provider: str
+    data_symbol: str
+    execution_venue: str
+    quote_currency: str
+    is_active: bool
+    is_tradable: bool
+
+    class Config:
+        from_attributes = True
+
+
+class AssetCreate(BaseModel):
+    symbol: str
+    display_name: str
+    asset_class: str
+    data_provider: str = "mock"
+    data_symbol: str
+    execution_venue: str = "SIMULATED"
+    quote_currency: str = "USD"
+    is_active: bool = True
+    is_tradable: bool = True
+
+
+class AssetUpdate(BaseModel):
+    display_name: str | None = None
+    asset_class: str | None = None
+    data_provider: str | None = None
+    data_symbol: str | None = None
+    execution_venue: str | None = None
+    quote_currency: str | None = None
+    is_active: bool | None = None
+    is_tradable: bool | None = None
+
+
+class FundAssetUniverseItem(BaseModel):
+    symbol: str
+    display_name: str
+    asset_class: str
+    min_weight_pct: float
+    max_weight_pct: float
+
+
+class FundResponse(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    mandate_id: str | None = None
+    risk_label: str | None = None
+    target_return_label: str | None = None
+    target_weekly_return_pct: float | None = None
+    target_monthly_return_pct: float | None = None
+    actual_weekly_return_pct: float | None = None
+    actual_monthly_return_pct: float | None = None
+    actual_total_return_pct: float | None = None
+    total_aum: float | None = None
+    portfolio_count: int | None = None
+    data_provenance: str | None = None  # DEMO | PAPER_LIVE | MIXED | UNKNOWN
+    allocation_policy: dict | None = None
+    is_active: bool
+    asset_universe: List[FundAssetUniverseItem] = []
+
+    class Config:
+        from_attributes = True
+
+
+class FundInvestRequest(BaseModel):
+    amount: float = Field(..., gt=0)
+    portfolio_id: str | None = None  # optional custom id; auto-generated otherwise
+
+
+class AllocationItem(BaseModel):
+    symbol: str
+    display_name: str | None = None
+    asset_class: str | None = None
+    target_weight_pct: float
+    current_weight_pct: float
+    updated_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class RebalanceEventResponse(BaseModel):
+    id: str
+    portfolio_id: int
+    trigger: str | None = None
+    regime: str | None = None
+    global_risk_score: float | None = None
+    decisions: Any | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class GlobalMarketStateResponse(BaseModel):
+    global_risk_score: float
+    market_regime: str
+    risk_on_off: str
+    asset_ranking: Any | None = None
+    macro_inputs: Any | None = None
+    computed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MarketRegimeResponse(BaseModel):
+    scope: str
+    regime: str
+    confidence: float
+    indicators: Any | None = None
+    detected_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ClientSettlementResponse(BaseModel):
+    id: str
+    portfolio_id: int
+    period_start: datetime
+    period_end: datetime
+    iso_week_key: str
+    opening_equity: float
+    closing_marked_equity: float
+    period_pnl: float
+    target_return_pct: float
+    client_entitlement: float
+    excess_routed: float
+    shortfall_topup: float
+    uncovered: float
+    status: str
+    breakdown: Any | None = None
+    created_at: datetime
+    # Client-facing aliases
+    starting_nav: float | None = None
+    trading_pnl: float | None = None
+    target_yield: float | None = None
+    treasury_routed: float | None = None
+    shortfall_topups: float | None = None
+    lnx_contribution: float | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class LNXIndexResponse(BaseModel):
+    nav: float
+    treasury_health: float
+    strategy_performance: float
+    execution_quality: float
+    aum_growth: float
+    composite_index: float
+    computed_at: datetime
+    weekly_change_pct: float | None = None
+    monthly_change_pct: float | None = None
+    treasury_nav: float | None = None
+    aum: float | None = None
+    reserve_ratio: float | None = None
 
     class Config:
         from_attributes = True

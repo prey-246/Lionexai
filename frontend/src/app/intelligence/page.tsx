@@ -2,42 +2,42 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { GlobalMarketIntelligence } from '@/components/intelligence/GlobalMarketIntelligence';
 import { intelligenceAPI } from '@/lib/api';
 import type { MarketNewsArticle, MarketSensitivityScore } from '@/lib/types';
-import { BrainCircuit, Newspaper, Calendar, Loader2, Activity, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { BrainCircuit, Newspaper, Calendar, Loader2, Activity } from 'lucide-react';
+
+function coverageLabel(factors: Record<string, unknown> | null | undefined): string {
+  const c = factors?.coverage as string | undefined;
+  if (c === 'DIRECT') return 'Direct news coverage';
+  if (c === 'ASSET_CLASS_PROXY') return `Proxy via ${factors?.proxy_symbol ?? 'peer asset'}`;
+  return 'Insufficient NLP coverage';
+}
+
+function hasRealCoverage(factors: Record<string, unknown> | null | undefined): boolean {
+  const c = factors?.coverage as string | undefined;
+  return c === 'DIRECT' || c === 'ASSET_CLASS_PROXY';
+}
 
 export default function IntelligenceHubPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [news, setNews] = useState<MarketNewsArticle[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [sentiments, setSentiments] = useState<Record<string, MarketSensitivityScore>>({});
+  const [pulse, setPulse] = useState<MarketSensitivityScore[]>([]);
 
   useEffect(() => {
     const fetchIntelligence = async () => {
       try {
         setLoading(true);
-        // Fetch news and economic events in parallel
-        const [newsData, eventsData] = await Promise.all([
+        const [newsData, eventsData, pulseData] = await Promise.all([
           intelligenceAPI.getNews(15).catch(() => []),
-          intelligenceAPI.getEconomicEvents(8).catch(() => [])
+          intelligenceAPI.getEconomicEvents(8).catch(() => []),
+          intelligenceAPI.getSentimentPulse(9).catch(() => []),
         ]);
         setNews(newsData);
         setEvents(eventsData);
-
-        // Fetch sentiment for core assets
-        const symbols = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
-        const sentimentData: Record<string, MarketSensitivityScore> = {};
-        
-        await Promise.all(symbols.map(async (sym) => {
-          try {
-            const data = await intelligenceAPI.getSentiment(sym);
-            sentimentData[sym] = data;
-          } catch (e) {
-            // Gracefully ignore if a symbol doesn't have sentiment data yet
-          }
-        }));
-        setSentiments(sentimentData);
+        setPulse(pulseData);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -51,13 +51,15 @@ export default function IntelligenceHubPage() {
   if (loading) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-gold" /></div>;
   if (error) return <div className="text-center text-danger">{error}</div>;
 
-  const getSentimentColor = (score: number) => {
+  const getSentimentColor = (score: number, covered: boolean) => {
+    if (!covered) return 'grey';
     if (score > 0.2) return 'teal';
     if (score < -0.2) return 'red';
     return 'grey';
   };
 
-  const getSentimentLabel = (score: number) => {
+  const getSentimentLabel = (score: number, covered: boolean) => {
+    if (!covered) return 'NO DATA';
     if (score > 0.2) return 'BULLISH';
     if (score < -0.2) return 'BEARISH';
     return 'NEUTRAL';
@@ -67,54 +69,67 @@ export default function IntelligenceHubPage() {
     <div className="space-y-8">
       <PageHeader title="Intelligence Hub" subtitle="AI-driven market sentiment and alternative data analysis." />
 
-      {/* AI Market Pulse Grid */}
+      <GlobalMarketIntelligence />
+
       <div className="g3">
-        {['BTC/USDT', 'ETH/USDT', 'SOL/USDT'].map((symbol) => {
-          const data = sentiments[symbol];
-          const score = data?.score || 0;
-          const color = getSentimentColor(score);
-          const label = getSentimentLabel(score);
-          const iconColorClass = score > 0.2 ? 'text-success' : score < -0.2 ? 'text-danger' : 'text-primary-blue';
-          
-          // Calculate a mock confidence/probability score based on signal strength (50% to 99%)
-          const confidence = Math.min(99.9, 50 + (Math.abs(score) * 45)).toFixed(1);
+        {pulse.map((data) => {
+          const factors = data.contributing_factors as Record<string, unknown> | undefined;
+          const covered = hasRealCoverage(factors);
+          const score = covered ? data.score : 0;
+          const color = getSentimentColor(score, covered);
+          const label = getSentimentLabel(score, covered);
+          const iconColorClass = !covered ? 'text-text-muted' : score > 0.2 ? 'text-success' : score < -0.2 ? 'text-danger' : 'text-primary-blue';
+          const articleCount = Number(factors?.article_count ?? 0);
+          const confidence = covered
+            ? Math.min(99.9, 55 + Math.abs(score) * 40).toFixed(1)
+            : null;
 
           return (
-            <div key={symbol} className={`card ${color} shadow-lg p-6`}>
+            <div key={data.symbol} className={`card ${color} shadow-lg p-6`}>
               <div className="flex items-center justify-between mb-4 border-b border-border-default pb-4">
                 <div className="flex items-center gap-2">
                   <BrainCircuit className={`w-4 h-4 ${iconColorClass}`} />
-                  <h3 className="sec-head mb-0">{symbol} AI Pulse</h3>
+                  <h3 className="sec-head mb-0">{data.symbol} AI Pulse</h3>
                 </div>
                 <span className={`tag ${color}`}>{label}</span>
               </div>
               <div className="flex items-baseline gap-3">
                 <span className="font-display text-[32px] font-bold text-text-primary tabular-nums">
-                  {score > 0 ? '+' : ''}{score.toFixed(2)}
+                  {covered ? `${score > 0 ? '+' : ''}${score.toFixed(2)}` : '—'}
                 </span>
                 <span className="font-mono text-[11px] uppercase tracking-wider text-text-muted">
                   Sensitivity Score
                 </span>
               </div>
-              
+
               <div className="mt-5 space-y-1.5">
-                <div className="flex justify-between items-center font-mono text-[11px] uppercase tracking-wider text-text-muted">
-                  <span>AI Confidence</span>
-                  <span className="text-text-primary font-bold">{confidence}%</span>
-                </div>
-                <div className="h-1.5 w-full bg-background-base rounded-full overflow-hidden border border-border-default">
-                  <div className={`h-full ${score > 0.2 ? 'bg-success' : score < -0.2 ? 'bg-danger' : 'bg-primary-blue'}`} style={{ width: `${confidence}%` }}></div>
-                </div>
-                <p className="font-sans text-[10px] text-text-muted mt-2 pt-2">Analyzed from {data?.contributing_factors?.article_count || 0} global sources.</p>
+                {confidence ? (
+                  <>
+                    <div className="flex justify-between items-center font-mono text-[11px] uppercase tracking-wider text-text-muted">
+                      <span>Signal Strength</span>
+                      <span className="text-text-primary font-bold">{confidence}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-background-base rounded-full overflow-hidden border border-border-default">
+                      <div
+                        className={`h-full ${score > 0.2 ? 'bg-success' : score < -0.2 ? 'bg-danger' : 'bg-primary-blue'}`}
+                        style={{ width: `${confidence}%` }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p className="font-mono text-[11px] text-text-muted uppercase">Awaiting news ingestion</p>
+                )}
+                <p className="font-sans text-[10px] text-text-muted mt-2 pt-2">
+                  {coverageLabel(factors)}
+                  {articleCount > 0 ? ` · ${articleCount} sources` : ''}
+                </p>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Alt-Data Feeds */}
       <div className="g212 items-start">
-        {/* News Feed */}
         <div className="card blue shadow-lg p-0 overflow-hidden">
           <div className="p-6 border-b border-border-default bg-background-base flex items-center gap-2">
             <Newspaper className="w-4 h-4 text-primary-blue" />
@@ -148,7 +163,6 @@ export default function IntelligenceHubPage() {
           </div>
         </div>
 
-        {/* Economic Calendar Shell */}
         <div className="card gold shadow-lg p-0 overflow-hidden">
           <div className="p-6 border-b border-border-default bg-background-base flex items-center gap-2">
             <Calendar className="w-4 h-4 text-primary-gold" />

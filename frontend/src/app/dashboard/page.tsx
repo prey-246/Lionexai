@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { portfolioAPI, intelligenceAPI } from '@/lib/api';
+import { portfolioAPI, intelligenceAPI, fundsAPI, lnxAPI, assetsAPI } from '@/lib/api';
 import type { Portfolio, PortfolioSummary, MarketNewsArticle, MarketSensitivityScore } from '@/lib/types';
 import { PageHeader } from "@/components/ui/PageHeader";
+import { GlobalMarketIntelligence } from "@/components/intelligence/GlobalMarketIntelligence";
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
-import { Loader2, AlertTriangle, Wallet, Activity, TrendingUp, ArrowRight, Star, ShieldAlert, Newspaper, BrainCircuit } from 'lucide-react';
+import { Loader2, AlertTriangle, Wallet, Activity, TrendingUp, ArrowRight, Star, ShieldAlert, Newspaper, BrainCircuit, Coins, Landmark, Target } from 'lucide-react';
 import MandateBadge from '@/components/ui/MandateBadge';
 
 export default function ClientDashboard() {
@@ -18,28 +19,45 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [lnxIndex, setLnxIndex] = useState<number | null>(null);
+  const [weeklyTarget, setWeeklyTarget] = useState<number | null>(null);
+  const [treasuryContributions, setTreasuryContributions] = useState(0);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setError(null);
-        const [summaryData, portfoliosData, newsData] = await Promise.all([
+        const [summaryData, portfoliosData, newsData, funds, lnx] = await Promise.all([
           portfolioAPI.getSummary(),
           portfolioAPI.listPortfolios(),
-          intelligenceAPI.getNews(5)
+          intelligenceAPI.getNews(5),
+          fundsAPI.listFunds().catch(() => []),
+          lnxAPI.getIndex().catch(() => null),
         ]);
 
-        // Fetch sentiments safely for our main assets
-        const symbolsToFetch = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+        const assetList = await assetsAPI.listAssets().catch(() => []);
+        const symbolsToFetch = (assetList || []).slice(0, 6).map((a) => a.symbol);
         const sentimentResults: {[key: string]: MarketSensitivityScore} = {};
         await Promise.all(symbolsToFetch.map(async (sym) => {
           try {
             const data = await intelligenceAPI.getSentiment(sym);
             sentimentResults[sym] = data;
-          } catch (e) {
-            // Ignore if no sentiment data yet for a specific symbol
-          }
+          } catch (e) { /* optional */ }
         }));
 
+        const autoPortfolios = (portfoliosData || []).filter((p: any) => p.auto_managed);
+        let contrib = 0;
+        await Promise.all(autoPortfolios.slice(0, 3).map(async (p) => {
+          try {
+            const stl = await portfolioAPI.getSettlements(p.id, 5);
+            contrib += (stl || []).reduce((s, x) => s + (x.excess_routed || 0), 0);
+          } catch { /* optional */ }
+        }));
+
+        const fundTargets = (funds || []).map((f) => f.target_weekly_return_pct).filter(Boolean) as number[];
+        setWeeklyTarget(fundTargets.length ? fundTargets.reduce((a, b) => a + b, 0) / fundTargets.length : null);
+        setLnxIndex(lnx?.composite_index ?? null);
+        setTreasuryContributions(contrib);
         setSummary(summaryData);
         setPortfolios(portfoliosData || []);
         setNews(newsData || []);
@@ -86,61 +104,30 @@ export default function ClientDashboard() {
     return <div>No summary data available.</div>;
   }
 
-  // Calculate Global Risk Visibility metrics from the portfolios list
-  const totalExposure = portfolios.reduce((acc, p) => acc + ((p as any).risk_context?.exposure_used || 0), 0);
-  const totalCapitalAtRisk = portfolios.reduce((acc, p) => acc + ((p as any).risk_context?.capital_at_risk || 0), 0);
-  const maxDrawdown = portfolios.reduce((acc, p) => Math.max(acc, p.current_drawdown_pct || 0), 0);
-  const killSwitches = portfolios.filter(p => (p as any).risk_context?.kill_switch_status).length;
-
   return (
     <div className="space-y-8">
-      <PageHeader title="My Dashboard" subtitle="Aggregate performance overview of all your portfolios" />
+      <PageHeader title="My Dashboard" subtitle="Fund performance, weekly yield targets, treasury contributions, and LNX ecosystem growth." />
 
-      <div className="flex gap-4 overflow-x-auto py-2 scrollbar-hide">
-        {Object.entries(livePrices || {}).length > 0 ? (
-          Object.entries(livePrices || {}).map(([symbol, price]) => {
-            const sentiment = sentiments[symbol];
-            let tagClass = "grey";
-            let sentimentLabel = "NEUTRAL";
-            if (sentiment) {
-              if (sentiment.score > 0.2) { tagClass = "teal"; sentimentLabel = "BULLISH"; }
-              else if (sentiment.score < -0.2) { tagClass = "red"; sentimentLabel = "BEARISH"; }
-            }
-            return (
-              <div key={symbol} className="card shrink-0 py-2.5 px-4 flex items-center gap-3 font-mono">
-                <span className="text-[12px] text-text-secondary font-semibold">{symbol}</span>
-                <span className="text-primary-emerald-bright font-bold text-[15px] tabular-nums">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                {sentiment && (
-                  <span className={`tag ${tagClass}`} title={`AI Score: ${sentiment.score}`}>
-                    {sentimentLabel}
-                  </span>
-                )}
-              </div>
-            );
-          })
-        ) : (
-          <div className="text-base text-text-secondary font-mono animate-pulse flex items-center gap-2">
-             <div className="w-2 h-2 bg-text-secondary rounded-full animate-ping"></div>
-             Connecting to live market feed...
-          </div>
-        )}
-      </div>
+      <GlobalMarketIntelligence />
 
       <div className="g4">
         <MetricDisplay label="Total Equity" value={`$${summary.total_equity.toLocaleString()}`} icon={Wallet} />
-        <MetricDisplay label="Total P&L" value={`$${summary.total_pnl.toLocaleString()}`} trend={summary.total_pnl > 0 ? 'up' : 'down'} icon={Activity} />
-        <MetricDisplay label="Overall Win Rate" value={`${summary.overall_win_rate_pct.toFixed(2)}%`} icon={TrendingUp} />
-        <MetricDisplay label="Active Portfolios" value={summary.portfolio_count} icon={ShieldAlert} />
+        <MetricDisplay label="Avg Weekly Target" value={weeklyTarget != null ? `${weeklyTarget.toFixed(2)}%` : '—'} icon={Target} trend="up" />
+        <MetricDisplay label="Treasury Contributions" value={`$${treasuryContributions.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} icon={Landmark} />
+        <MetricDisplay label="LNX Index" value={lnxIndex?.toFixed(2) ?? '—'} icon={Coins} />
       </div>
 
-      <div>
-        <h3 className="sec-head">Global Risk Visibility</h3>
-        <div className="g4">
-          <MetricDisplay label="Capital at Risk" value={`$${totalCapitalAtRisk.toLocaleString(undefined, {minimumFractionDigits: 2})}`} trend="down" />
-          <MetricDisplay label="Active Exposure" value={`$${totalExposure.toLocaleString(undefined, {minimumFractionDigits: 2})}`} />
-          <MetricDisplay label="Max System Drawdown" value={`${maxDrawdown.toFixed(2)}%`} trend={maxDrawdown > 0 ? 'down' : 'neutral'} />
-          <MetricDisplay label="Mandates Halted" value={killSwitches} trend={killSwitches > 0 ? 'down' : 'neutral'} />
-        </div>
+      <div className="g4">
+        <MetricDisplay label="Total P&L" value={`$${summary.total_pnl.toLocaleString()}`} trend={summary.total_pnl > 0 ? 'up' : 'down'} icon={Activity} />
+        <MetricDisplay label="Active Portfolios" value={summary.portfolio_count} icon={ShieldAlert} />
+        <Link href="/fund-performance" className="card blue p-4 flex items-center justify-between hover:border-primary-blue transition-colors">
+          <span className="font-sans text-[13px]">Fund Performance</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+        <Link href="/allocation" className="card gold p-4 flex items-center justify-between hover:border-primary-gold transition-colors">
+          <span className="font-sans text-[13px]">Live Allocation</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
       <div className="g21">

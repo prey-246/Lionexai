@@ -6,6 +6,7 @@ import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import { createChart, ColorType, Time } from 'lightweight-charts';
 import { Calculator, TrendingUp, AlertTriangle, Target, Zap, Activity, BarChart3, Percent, Plus, Minus, Download, Loader2 } from 'lucide-react';
 import { validationAPI } from '@/lib/api/validation';
+import { fundsAPI } from '@/lib/api';
 
 export default function SimulatorPage() {
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -28,6 +29,25 @@ export default function SimulatorPage() {
   const [withdrawalSchedule, setWithdrawalSchedule] = useState<Record<number, number>>({});
   const [withdrawalMonth, setWithdrawalMonth] = useState(1);
   const [downloading, setDownloading] = useState(false);
+
+  const [fundTargets, setFundTargets] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fundsAPI.listFunds().then((funds) => {
+      const map: Record<string, number> = {
+        CONSERVATIVE: 0.01,
+        BALANCED: 0.025,
+        AGGRESSIVE: 0.05,
+      };
+      funds.forEach((f) => {
+        if (f.target_weekly_return_pct) map[f.id] = f.target_weekly_return_pct / 100;
+        if (f.id === 'PRESERVE' && f.target_weekly_return_pct) map.CONSERVATIVE = f.target_weekly_return_pct / 100;
+        if (f.id === 'BALANCE' && f.target_weekly_return_pct) map.BALANCED = f.target_weekly_return_pct / 100;
+        if (f.id === 'ALPHA' && f.target_weekly_return_pct) map.AGGRESSIVE = f.target_weekly_return_pct / 100;
+      });
+      setFundTargets(map);
+    }).catch(() => {});
+  }, []);
 
   const depositPresets = [1000, 5000, 10000, 50000, 100000];
 
@@ -80,12 +100,15 @@ export default function SimulatorPage() {
 
     // Calculate growth
     const weeklyRates: Record<string, number> = {
-      'CONSERVATIVE': 0.005, // 0.5% per week
-      'BALANCED': 0.010,     // 1.0% per week
-      'AGGRESSIVE': 0.015,   // 1.5% per week
+      CONSERVATIVE: fundTargets.CONSERVATIVE ?? 0.01,
+      BALANCED: fundTargets.BALANCED ?? 0.025,
+      AGGRESSIVE: fundTargets.AGGRESSIVE ?? 0.05,
+      PRESERVE: fundTargets.PRESERVE ?? fundTargets.CONSERVATIVE ?? 0.01,
+      BALANCE: fundTargets.BALANCE ?? fundTargets.BALANCED ?? 0.025,
+      ALPHA: fundTargets.ALPHA ?? fundTargets.AGGRESSIVE ?? 0.05,
     };
 
-    const weeklyRate = weeklyRates[scenario] || 0.01;
+    const weeklyRate = weeklyRates[fundType] ?? weeklyRates[scenario] ?? 0.025;
     const totalWeeks = months * 4;
     
     let currentCapital = deposit;
@@ -140,7 +163,7 @@ export default function SimulatorPage() {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [deposit, months, scenario, monthlyContribution, withdrawalSchedule]);
+  }, [deposit, months, scenario, monthlyContribution, withdrawalSchedule, fundType, fundTargets]);
 
   // Institutional Projection Metrics based on Scenario
   const scenarioMetrics = {
@@ -267,9 +290,9 @@ export default function SimulatorPage() {
                 onChange={(e) => setScenario(e.target.value)}
                 className="block w-full px-3 py-2 bg-background-base border border-border-default rounded-[3px] text-text-primary text-[14px] focus:outline-none focus:border-primary-gold"
               >
-                <option value="CONSERVATIVE">Conservative (Est. ~0.5% Weekly Growth)</option>
-                <option value="BALANCED">Balanced (Est. ~1.0% Weekly Growth)</option>
-                <option value="AGGRESSIVE">Aggressive (Est. ~1.5% Weekly Growth)</option>
+                <option value="CONSERVATIVE">Conservative (Preserve ~1% weekly)</option>
+                <option value="BALANCED">Balanced (~2.5% weekly)</option>
+                <option value="AGGRESSIVE">Alpha (~5% weekly)</option>
               </select>
             </div>
 

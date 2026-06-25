@@ -23,6 +23,9 @@ PERIOD_LABELS = {
     "7D": "Weekly (7-Day)",
     "14D": "14-Day Validation",
     "30D": "Monthly (30-Day)",
+    "90D": "Quarterly (90-Day)",
+    "180D": "Semi-Annual (180-Day)",
+    "365D": "Annual (365-Day)",
     "ALL": "All-Time Validation",
 }
 
@@ -31,6 +34,9 @@ PERIOD_SPECS = {
     "7D": 7,
     "14D": 14,
     "30D": 30,
+    "90D": 90,
+    "180D": 180,
+    "365D": 365,
     "ALL": None,
 }
 
@@ -447,6 +453,9 @@ def validation_pdf_filename(period: str) -> str:
         "30D": "nexa_30_day_validation_report.pdf",
         "ALL": "nexa_all_time_validation_report.pdf",
         "TODAY": "nexa_daily_validation_report.pdf",
+        "90D": "nexa_90_day_validation_report.pdf",
+        "180D": "nexa_180_day_validation_report.pdf",
+        "365D": "nexa_365_day_validation_report.pdf",
         "LEGACY": "nexa_legacy_validation_report.pdf",
     }
     return names.get(period, f"nexa_{period.lower()}_validation_report.pdf")

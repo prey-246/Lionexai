@@ -5,11 +5,17 @@ import type {
   ValidationHistoryRecord,
   MetricTimeseries,
   ValidationMetric,
+  ValidationDataSource,
 } from '../types/validation';
 
 export const validationAPI = {
-  getSnapshots(period: string, snapshotType?: string, scopeId?: string): Promise<ValidationSnapshot[]> {
-    const params = new URLSearchParams({ period });
+  getSnapshots(
+    period: string,
+    snapshotType?: string,
+    scopeId?: string,
+    dataSource: ValidationDataSource = 'validated',
+  ): Promise<ValidationSnapshot[]> {
+    const params = new URLSearchParams({ period, data_source: dataSource });
     if (snapshotType) params.set('snapshot_type', snapshotType);
     if (scopeId) params.set('scope_id', scopeId);
     return apiJson(`${API_BASE_URL}/api/validation/snapshots?${params.toString()}`);

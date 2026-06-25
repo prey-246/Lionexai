@@ -25,12 +25,12 @@ def seed_mock_data():
         logger.info("Seeding mock users...")
         
         users_to_create = [
-            {"email": "operator1@lionex.ai", "role_tier": "operator"},
-            {"email": "operator2@lionex.ai", "role_tier": "operator"},
-            {"email": "risk1@lionex.ai", "role_tier": "risk_manager"},
-            {"email": "risk2@lionex.ai", "role_tier": "risk_manager"},
-            {"email": "client1@lionex.ai", "role_tier": "client"},
-            {"email": "client2@lionex.ai", "role_tier": "client"},
+            {"email": "operator1@google.com", "role_tier": "operator"},
+            {"email": "operator2@google.com", "role_tier": "operator"},
+            {"email": "risk1@google.com", "role_tier": "risk_manager"},
+            {"email": "risk2@google.com", "role_tier": "risk_manager"},
+            {"email": "client1@google.com", "role_tier": "client"},
+            {"email": "client2@google.com", "role_tier": "client"},
         ]
         
         created_users = []
@@ -58,7 +58,7 @@ def seed_mock_data():
             logger.warning("No active mandates found! Run the seed-defaults API first. Skipping portfolio creation.")
             return
 
-        client1 = next((u for u in created_users if u.email == "client1@lionex.ai"), None)
+        client1 = next((u for u in created_users if u.email == "client1@google.com"), None)
         
         if client1 and not db.query(Portfolio).filter(Portfolio.user_id == client1.id).first():
             portfolios = [

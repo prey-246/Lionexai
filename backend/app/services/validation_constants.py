@@ -21,16 +21,21 @@ SNAPSHOT_PERIODS = (
     ("7D", 7),
     ("14D", 14),
     ("30D", 30),
+    ("90D", 90),
+    ("180D", 180),
+    ("365D", 365),
     ("ALL", None),
 )
 
 ROLLING_WINDOW_DAYS = 7
 
-# Portfolio/strategy snapshots use these rolling windows (excludes TODAY)
 SCOPED_SNAPSHOT_PERIODS = (
     ("7D", 7),
     ("14D", 14),
     ("30D", 30),
+    ("90D", 90),
+    ("180D", 180),
+    ("365D", 365),
     ("ALL", None),
 )
 

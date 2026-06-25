@@ -21,13 +21,25 @@ export interface ValidationChartData {
   daily_trades?: ChartPoint[];
   daily_returns?: ChartPoint[];
   rolling_win_rate?: ChartPoint[];
+  extended_metrics?: {
+    fund_performance_pct?: number;
+    asset_performance_pct?: number;
+    top_asset_symbol?: string;
+    treasury_growth_pct?: number;
+    treasury_nav?: number;
+    lnx_growth_pct?: number;
+    client_yield_delivery_pct?: number;
+  };
 }
+
+export type ValidationDataSource = 'validated' | 'demo';
 
 export interface ValidationSnapshot {
   snapshot_key: string;
   snapshot_type: string;
   period: string;
   scope_id?: string | null;
+  data_provenance?: 'VALIDATED_HISTORICAL' | 'DEMO' | 'PAPER_LIVE' | string;
   total_trades: number;
   winning_trades: number;
   losing_trades: number;
@@ -106,7 +118,7 @@ export interface ValidationSummary {
   };
 }
 
-export type ValidationPeriod = 'TODAY' | '7D' | '14D' | '30D' | 'ALL';
+export type ValidationPeriod = 'TODAY' | '7D' | '14D' | '30D' | '90D' | '180D' | '365D' | 'ALL';
 
 export type ValidationMetric =
   | 'win_rate_pct'

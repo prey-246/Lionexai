@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database, TrendingUp, ShieldCheck, Server, HeartPulse, Search, GitCompare, FileText, Menu, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { BarChart, Terminal, Shield, History, LogOut, Wallet, FlaskConical, ShieldAlert, Users, Settings, Activity, BrainCircuit, Landmark, Coins, Briefcase, Database, TrendingUp, ShieldCheck, Server, HeartPulse, Search, GitCompare, FileText, Menu, X, PanelLeftClose, PanelLeftOpen, Globe } from 'lucide-react';
 import clsx from 'clsx';
 import Cookies from 'js-cookie';
 import { useUser } from '@/contexts/UserContext';
@@ -54,10 +54,12 @@ export function TerminalSidebar() {
 
   const clientNav = [
     { href: '/dashboard', label: 'My Dashboard', icon: BarChart },
-    { href: '/portfolios', label: 'Portfolios', icon: Wallet },
     { href: '/funds', label: 'Lionex Funds', icon: Briefcase },
-    { href: '/trade', label: 'Execution Terminal', icon: Terminal },
+    { href: '/fund-performance', label: 'Fund Performance', icon: TrendingUp },
+    { href: '/allocation', label: 'Live Allocation', icon: Database },
+    { href: '/portfolios', label: 'Portfolios', icon: Wallet },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
+    { href: '/market-intelligence', label: 'Market Intelligence', icon: Globe },
     { href: '/lnx', label: 'LNX Ecosystem', icon: Coins },
     { href: '/simulator', label: 'Growth Simulator', icon: TrendingUp },
   ];
@@ -72,8 +74,13 @@ export function TerminalSidebar() {
     { href: '/execution-monitor', label: 'Execution Monitor', icon: Server },
     { href: '/execution-health', label: 'Execution Health', icon: HeartPulse },
     { href: '/validation', label: 'Validation Framework', icon: ShieldCheck },
+    { href: '/research-lab', label: 'Research Lab', icon: FlaskConical },
+    { href: '/alpha-evidence', label: 'Alpha Evidence', icon: ShieldCheck },
     { href: '/reports', label: 'Performance Reports', icon: FileText },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
+    { href: '/market-intelligence', label: 'Market Intelligence', icon: Globe },
+    { href: '/fund-performance', label: 'Fund Performance', icon: TrendingUp },
+    { href: '/allocation', label: 'Live Allocation', icon: Database },
   ];
 
   const riskNav = [
@@ -81,8 +88,14 @@ export function TerminalSidebar() {
     { href: '/mandates', label: 'Mandate Contracts', icon: Shield },
     { href: '/audit', label: 'Audit Trail', icon: History },
     { href: '/intelligence', label: 'Intelligence Hub', icon: BrainCircuit },
+    { href: '/market-intelligence', label: 'Market Intelligence', icon: Globe },
     { href: '/stress-test', label: 'Risk Stress Tests', icon: ShieldCheck },
     { href: '/validation', label: 'Validation Framework', icon: ShieldCheck },
+    { href: '/research-lab', label: 'Research Lab', icon: FlaskConical },
+    { href: '/alpha-evidence', label: 'Alpha Evidence', icon: ShieldCheck },
+    { href: '/treasury', label: 'Treasury NAV', icon: Landmark },
+    { href: '/fund-performance', label: 'Fund Performance', icon: TrendingUp },
+    { href: '/allocation', label: 'Live Allocation', icon: Database },
   ];
 
   const adminNav = [

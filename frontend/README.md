@@ -1,17 +1,16 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NEXA Platform: Frontend
+
+This is the Next.js frontend for the NEXA platform. It is built with TypeScript, React, and Tailwind CSS.
 
 ## Getting Started
 
-First, run the development server:
+The frontend is designed to be run via Docker Compose as part of the complete NEXA development environment. Please refer to the main `docs/DEVELOPMENT.md` guide in the root of the repository for setup instructions.
+
+1.  **Ensure the backend is running:** The frontend requires the backend API to be available.
+2.  **Start the development server (via Docker):**
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

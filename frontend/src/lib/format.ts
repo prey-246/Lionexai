@@ -35,3 +35,55 @@ export function toChartTimestamp(time: number | string | Date): Time {
   const date = new Date(time);
   return (date.getTime() / 1000) as Time;
 }
+
+type EquityPoint = {
+  timestamp?: string;
+  time?: number;
+  equity?: number;
+  value?: number;
+};
+
+function equityPointMs(point: EquityPoint): number {
+  if (point.timestamp) return new Date(point.timestamp).getTime();
+  if (point.time != null) return point.time > 1_000_000_000_000 ? point.time : point.time * 1000;
+  return 0;
+}
+
+function equityPointValue(point: EquityPoint): number {
+  return toFiniteNumber(point.equity ?? point.value, 0);
+}
+
+/** Total and trailing 7-day return from an equity curve series. */
+export function computeEquityReturns(data: EquityPoint[]): {
+  totalReturnPct: number | null;
+  weeklyReturnPct: number | null;
+} {
+  if (!data?.length) return { totalReturnPct: null, weeklyReturnPct: null };
+
+  const sorted = [...data]
+    .map((p) => ({ ms: equityPointMs(p), value: equityPointValue(p) }))
+    .filter((p) => p.ms > 0 && p.value > 0)
+    .sort((a, b) => a.ms - b.ms);
+
+  if (sorted.length < 2) return { totalReturnPct: null, weeklyReturnPct: null };
+
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  const totalReturnPct = ((last.value - first.value) / first.value) * 100;
+
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const targetMs = last.ms - weekMs;
+  let baseline = sorted[0];
+  for (const point of sorted) {
+    if (point.ms <= targetMs) baseline = point;
+    else break;
+  }
+  const weeklyReturnPct =
+    baseline.value > 0 ? ((last.value - baseline.value) / baseline.value) * 100 : null;
+
+  return {
+    totalReturnPct: Number.isFinite(totalReturnPct) ? totalReturnPct : null,
+    weeklyReturnPct:
+      weeklyReturnPct != null && Number.isFinite(weeklyReturnPct) ? weeklyReturnPct : null,
+  };
+}

@@ -660,3 +660,49 @@ For migration details, see `backend/alembic/versions/`.
 |----------|------|-------------|
 | `b7c3e1a42f90` | `extend_trade_validation_fields.py` | Trade columns: exchange, latency, strategy, rejection, trade_source |
 | `c4d8e2f91a03` | `validation_snapshot_history.py` | Daily snapshot archive table |
+
+---
+
+## Phase 4 Schema (June 2026)
+
+Full narrative: [PHASE4_AUTONOMOUS_FUND_MANAGER.md](./PHASE4_AUTONOMOUS_FUND_MANAGER.md)
+
+### Phase 4 Migrations
+
+| Revision | File | Description |
+|----------|------|-------------|
+| `d5f3a1b9c204` | `phase4_autonomous_fund_manager.py` | Assets, market_bars, funds, universes, allocations, rebalances, regimes, global_market_state, strategy_scores, lnx_index_snapshots |
+| `e6a8c3d12f05` | `treasury_economics_settlements.py` | Fund weekly targets, portfolio principal/last_settled_at, client_settlements |
+| `f9c2a4e01b06` | `market_intel_news_columns.py` | market_news_articles.region, asset_classes |
+
+### Key Phase 4 Tables
+
+| Table | Purpose |
+|-------|---------|
+| `assets` | Multi-asset registry (symbol, asset_class, data_provider, execution_venue) |
+| `market_bars` | Unified OHLCV (Timescale-friendly) for crypto, metals, FX |
+| `funds` | PRESERVE / BALANCE / ALPHA — `target_weekly_return_pct`, `target_monthly_return_pct`, `target_return_label` (actual returns computed at API layer via `fund_performance_service`, not stored) |
+| `fund_asset_universe` | Per-fund asset min/max weight constraints |
+| `portfolio_allocations` | Target vs current weight per asset per portfolio |
+| `rebalance_events` | Allocation engine decision audit trail |
+| `client_settlements` | Weekly profit-routing ledger (idempotent per ISO week) |
+| `market_regimes` | Per-asset + GLOBAL regime snapshots |
+| `global_market_state` | Macro risk score, asset ranking |
+| `strategy_scores` | Weekly optimizer composite rankings |
+| `lnx_index_snapshots` | Daily LNX composite index components |
+
+### Portfolio Extensions
+
+- `fund_pk_id` — FK to funds (auto-managed portfolios)
+- `auto_managed` — gates settlement + portfolio manager
+- `principal` — initial deposit for yield-delivery metrics
+- `last_settled_at` — settlement watermark
+
+### Treasury Pools (Seeded)
+
+`RESERVE`, `YIELD`, `GROWTH`, `OPERATIONS`, `INSURANCE`, `LNX_INDEX`
+
+### Validation Extensions
+
+Snapshot periods now include **90D**, **180D**, **365D**. Extended fund/treasury/LNX metrics stored in `validation_snapshots.chart_data.extended_metrics` (JSON).
+

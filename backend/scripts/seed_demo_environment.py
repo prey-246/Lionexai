@@ -77,14 +77,14 @@ def seed_demo_environment():
 
 def _ensure_users(db):
     specs = [
-        ("admin@lionex.ai", "admin"),
-        ("operator1@lionex.ai", "operator"),
-        ("operator2@lionex.ai", "operator"),
-        ("risk1@lionex.ai", "risk_manager"),
-        ("risk2@lionex.ai", "risk_manager"),
-        ("client1@lionex.ai", "client"),
-        ("client2@lionex.ai", "client"),
-        ("client3@lionex.ai", "client"),
+        ("admin@google.com", "admin"),
+        ("operator1@google.com", "operator"),
+        ("operator2@google.com", "operator"),
+        ("risk1@google.com", "risk_manager"),
+        ("risk2@google.com", "risk_manager"),
+        ("client1@google.com", "client"),
+        ("client2@google.com", "client"),
+        ("client3@google.com", "client"),
     ]
     users = []
     for email, role in specs:

@@ -10,6 +10,7 @@ from app.models import schemas
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models import domain
+from app.services import market_data_service
 from app.strategies import get_strategy
 
 router = APIRouter()
@@ -37,23 +38,24 @@ def run_backtest(
         )
 
     try:
-        query = db.query(
-            domain.MarketDataOHLCV.timestamp,
-            domain.MarketDataOHLCV.open,
-            domain.MarketDataOHLCV.high,
-            domain.MarketDataOHLCV.low,
-            domain.MarketDataOHLCV.close,
-            domain.MarketDataOHLCV.volume
-        ).filter(
-            domain.MarketDataOHLCV.symbol == backtest_in.symbol,
-            domain.MarketDataOHLCV.timestamp >= start_date,
-            domain.MarketDataOHLCV.timestamp <= end_date
-        ).order_by(domain.MarketDataOHLCV.timestamp.asc())
-        
-        df = pd.read_sql(query.statement, db.bind)
+        df = market_data_service.get_bars_df(db, backtest_in.symbol, timeframe="1d", limit=2000)
+        if df is None or df.empty or len(df) < 50:
+            query = db.query(
+                domain.MarketDataOHLCV.timestamp,
+                domain.MarketDataOHLCV.open,
+                domain.MarketDataOHLCV.high,
+                domain.MarketDataOHLCV.low,
+                domain.MarketDataOHLCV.close,
+                domain.MarketDataOHLCV.volume
+            ).filter(
+                domain.MarketDataOHLCV.symbol == backtest_in.symbol,
+                domain.MarketDataOHLCV.timestamp >= start_date,
+                domain.MarketDataOHLCV.timestamp <= end_date
+            ).order_by(domain.MarketDataOHLCV.timestamp.asc())
+            df = pd.read_sql(query.statement, db.bind)
 
         if len(df) < 50:
-            raise ValueError(f"Not enough historical data in the database for {backtest_in.symbol} between {start_date.date()} and {end_date.date()}. Please backfill more data.")
+            raise ValueError(f"Not enough historical data for {backtest_in.symbol}. Backfill market_bars first.")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch market data from database: {e}")
 

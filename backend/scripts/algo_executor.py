@@ -13,6 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.database import SessionLocal
 from app.models import domain
+from app.services.audit_service import create_audit_log, log_exchange_reconnect, log_exchange_disconnect
 from app.strategies import get_strategy
 from app.exchange import get_exchange_adapter, ExchangeAdapter
 
@@ -76,20 +77,12 @@ async def run_autonomous_execution():
                     exchange_adapter = get_exchange_adapter(execution_exchange, api_key, secret_key)
                     await exchange_adapter.connect()
                     adapters[execution_exchange] = exchange_adapter
-                    db.add(domain.AuditLog(
-                        action_type="EXCHANGE_RECONNECTED",
-                        description=f"{execution_exchange.upper()} testnet adapter connected.",
-                        metadata_json={"exchange": execution_exchange},
-                    ))
+                    log_exchange_reconnect(db, execution_exchange)
                     db.commit()
                     logger.info(f"Adapter for {execution_exchange.upper()} initialized for this run.")
                 except Exception as e:
                     logger.error(f"Could not connect adapter for {execution_exchange}: {e}")
-                    db.add(domain.AuditLog(
-                        action_type="EXCHANGE_DISCONNECTED",
-                        description=f"Failed to connect to {execution_exchange.upper()}: {e}",
-                        metadata_json={"exchange": execution_exchange, "error": str(e)},
-                    ))
+                    log_exchange_disconnect(db, execution_exchange, str(e))
                     db.commit()
                     continue
 

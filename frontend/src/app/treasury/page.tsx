@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
-import { treasuryAPI } from '@/lib/api';
+import { treasuryAPI, institutionalAPI, type TreasuryPoolAnalytics } from '@/lib/api';
 import { Landmark, ArrowRightLeft, Loader2, Database, Shield, Activity, TrendingUp } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 
@@ -12,6 +12,9 @@ export default function TreasuryDashboard() {
   const [loading, setLoading] = useState(true);
   const [pools, setPools] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [routing, setRouting] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<TreasuryPoolAnalytics[]>([]);
+  const [verification, setVerification] = useState<any>(null);
 
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [transferForm, setTransferForm] = useState({ source: '', target: '', amount: '', description: '' });
@@ -20,12 +23,18 @@ export default function TreasuryDashboard() {
   const fetchTreasuryData = async () => {
     try {
       setLoading(true);
-      const [poolsData, txData] = await Promise.all([
+      const [poolsData, txData, routingData, analyticsData, verifyData] = await Promise.all([
         treasuryAPI.getPools(),
-        treasuryAPI.getTransactions(15)
+        treasuryAPI.getTransactions(15),
+        treasuryAPI.getRouting(20).catch(() => []),
+        treasuryAPI.getPoolAnalytics().catch(() => []),
+        institutionalAPI.verifyTreasury(false).catch(() => null),
       ]);
       setPools(poolsData || []);
       setTransactions(txData || []);
+      setRouting(routingData || []);
+      setAnalytics(analyticsData || []);
+      setVerification(verifyData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -119,6 +128,53 @@ export default function TreasuryDashboard() {
         <MetricDisplay label="Total Active Pools" value={pools.length} icon={Database} />
       </div>
 
+      {verification && (
+        <div className="card gold p-6">
+          <h3 className="sec-head">Treasury Verification</h3>
+          <div className="g4 mt-4">
+            <MetricDisplay label="Solvency Score" value={`${verification.solvency_score}/100`} icon={Shield} />
+            <MetricDisplay label="Status" value={verification.status} icon={Activity} />
+            <MetricDisplay label="Routing Integrity" value={`${verification.routing_integrity_pct}%`} icon={ArrowRightLeft} />
+            <MetricDisplay label="Settlement Coverage" value={`${verification.settlement_coverage_pct}%`} icon={TrendingUp} />
+          </div>
+          {verification.issues?.length > 0 && (
+            <ul className="mt-4 text-[12px] text-warning list-disc pl-5 space-y-1">
+              {verification.issues.map((issue: string, i: number) => <li key={i}>{issue}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {analytics.length > 0 && (
+        <div className="card blue shadow-lg p-0 overflow-hidden">
+          <div className="p-6 border-b border-border-default">
+            <h3 className="sec-head mb-0">Pool Analytics</h3>
+            <p className="font-sans text-[12px] text-text-muted mt-1">Balance, contributions, withdrawals, and net flow per institutional pool.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="nexa-table">
+              <thead>
+                <tr><th>Pool</th><th>Balance</th><th>Contributions</th><th>Withdrawals</th><th>Net Flow</th><th>Txns</th></tr>
+              </thead>
+              <tbody>
+                {analytics.map((a) => (
+                  <tr key={a.pool_id}>
+                    <td className="font-mono font-bold text-primary-gold">{a.pool_id}</td>
+                    <td className="font-mono font-bold text-primary-emerald">${a.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="font-mono text-primary-emerald">+${a.contributions.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="font-mono text-danger">-${a.withdrawals.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className={`font-mono font-bold ${a.net_flow >= 0 ? 'text-primary-emerald' : 'text-danger'}`}>
+                      {a.net_flow >= 0 ? '+' : ''}${a.net_flow.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="font-mono">{a.transaction_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="g21">
         {/* Active Pools */}
         <div className="card gold shadow-lg p-0 overflow-hidden">
@@ -182,6 +238,33 @@ export default function TreasuryDashboard() {
           </div>
         </div>
       </div>
+
+      {routing.length > 0 && (
+        <div className="card gold shadow-lg p-0 overflow-hidden">
+          <div className="p-6 border-b border-border-default bg-background-base">
+            <h3 className="sec-head mb-0">Profit Routing Ledger</h3>
+            <p className="font-sans text-[12px] text-text-muted mt-1">Weekly settlement excess routed to treasury pools (auto-managed portfolios).</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="nexa-table">
+              <thead><tr><th>Time</th><th>Pool</th><th>Amount</th><th>Portfolio</th><th>Description</th></tr></thead>
+              <tbody>
+                {routing.map((r: any) => (
+                  <tr key={r.id}>
+                    <td className="font-mono text-[10px]">{new Date(r.timestamp).toLocaleString()}</td>
+                    <td className="font-mono font-bold text-primary-gold">{r.pool_id}</td>
+                    <td className={`font-mono font-bold ${r.amount > 0 ? 'text-primary-emerald' : 'text-danger'}`}>
+                      {r.amount > 0 ? '+' : ''}{r.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="font-mono text-[11px]">{r.reference_id || '—'}</td>
+                    <td className="font-sans text-[11px] text-text-secondary">{r.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Transfer Modal Overlay */}
       {isTransferModalOpen && (

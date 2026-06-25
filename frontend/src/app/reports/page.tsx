@@ -17,9 +17,14 @@ export default function ReportsPage() {
     const fetchPortfolios = async () => {
       try {
         const portfolioData = await portfolioAPI.listPortfolios();
-        setPortfolios(portfolioData);
-        if (portfolioData.length > 0) {
-          setSelectedPortfolio(portfolioData[0].id);
+        const sorted = [...portfolioData].sort((a: any, b: any) => {
+          if (a.auto_managed && !b.auto_managed) return -1;
+          if (!a.auto_managed && b.auto_managed) return 1;
+          return a.id.localeCompare(b.id);
+        });
+        setPortfolios(sorted);
+        if (sorted.length > 0) {
+          setSelectedPortfolio(sorted[0].id);
         }
       } catch (error) {
         console.error("Failed to fetch portfolios", error);

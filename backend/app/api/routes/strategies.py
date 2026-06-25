@@ -62,6 +62,27 @@ def list_strategies(active_only: bool = False, db: Session = Depends(get_db)):
         query = query.filter(Strategy.is_active == True)
     return query.all()
 
+
+@router.get("/scores", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
+def list_strategy_scores(limit: int = 20, db: Session = Depends(get_db)):
+    from app.models.domain import StrategyScore
+    rows = db.query(StrategyScore).order_by(StrategyScore.computed_at.desc(), StrategyScore.rank.asc()).limit(limit).all()
+    return [
+        {
+            "strategy_name": r.strategy_name,
+            "period": r.period,
+            "sharpe": r.sharpe,
+            "win_rate": r.win_rate,
+            "max_drawdown": r.max_drawdown,
+            "profit_factor": r.profit_factor,
+            "composite_score": r.composite_score,
+            "rank": r.rank,
+            "computed_at": r.computed_at.isoformat() if r.computed_at else None,
+        }
+        for r in rows
+    ]
+
+
 @router.get("/{strategy_id}", summary="Get strategy details")
 def get_strategy(strategy_id: str, db: Session = Depends(get_db)):
     """

@@ -7,6 +7,7 @@ import uuid
 from app.core.database import get_db
 from app.models import schemas, domain
 from app.api.deps import get_current_user
+from app.api.portfolio_access import portfolio_for_user
 from app.services.audit_service import create_audit_log
 from app.services.pdf_service import generate_pdf_from_template
 
@@ -19,10 +20,7 @@ def generate_report(
     current_user: domain.User = Depends(get_current_user)
 ):
     """Generate a new performance report for a portfolio."""
-    portfolio = db.query(domain.Portfolio).filter(
-        domain.Portfolio.id == report_in.portfolio_id,
-        domain.Portfolio.user_id == current_user.id
-    ).first()
+    portfolio = portfolio_for_user(db, report_in.portfolio_id, current_user)
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
@@ -93,12 +91,10 @@ def download_report(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    portfolio = db.query(domain.Portfolio).filter(
-        domain.Portfolio.pk_id == report.portfolio_id,
-        domain.Portfolio.user_id == current_user.id
-    ).first()
-
+    portfolio = db.query(domain.Portfolio).filter(domain.Portfolio.pk_id == report.portfolio_id).first()
     if not portfolio:
+        raise HTTPException(status_code=404, detail="Portfolio not found")
+    if current_user.role_tier == "client" and portfolio.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Portfolio not found")
 
     pdf_bytes = generate_pdf_from_template(
@@ -125,10 +121,7 @@ def get_reports(
     current_user: domain.User = Depends(get_current_user)
 ):
     """List generated reports for a portfolio."""
-    portfolio = db.query(domain.Portfolio).filter(
-        domain.Portfolio.id == portfolio_id,
-        domain.Portfolio.user_id == current_user.id
-    ).first()
+    portfolio = portfolio_for_user(db, portfolio_id, current_user)
     if not portfolio:
         raise HTTPException(status_code=404, detail="Portfolio not found")
 

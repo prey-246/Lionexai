@@ -35,7 +35,7 @@ export function MetricDisplay({
       : 'text-text-muted';
 
   return (
-    <div className={`card ${accent ?? ''} group`}>
+    <div className={`card ${accent ?? ''} group min-w-0 overflow-hidden`}>
       <div className="flex items-start justify-between gap-3">
         <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-muted">
           {label}
@@ -46,8 +46,8 @@ export function MetricDisplay({
           </span>
         )}
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3 flex-wrap">
-        <span className="font-display font-bold text-[30px] leading-none text-text-primary tabular-nums tracking-tight">
+      <div className="mt-3 flex items-end justify-between gap-3 flex-wrap min-w-0">
+        <span className="font-display font-bold text-[clamp(1.125rem,2.5vw,1.875rem)] leading-tight text-text-primary tabular-nums tracking-tight break-all min-w-0">
           {value}
         </span>
         {displayTrend && displayTrendValue && (

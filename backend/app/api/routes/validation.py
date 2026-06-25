@@ -17,6 +17,8 @@ from app.services.validation_service import (
     query_validation_history,
     query_metric_timeseries,
     archive_snapshots_to_history,
+    build_validated_historical_snapshots,
+    _sanitize_snapshot_metrics,
 )
 from app.services.validation_report_service import (
     build_validation_report_context,
@@ -156,6 +158,7 @@ class ValidationSnapshotResponse(BaseModel):
     snapshot_type: str
     period: str
     scope_id: str | None = None
+    data_provenance: str | None = "DEMO"
     total_trades: int
     winning_trades: int
     losing_trades: int
@@ -185,10 +188,38 @@ class ValidationSnapshotResponse(BaseModel):
 
 
 def _snapshot_to_response(snapshot: domain.ValidationSnapshot) -> ValidationSnapshotResponse:
-    # Use Pydantic's model_validate (from_orm in v1) to directly map the ORM object
-    # to the response model. This is cleaner and less error-prone.
-    # The `from_attributes=True` in the model's Config enables this.
-    return ValidationSnapshotResponse.model_validate(snapshot)
+    raw = {
+        "snapshot_key": snapshot.snapshot_key,
+        "snapshot_type": snapshot.snapshot_type,
+        "period": snapshot.period,
+        "scope_id": snapshot.scope_id,
+        "data_provenance": "DEMO",
+        "total_trades": snapshot.total_trades,
+        "winning_trades": snapshot.winning_trades,
+        "losing_trades": snapshot.losing_trades,
+        "win_rate_pct": snapshot.win_rate_pct,
+        "total_pnl": snapshot.total_pnl,
+        "profit_factor": snapshot.profit_factor,
+        "sharpe_ratio": snapshot.sharpe_ratio,
+        "max_drawdown_pct": snapshot.max_drawdown_pct,
+        "avg_return_pct": snapshot.avg_return_pct,
+        "largest_win": snapshot.largest_win,
+        "largest_loss": snapshot.largest_loss,
+        "avg_latency_ms": snapshot.avg_latency_ms,
+        "fill_rate_pct": snapshot.fill_rate_pct,
+        "total_orders": snapshot.total_orders or 0,
+        "filled_orders": snapshot.filled_orders or 0,
+        "rejected_orders": snapshot.rejected_orders or 0,
+        "best_portfolio": snapshot.best_portfolio,
+        "worst_portfolio": snapshot.worst_portfolio,
+        "best_strategy": snapshot.best_strategy,
+        "worst_strategy": snapshot.worst_strategy,
+        "exchange_distribution": snapshot.exchange_distribution,
+        "chart_data": snapshot.chart_data,
+        "updated_at": snapshot.updated_at,
+    }
+    clean = _sanitize_snapshot_metrics(raw)
+    return ValidationSnapshotResponse(**clean)
 
 @router.post("/snapshots/refresh", dependencies=[Depends(require_role(["admin", "operator", "risk_manager"]))])
 def refresh_validation_snapshots(db: Session = Depends(get_db)):
@@ -202,12 +233,21 @@ def get_validation_snapshots(
     period: str | None = None,
     snapshot_type: str | None = None,
     scope_id: str | None = None,
+    data_source: str = "validated",
     db: Session = Depends(get_db)
 ):
     """
-    Retrieve pre-calculated validation snapshots.
-    Filter by period (7D, 14D, 30D, ALL), type (GLOBAL, PORTFOLIO, STRATEGY), or scope_id.
+    Retrieve validation snapshots.
+    data_source=validated (default): institutional backtests on real market history.
+    data_source=demo: operational paper-trading ledger snapshots.
     """
+    source = (data_source or "validated").lower()
+    if source == "validated":
+        validated = build_validated_historical_snapshots(
+            db, period=period, snapshot_type=snapshot_type, scope_id=scope_id
+        )
+        return [_computed_to_response(s) for s in validated]
+
     count = db.query(domain.ValidationSnapshot).count()
     if count == 0:
         update_validation_snapshots_job()
@@ -265,6 +305,11 @@ class MetricTimeseriesResponse(BaseModel):
 
 
 def _history_to_response(row: domain.ValidationSnapshotHistory) -> ValidationHistoryResponse:
+    clean = _sanitize_snapshot_metrics({
+        "max_drawdown_pct": row.max_drawdown_pct,
+        "avg_return_pct": row.avg_return_pct,
+        "sharpe_ratio": row.sharpe_ratio,
+    })
     return ValidationHistoryResponse(
         archive_date=row.archive_date,
         snapshot_key=row.snapshot_key,
@@ -277,9 +322,9 @@ def _history_to_response(row: domain.ValidationSnapshotHistory) -> ValidationHis
         win_rate_pct=row.win_rate_pct,
         total_pnl=row.total_pnl,
         profit_factor=row.profit_factor,
-        sharpe_ratio=row.sharpe_ratio,
-        max_drawdown_pct=row.max_drawdown_pct,
-        avg_return_pct=row.avg_return_pct,
+        sharpe_ratio=clean.get("sharpe_ratio"),
+        max_drawdown_pct=clean["max_drawdown_pct"],
+        avg_return_pct=clean["avg_return_pct"],
         largest_win=row.largest_win,
         largest_loss=row.largest_loss,
         avg_latency_ms=row.avg_latency_ms,
@@ -289,34 +334,36 @@ def _history_to_response(row: domain.ValidationSnapshotHistory) -> ValidationHis
 
 
 def _computed_to_response(data: dict[str, Any]) -> ValidationSnapshotResponse:
-    exchange_raw = data.get("exchange_distribution") or {}
+    clean = _sanitize_snapshot_metrics(dict(data))
+    exchange_raw = clean.get("exchange_distribution") or {}
     return ValidationSnapshotResponse(
-        snapshot_key=data["snapshot_key"],
-        snapshot_type=data["snapshot_type"],
-        period=data["period"],
-        scope_id=data.get("scope_id"),
-        total_trades=data["total_trades"],
-        winning_trades=data["winning_trades"],
-        losing_trades=data["losing_trades"],
-        win_rate_pct=data["win_rate_pct"],
-        total_pnl=data["total_pnl"],
-        profit_factor=data.get("profit_factor"),
-        sharpe_ratio=data.get("sharpe_ratio"),
-        max_drawdown_pct=data["max_drawdown_pct"],
-        avg_return_pct=data["avg_return_pct"],
-        largest_win=data["largest_win"],
-        largest_loss=data["largest_loss"],
-        avg_latency_ms=data["avg_latency_ms"],
-        fill_rate_pct=data["fill_rate_pct"],
-        total_orders=data.get("total_orders", 0),
-        filled_orders=data.get("filled_orders", 0),
-        rejected_orders=data.get("rejected_orders", 0),
-        best_portfolio=data.get("best_portfolio"),
-        worst_portfolio=data.get("worst_portfolio"),
-        best_strategy=data.get("best_strategy"),
-        worst_strategy=data.get("worst_strategy"),
+        snapshot_key=clean["snapshot_key"],
+        snapshot_type=clean["snapshot_type"],
+        period=clean["period"],
+        scope_id=clean.get("scope_id"),
+        data_provenance=clean.get("data_provenance", "DEMO"),
+        total_trades=clean["total_trades"],
+        winning_trades=clean["winning_trades"],
+        losing_trades=clean["losing_trades"],
+        win_rate_pct=clean["win_rate_pct"],
+        total_pnl=clean["total_pnl"],
+        profit_factor=clean.get("profit_factor"),
+        sharpe_ratio=clean.get("sharpe_ratio"),
+        max_drawdown_pct=clean["max_drawdown_pct"],
+        avg_return_pct=clean["avg_return_pct"],
+        largest_win=clean["largest_win"],
+        largest_loss=clean["largest_loss"],
+        avg_latency_ms=clean["avg_latency_ms"],
+        fill_rate_pct=clean["fill_rate_pct"],
+        total_orders=clean.get("total_orders", 0),
+        filled_orders=clean.get("filled_orders", 0),
+        rejected_orders=clean.get("rejected_orders", 0),
+        best_portfolio=clean.get("best_portfolio"),
+        worst_portfolio=clean.get("worst_portfolio"),
+        best_strategy=clean.get("best_strategy"),
+        worst_strategy=clean.get("worst_strategy"),
         exchange_distribution=ExchangeDistribution(**exchange_raw) if exchange_raw else None,
-        chart_data=data.get("chart_data") or None,
+        chart_data=clean.get("chart_data") or None,
         updated_at=datetime.utcnow(),
     )
 
@@ -402,13 +449,20 @@ class SimulationParams(BaseModel):
     fund_type: str
 
 @router.post("/reports/generate-simulation", dependencies=[Depends(require_role(["client", "admin"]))])
-def generate_simulation_report(params: SimulationParams):
-    weekly_rates = {
-        'CONSERVATIVE': 0.005,
-        'BALANCED': 0.010,
-        'AGGRESSIVE': 0.015,
-    }
-    weekly_rate = weekly_rates.get(params.scenario, 0.01)
+def generate_simulation_report(params: SimulationParams, db: Session = Depends(get_db)):
+    fund = db.query(domain.Fund).filter(domain.Fund.id == params.fund_type).first()
+    if fund and fund.target_weekly_return_pct:
+        weekly_rate = fund.target_weekly_return_pct / 100.0
+    else:
+        weekly_rates = {
+            'CONSERVATIVE': 0.01,
+            'BALANCED': 0.025,
+            'AGGRESSIVE': 0.05,
+            'PRESERVE': 0.01,
+            'BALANCE': 0.025,
+            'ALPHA': 0.05,
+        }
+        weekly_rate = weekly_rates.get(params.fund_type, weekly_rates.get(params.scenario, 0.025))
     total_weeks = params.months * 4
     
     current_capital = params.deposit
