@@ -136,12 +136,16 @@ def _demo_fund_actuals(db: Session, portfolios: list[domain.Portfolio]) -> dict[
     """Demo ledger metrics — admin-only, never shown as primary performance."""
     from app.services.fund_performance_service import compute_fund_actuals, detect_fund_provenance
 
-    if not portfolios:
+    demo_portfolios = [p for p in portfolios if not p.id.endswith("-VALIDATED")]
+    if not demo_portfolios:
         return {}
-    fund_pk = portfolios[0].fund_pk_id
+    fund_pk = demo_portfolios[0].fund_pk_id
     fund = db.query(domain.Fund).filter(domain.Fund.pk_id == fund_pk).first()
     if not fund:
         return {}
-    actuals = compute_fund_actuals(db, fund)
-    actuals["data_provenance"] = detect_fund_provenance(db, portfolios)
+    actuals = compute_fund_actuals(db, fund, exclude_validated=True)
+    actuals["data_provenance"] = detect_fund_provenance(db, demo_portfolios)
+    actuals["portfolio_count"] = len(demo_portfolios)
+    actuals["total_aum"] = round(sum(p.total_equity or 0 for p in demo_portfolios), 2)
+    actuals["client_count"] = len({p.user_id for p in demo_portfolios})
     return actuals

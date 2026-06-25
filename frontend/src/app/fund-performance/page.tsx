@@ -130,11 +130,24 @@ export default function FundPerformancePage() {
           {runningBacktest ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
           Baseline Backtests Only
         </button>
-        <label className="flex items-center gap-2 text-[13px] text-text-secondary cursor-pointer">
-          <input type="checkbox" checked={showDemo} onChange={(e) => setShowDemo(e.target.checked)} />
-          Show demo comparison (admin)
+        <label className="flex items-center gap-2 text-[13px] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showDemo}
+            onChange={(e) => setShowDemo(e.target.checked)}
+            className="accent-primary-gold"
+          />
+          <span className={showDemo ? 'text-danger font-semibold' : 'text-text-secondary'}>
+            Show demo comparison (admin)
+          </span>
         </label>
       </div>
+
+      {showDemo && (
+        <div className="card p-3 text-[12px] text-text-secondary border border-system-rBd bg-system-rBg/30">
+          <strong className="text-danger">Demo comparison active.</strong> Red column shows operational metrics from seeded client portfolios — not for institutional reporting.
+        </div>
+      )}
 
       <div className="g3">
         <MetricDisplay label="Global Risk Score" value={`${globalRisk?.global_risk_score?.toFixed(1) ?? globalState?.global_risk_score?.toFixed(1) ?? '—'}`} icon={Shield} />
@@ -170,34 +183,55 @@ export default function FundPerformancePage() {
                 </p>
               )}
 
-              <div className="mt-6 rounded-lg border border-border-subtle bg-background-panel/50 p-4">
-                <div className="grid grid-cols-3 gap-2 mb-2 pb-2 border-b border-border-default text-[9px] font-mono uppercase text-text-muted">
+              <div className="mt-6 rounded-lg border border-border-subtle bg-background-panel/50 p-4 overflow-x-auto">
+                <div className={`grid ${showDemo ? 'grid-cols-4' : 'grid-cols-3'} gap-2 mb-2 pb-2 border-b border-border-default text-[9px] font-mono uppercase text-text-muted min-w-[280px]`}>
                   <span>Metric</span>
                   <span className="text-right">Target</span>
                   <span className="text-right">Historical</span>
+                  {showDemo && <span className="text-right text-danger">Demo Ledger</span>}
                 </div>
-                {[
-                  ['Weekly Return', fund.target_weekly_return_pct, v.avg_weekly_return_pct, false],
-                  ['Monthly Return', fund.target_monthly_return_pct, v.avg_monthly_return_pct, false],
-                  ['CAGR', null, v.cagr_pct, false],
-                  ['Total Return', null, v.total_return_pct, false],
-                  ['Sharpe', null, v.sharpe_ratio, true],
-                  ['Sortino', null, v.sortino_ratio, true],
-                  ['Max Drawdown', null, v.max_drawdown_pct, false],
-                  ['Calmar', null, v.calmar_ratio, true],
-                  ['Win Rate', null, v.win_rate_pct, false],
-                  ['Profit Factor', null, v.profit_factor, true],
-                  ['Volatility', null, v.volatility_pct, false],
-                  ['Yield Delivery', null, v.yield_delivery_pct, false],
-                ].map(([label, target, actual, isRatio]) => (
-                  <div key={String(label)} className="grid grid-cols-3 gap-2 py-2 border-b border-border-subtle last:border-0 text-[13px]">
-                    <span className="text-text-muted">{label}</span>
-                    <span className="font-mono text-right">{typeof target === 'number' ? fmtPct(target) : '—'}</span>
-                    <span className="font-mono font-bold text-right text-primary-blue">
-                      {metricCell(String(label), actual as number | null, isRatio as boolean)}
+                {(() => {
+                  const demo = v.demo_comparison as Record<string, number | null | undefined> | undefined;
+                  const rows: Array<[string, number | null | undefined, number | null | undefined, number | null | undefined, boolean]> = [
+                    ['Weekly Return', fund.target_weekly_return_pct, v.avg_weekly_return_pct, demo?.actual_weekly_return_pct ?? null, false],
+                    ['Monthly Return', fund.target_monthly_return_pct, v.avg_monthly_return_pct, demo?.actual_monthly_return_pct ?? null, false],
+                    ['CAGR', null, v.cagr_pct, null, false],
+                    ['Total Return', null, v.total_return_pct, demo?.actual_total_return_pct ?? null, false],
+                    ['Sharpe', null, v.sharpe_ratio, null, true],
+                    ['Sortino', null, v.sortino_ratio, null, true],
+                    ['Max Drawdown', null, v.max_drawdown_pct, null, false],
+                    ['Calmar', null, v.calmar_ratio, null, true],
+                    ['Win Rate', null, v.win_rate_pct, null, false],
+                    ['Profit Factor', null, v.profit_factor, null, true],
+                    ['Volatility', null, v.volatility_pct, null, false],
+                    ['Yield Delivery', null, v.yield_delivery_pct, null, false],
+                  ];
+                  return rows.map(([label, target, actual, demoVal, isRatio]) => (
+                    <div key={String(label)} className={`grid ${showDemo ? 'grid-cols-4' : 'grid-cols-3'} gap-2 py-2 border-b border-border-subtle last:border-0 text-[13px] min-w-[280px]`}>
+                      <span className="text-text-muted">{label}</span>
+                      <span className="font-mono text-right">{typeof target === 'number' ? fmtPct(target) : '—'}</span>
+                      <span className="font-mono font-bold text-right text-primary-blue">
+                        {metricCell(String(label), actual as number | null, isRatio as boolean)}
+                      </span>
+                      {showDemo && (
+                        <span className="font-mono font-bold text-right text-danger">
+                          {demoVal != null ? metricCell(String(label), demoVal as number, isRatio as boolean) : '—'}
+                        </span>
+                      )}
+                    </div>
+                  ));
+                })()}
+                {showDemo && (
+                  <p className="mt-3 pt-2 border-t border-border-subtle text-[11px] text-text-muted">
+                    Demo column: seeded client portfolios only (excludes <span className="font-mono">*-VALIDATED</span> reference).
+                    Provenance:{' '}
+                    <span className={provenanceBadge((v.demo_comparison as any)?.data_provenance || 'DEMO')}>
+                      {(v.demo_comparison as any)?.data_provenance || 'DEMO'}
                     </span>
-                  </div>
-                ))}
+                    {' · '}{(v.demo_comparison as any)?.portfolio_count ?? 0} demo portfolios ·{' '}
+                    AUM ${((v.demo_comparison as any)?.total_aum ?? 0).toLocaleString()}
+                  </p>
+                )}
               </div>
 
               {fund.id === 'ALPHA' && v.avg_monthly_return_pct != null && (

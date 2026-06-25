@@ -68,12 +68,14 @@ def _weighted_avg(values: list[tuple[float, float | None]]) -> float | None:
     return round(sum(w * v for w, v in pairs) / total_w, 2)
 
 
-def compute_fund_actuals(db: Session, fund: domain.Fund) -> dict[str, Any]:
-    portfolios = (
-        db.query(domain.Portfolio)
-        .filter(domain.Portfolio.fund_pk_id == fund.pk_id, domain.Portfolio.auto_managed == True)
-        .all()
+def compute_fund_actuals(db: Session, fund: domain.Fund, exclude_validated: bool = False) -> dict[str, Any]:
+    query = db.query(domain.Portfolio).filter(
+        domain.Portfolio.fund_pk_id == fund.pk_id,
+        domain.Portfolio.auto_managed == True,
     )
+    if exclude_validated:
+        query = query.filter(~domain.Portfolio.id.like("%-VALIDATED"))
+    portfolios = query.all()
     if not portfolios:
         return {
             "portfolio_count": 0,
