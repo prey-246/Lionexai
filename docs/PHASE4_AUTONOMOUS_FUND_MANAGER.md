@@ -716,6 +716,10 @@ Portfolio and fund returns are computed from **`equity_curves`** and **`trades`*
 
 ## Related Documents
 
+- [ALPHA_OPTIMIZATION_PROGRAM.md](./ALPHA_OPTIMIZATION_PROGRAM.md) — Grid optimization & best config selection
+- [INSTITUTIONAL_PERFORMANCE_REPORT.md](./INSTITUTIONAL_PERFORMANCE_REPORT.md) — Post-optimization validated results
+- [HISTORICAL_VALIDATION_AUDIT.md](./HISTORICAL_VALIDATION_AUDIT.md) — Demo vs validated surfaces
+- [BRAND_GUIDE.md](./BRAND_GUIDE.md) — Logo colors for presentations
 - [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) — Base validation framework
 - [EXECUTION_ARCHITECTURE.md](./EXECUTION_ARCHITECTURE.md) — Exchange adapters & audit events
 - [FEATURES_DEEP_DIVE.md](./FEATURES_DEEP_DIVE.md) — NLP & risk gatekeeper (pre–Phase 4)
@@ -723,4 +727,4 @@ Portfolio and fund returns are computed from **`equity_curves`** and **`trades`*
 
 ---
 
-*Last updated: June 2026 · Phase 4 + Productionization complete.*
+*Last updated: June 2026 · Phase 4 + Alpha Optimization + validation hardening.*

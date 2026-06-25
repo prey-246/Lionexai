@@ -1,8 +1,8 @@
 # NEXA Platform: Development Journey & Changelog
 
-This document chronicles the evolution of the UnifyX NEXA platform from a barebones MVP into a production-grade, AI-driven institutional quantitative trading system. 
+> **Archive — historical only.** For current platform status see [../README.md](../README.md).
 
-It details the major features implemented, the architectural shifts, and the specific challenges and bugs overcome during development.
+This document chronicles the evolution of the UnifyX NEXA platform from a barebones MVP into a production-grade, AI-driven institutional quantitative trading system.
 
 ---
 

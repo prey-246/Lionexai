@@ -704,5 +704,14 @@ Full narrative: [PHASE4_AUTONOMOUS_FUND_MANAGER.md](./PHASE4_AUTONOMOUS_FUND_MAN
 
 ### Validation Extensions
 
-Snapshot periods now include **90D**, **180D**, **365D**. Extended fund/treasury/LNX metrics stored in `validation_snapshots.chart_data.extended_metrics` (JSON).
+Snapshot periods include **90D**, **180D**, **365D**. Extended fund/treasury/LNX metrics stored in `validation_snapshots.chart_data.extended_metrics` (JSON). Demo snapshots refreshed every 15 minutes; validated snapshots computed on-demand via `data_source=validated`.
+
+### Validated fund runs (Phase 5+)
+
+| Table | Purpose |
+|-------|---------|
+| `validated_fund_runs` | Fund-level historical backtests on `market_bars`; stores `metrics`, `equity_curve`, `rebalance_log`, `experiment_config`, `rank_score`, `provenance=VALIDATED_HISTORICAL` |
+| `validated_strategy_runs` | Single-strategy / symbol research runs |
+
+Reference portfolios `LNX-*-VALIDATED` are regenerated from `SELECTED_BEST` runs via `ValidatedInstitutionalRegenerator`.
 

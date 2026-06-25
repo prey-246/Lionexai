@@ -1,35 +1,63 @@
-# NEXA Platform: Frontend
+# LionexAI Frontend
 
-This is the Next.js frontend for the NEXA platform. It is built with TypeScript, React, and Tailwind CSS.
+Next.js 14 · TypeScript · Tailwind CSS · TradingView Lightweight Charts
 
-## Getting Started
+Premium institutional UI for the NEXA / LionexAI platform — dark charcoal theme with **metallic gold + emerald/teal** accents from the brand logo.
 
-The frontend is designed to be run via Docker Compose as part of the complete NEXA development environment. Please refer to the main `docs/DEVELOPMENT.md` guide in the root of the repository for setup instructions.
+## Design system
 
-1.  **Ensure the backend is running:** The frontend requires the backend API to be available.
-2.  **Start the development server (via Docker):**
+Tokens live in `src/app/globals.css`. Presentation colors: [docs/BRAND_GUIDE.md](../docs/BRAND_GUIDE.md).
+
+| Token | Hex | Use |
+|-------|-----|-----|
+| `--primary-gold` | `#CFA43B` | Brand accent, CTAs |
+| `--primary-emerald` | `#0FA89A` | AI / positive accent |
+| `--background-base` | `#070809` | Page background |
+| `--text-primary` | `#F6F8FB` | Headlines |
+
+Fonts: **Inter** (body), **Sora** (display), **JetBrains Mono** (metrics).
+
+## Run (production compose)
 
 ```bash
-docker compose up
+docker compose -f docker-compose.prod.yml up -d
+# After UI changes:
+docker compose -f docker-compose.prod.yml build frontend
+docker compose -f docker-compose.prod.yml up -d frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run (dev compose)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose up -d
+```
 
-## Learn More
+Backend must be running at `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
 
-To learn more about Next.js, take a look at the following resources:
+## Key routes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Route | Purpose |
+|-------|---------|
+| `/fund-performance` | Validated historical funds; admin demo comparison toggle |
+| `/validation` | Validated Historical (default) or Demo Ledger |
+| `/portfolios/[id]` | Portfolio detail — validated reference portfolios show backtest stats |
+| `/funds` | Client invest flow |
+| `/treasury`, `/lnx` | Treasury & index |
+| `/research-lab`, `/alpha-evidence` | Staff validation tools |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API client
 
-## Deploy on Vercel
+- `src/lib/api.ts` — core API + `validatedAPI`
+- `src/lib/api/validation.ts` — validation snapshots (`data_source=validated|demo`)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Typecheck
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker compose -f docker-compose.prod.yml exec frontend npx tsc --noEmit
+```
+
+## Demo login
+
+`admin@google.com` / `password123` — see [docs/README.md](../docs/README.md).

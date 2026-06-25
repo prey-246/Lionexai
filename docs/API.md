@@ -732,7 +732,8 @@ See [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) and [API_REFERENCE.md](./API_
 
 ### Get Validation Snapshots
 ```
-GET /api/validation/snapshots?period=30D
+GET /api/validation/snapshots?period=30D&data_source=validated
+# data_source=demo for operational ledger (admin only)
 ```
 
 **Auth:** admin, operator, or risk_manager

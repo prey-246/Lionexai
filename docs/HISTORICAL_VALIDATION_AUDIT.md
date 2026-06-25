@@ -58,19 +58,23 @@ Demo data **remains in the database** for operational demos but is **not display
 
 ---
 
-## Fund Backtest Results (Actual — Not Inflated)
+## Fund Backtest Results (Post–Alpha Optimization)
 
-Run: `docker exec nexa_backend_prod bash -c "cd /code && PYTHONPATH=/code python scripts/run_historical_fund_backtests.py --backfill --limit 2000"`
+After aligned `market_bars` backfill (~1379 daily bars, 2021–2026) and grid optimization, **SELECTED_BEST** runs approximate:
 
-| Fund | Period | CAGR | Avg Monthly | Max DD | Sharpe | Meets 20% Monthly Target |
-|------|--------|------|-------------|--------|--------|--------------------------|
-| **PRESERVE** | 2025-07-09 → 2026-06-24 | **-7.05%** | **-0.60%** | 15.33% | -0.56 | N/A |
-| **BALANCE** | 2025-07-10 → 2026-06-24 | **-2.01%** | **-0.15%** | 7.08% | -0.22 | N/A |
-| **ALPHA** | 2025-07-10 → 2026-06-24 | **+6.88%** | **+0.61%** | 7.89% | 0.76 | **NO** (target 20%+) |
+| Fund | CAGR | Sharpe | Max DD | Profit Factor |
+|------|------|--------|--------|---------------|
+| **PRESERVE** | ~7.6% | ~0.80 | ~17% | ~1.42 |
+| **BALANCE** | ~8.4% | ~0.82 | ~24% | ~1.55 |
+| **ALPHA** | ~7.8% | ~0.77 | ~23% | ~1.68 |
 
-### Alpha fund — honest conclusion
+Full report: [INSTITUTIONAL_PERFORMANCE_REPORT.md](./INSTITUTIONAL_PERFORMANCE_REPORT.md). Alpha **does not** meet 20% monthly target on historical data — reported honestly.
 
-On available historical daily bars with multi-asset allocation backtest, **Alpha does NOT achieve 20% monthly compounded returns**. Actual average monthly return: **0.61%**. This is reported without smoothing or fabrication.
+Legacy single-panel results (pre-optimization, shorter history) are superseded; re-run:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend python scripts/run_alpha_optimization.py --phase all
+```
 
 ---
 
@@ -84,9 +88,11 @@ On available historical daily bars with multi-asset allocation backtest, **Alpha
 
 4. **Treasury / LNX:** Cannot be historically validated without simulating full settlement economics chain; remain operational metrics with UI disclaimers.
 
-5. **Validation dashboard:** Still shows operational paper-trading snapshots; use Fund Performance for strategy validation.
+5. **Validation dashboard:** Defaults to **Validated Historical** (`data_source=validated`). Use **Demo Ledger** toggle only for operational paper-trading review — not investor reporting.
 
-6. **Single-asset Research Lab runs:** Still available separately in `validated_strategy_runs` for strategy×symbol research.
+6. **Validated reference portfolios:** `LNX-*-VALIDATED` on `admin@google.com` — regenerated via `ValidatedInstitutionalRegenerator`.
+
+7. **Single-asset Research Lab runs:** Still available in `validated_strategy_runs` for strategy×symbol research.
 
 ---
 
@@ -115,7 +121,7 @@ docker compose -f docker-compose.prod.yml up -d frontend
 | Label | Meaning | Shown on Fund Performance? |
 |-------|---------|------------------------------|
 | `VALIDATED_HISTORICAL` | Fund backtest on `market_bars` | **Yes (primary)** |
-| `DEMO` | Seeded institutional demo ledger | **No** (hidden from performance UI) |
+| `DEMO` | Seeded client demo ledger | **Admin only** — Fund Performance demo comparison + Validation Demo Ledger toggle |
 | `PAPER_LIVE` | Live autonomous non-simulated fills | Future — when `autonomous_v2` runs without demo reset |
 | `UNVALIDATED` | No backtest run yet | Shown with prompt to run backtests |
 

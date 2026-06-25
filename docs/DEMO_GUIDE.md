@@ -103,37 +103,47 @@ See also: [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) · [DEMO Script D](#dem
 ### Click-Path & Pitch Points
 
 1.  **Navigate to `/validation`:**
-    *   **Pitch:** *"This is our institutional validation dashboard. It tracks autonomous paper trades only — not seed data — across rolling periods: Today, 7D, 14D, 30D, and All Time."*
-    *   **Show:** Period tabs, KPI grid (orders, best/worst portfolio & strategy, exchange split), cumulative PnL chart.
+    *   **Pitch:** *"Institutional validation defaults to **Validated Historical** — aggregated backtests on real market bars for all three Lionex funds. This is what we show investors."*
+    *   **Show:** Period tabs, KPI grid, equity-based Sharpe and drawdown (~8% CAGR range, ~17–24% max DD on ALL period).
 
-2.  **Switch to 30D tab and download PDF:**
-    *   **Action:** Click "Download 30-Day Report" or use weekly/monthly PDF buttons.
-    *   **Pitch:** *"Investors receive an 11-section institutional PDF with embedded charts — executive summary, capital curve, risk metrics, portfolio/strategy/exchange breakdown, latency analysis, and system health."*
+2.  **Toggle Demo Ledger (admin only):**
+    *   **Pitch:** *"For internal ops we can switch to the **Demo Ledger** — seeded autonomous paper trades. Never use this column in investor materials."*
 
-3.  **Scroll to Historical Metrics charts:**
-    *   **Pitch:** *"Our continuous validation engine archives snapshots daily. These charts show key metrics like win rate and drawdown trending over time — building a compliance-grade audit trail of performance."*
+3.  **Navigate to `/fund-performance`:**
+    *   **Pitch:** *"Fund Performance is always validated historical first. Check **Show demo comparison** to contrast with seeded client portfolio ledgers side-by-side."*
 
-4.  **Navigate to `/trade-explorer`:**
+4.  **Open `/portfolios/LNX-ALPHA-VALIDATED` (admin):**
+    *   **Pitch:** *"Reference portfolios mirror the best optimization run — equity curve, rebalance log, settlements, and backtest-derived P&L."*
+
+5.  **Download validation PDF (demo mode optional):**
+    *   **Action:** Use PDF buttons on `/validation` while in appropriate data source mode.
+
+6.  **Navigate to `/trade-explorer`:**
     *   **Action:** Filter by `trade_source=AUTONOMOUS`, exchange, or strategy name.
     *   **Pitch:** *"Every trade — filled, rejected, or manual — is searchable. Rejections include the exact reason from the risk engine or exchange."*
 
-5.  **Navigate to `/analytics/compare`:**
+7.  **Navigate to `/analytics/compare`:**
     *   **Action:** Select 2–3 portfolios or strategies for side-by-side comparison.
     *   **Pitch:** *"Portfolio and strategy comparison tools let risk teams identify outperformers and laggards without exporting to Excel."*
 
-6.  **Navigate to `/strategies`:**
+8.  **Navigate to `/strategies`:**
     *   **Pitch:** *"The strategy registry now shows live performance analytics — win rate and PnL per algorithm — updated from real execution data."*
 
-7.  **Navigate to `/audit`:**
+9.  **Navigate to `/audit`:**
     *   **Action:** Search for "AUTONOMOUS" or filter by exchange.
     *   **Pitch:** *"Privileged roles see the full system audit trail with search and date filters — every autonomous execution, risk rejection, and mandate change is immutably logged."*
 
-### Pre-Demo Setup (if metrics show zeros)
+### Pre-Demo Setup
 
 ```bash
 docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+docker compose -f docker-compose.prod.yml exec backend python scripts/reset_institutional_demo.py --confirm
+
+# Ensure validated runs + reference portfolios exist (admin)
+docker compose -f docker-compose.prod.yml exec backend python scripts/run_alpha_optimization.py --phase all
+
 docker compose -f docker-compose.prod.yml exec backend python -c \
   "from app.services.validation_service import update_validation_snapshots_job; update_validation_snapshots_job()"
 ```
 
-Ensure `.env` has Binance/Bybit testnet keys and at least one active strategy assigned to a portfolio with `execution_exchange` set. Wait 60–120 seconds for the algo executor cycle.
+Log in as **`admin@google.com`** / `password123` for validated toggles and demo comparison.

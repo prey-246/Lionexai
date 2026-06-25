@@ -26,7 +26,7 @@ Migration: `a1b2c3d4e5f6_p5_validated`
 
 ## Step 2 — Historical Validation (Research Lab) ✅
 
-1. Log in as `operator1@lionex.ai` or `admin@lionex.ai`
+1. Log in as `operator1@google.com` or `admin@google.com`
 2. Open `/research-lab`
 3. Run backtests per strategy × symbol (BTC/USDT, XAUUSD, etc.)
 4. Run **Alpha 20% Monthly Evidence** — uses Phase 6 institutional API

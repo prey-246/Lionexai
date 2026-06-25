@@ -1,6 +1,19 @@
 # NEXA Institutional Validation Framework
 
-This document defines the institutional validation framework for NEXA paper trading and autonomous execution. Metrics are sourced from autonomous trades (`trade_source = AUTONOMOUS`), exchange audit logs (Binance/Bybit), and the risk engine.
+This document defines the institutional validation framework for NEXA. **June 2026 update:** the validation dashboard supports two data sources — use the correct one for your audience.
+
+## Data sources (June 2026)
+
+| Mode | API | UI toggle | Audience |
+|------|-----|-----------|----------|
+| **Validated Historical** (default) | `GET /api/validation/snapshots?data_source=validated` | **Validated Historical** | Investors, institutional reporting |
+| **Demo Ledger** | `GET /api/validation/snapshots?data_source=demo` | **Demo Ledger** | Internal ops — seeded paper-trading ledger |
+
+**Validated mode** aggregates equity curves from `validated_fund_runs` (PRESERVE + BALANCE + ALPHA). **Demo mode** uses pre-calculated `validation_snapshots` from autonomous/demo trades — metrics are equity-based and sanitized (max drawdown capped at 100%).
+
+For fund-level strategy validation, prefer **`/fund-performance`** (always VALIDATED_HISTORICAL primary).
+
+This document defines metrics for **operational (demo) validation**. Validated historical snapshots are computed on-demand and not stored in `validation_snapshots`.
 
 ## UI & API Entry Points
 
@@ -11,7 +24,7 @@ This document defines the institutional validation framework for NEXA paper trad
 | Analytics Compare | `/analytics/compare` |
 | Execution Health | `/execution-health` |
 | Legacy 3-Day Summary | `GET /api/validation/summary` |
-| Live Snapshots | `GET /api/validation/snapshots` |
+| Live Snapshots | `GET /api/validation/snapshots?data_source=validated\|demo` |
 | Custom Date Range | `GET /api/validation/snapshots/range` |
 | Daily Archive | `GET /api/validation/history` |
 | Metric Time-Series | `GET /api/validation/history/metrics` |
@@ -29,7 +42,10 @@ Pre-calculated snapshots are stored in `validation_snapshots` and refreshed ever
 | 7D | `GLOBAL_7D` | Rolling 7 days |
 | 14D | `GLOBAL_14D` | Rolling 14 days |
 | 30D | `GLOBAL_30D` | Rolling 30 days |
-| ALL | `GLOBAL_ALL` | All autonomous history |
+| 90D | `GLOBAL_90D` | Rolling 90 days |
+| 180D | `GLOBAL_180D` | Rolling 180 days |
+| 365D | `GLOBAL_365D` | Rolling 365 days |
+| ALL | `GLOBAL_ALL` | Full validated backtest or all demo history |
 
 Portfolio and strategy scoped snapshots: `PORTFOLIO_{id}_{period}`, `STRATEGY_{name}_{period}`.
 
@@ -44,11 +60,11 @@ All metrics below are computed from **autonomous paper trades only** unless note
 | Total / Winning / Losing Trades | Closed trades with PnL |
 | Win Rate | Winning / total closed × 100 |
 | Total P&L | Sum of closed trade PnL |
-| Average Return | Mean per-trade return % |
+| Average Return | Mean **daily** return % from equity curve (not compounded per-trade) |
 | Largest Win / Loss | Best and worst single trade |
 | Profit Factor | Gross profit / gross loss |
 | Sharpe Ratio | Annualized from daily returns |
-| Max Drawdown | Peak-to-trough on cumulative PnL |
+| Max Drawdown | Peak-to-trough on **equity curve** |
 | Fill Rate | Filled / (filled + rejected) orders |
 | Avg Latency | Mean execution latency (ms) |
 | Daily / Weekly / Monthly PnL | Aggregated chart series |

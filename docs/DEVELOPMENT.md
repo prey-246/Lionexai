@@ -50,6 +50,15 @@ This document provides a comprehensive guide for developers to set up the local 
     docker compose exec backend python scripts/reset_institutional_demo.py --confirm
     ```
 
+    Demo accounts (password `password123`): `admin@google.com`, `client1@google.com`, `operator1@google.com`, `risk1@google.com`.
+
+7.  **Alpha optimization + validated portfolios (optional):**
+    ```bash
+    docker compose -f docker-compose.prod.yml exec backend python scripts/run_alpha_optimization.py --phase all
+    docker compose -f docker-compose.prod.yml exec backend python -c \
+      "from app.core.database import SessionLocal; from app.validation.validated_institutional_regenerator import ValidatedInstitutionalRegenerator; db=SessionLocal(); ValidatedInstitutionalRegenerator(db).regenerate_all(); db.close()"
+    ```
+
 ---
 
 ## 2. Common Development Tasks
@@ -158,6 +167,11 @@ This is expected when no news articles match a symbol's NLP keywords. Refresh se
 docker compose -f docker-compose.prod.yml exec backend python -c \
   "from app.services.nlp_service import run_nlp_analysis; run_nlp_analysis()"
 ```
+
+### Validation metrics overflow or all zeros
+- **Validated mode** (`/validation`, default): requires `validated_fund_runs` — run alpha optimization or `POST /api/validated/fund/run-all`.
+- **Demo mode**: refresh with `update_validation_snapshots_job()` after `reset_institutional_demo.py`.
+- Metrics use equity curves; values are sanitized on API response (max DD ≤ 100%).
 
 ### Research Lab global risk error
 Ensure `global_risk_engine.py` orders `MarketSensitivityScore` by **`timestamp`** (not `computed_at`).

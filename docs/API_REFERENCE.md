@@ -38,10 +38,13 @@ Complete endpoint catalog. Interactive Swagger: `http://localhost:8000/docs`
 | GET | `/api/portfolios/summary` | Any | Aggregated summary |
 | GET | `/api/portfolios/{id}` | Owner/Privileged | Portfolio detail |
 | DELETE | `/api/portfolios/{id}` | Owner/Admin | Delete portfolio |
-| GET | `/api/portfolios/{id}/stats` | Owner/Privileged | Performance stats |
+| GET | `/api/portfolios/{id}/equity-curve` | Owner/Privileged | Equity time-series (full history for `*-VALIDATED`) |
+| GET | `/api/portfolios/{id}/stats` | Owner/Privileged | Trade stats; validated portfolios use backtest metrics |
 | GET | `/api/portfolios/{id}/trades` | Owner/Privileged | Portfolio trades |
 | GET | `/api/portfolios/{id}/risk-events` | Owner/Privileged | Risk events |
-| GET | `/api/portfolios/{id}/equity-curve` | Owner/Privileged | Equity time-series |
+| GET | `/api/portfolios/{id}/allocations` | Owner/Privileged | Target vs actual weights |
+| GET | `/api/portfolios/{id}/rebalances` | Owner/Privileged | Rebalance decision log |
+| GET | `/api/portfolios/{id}/settlements` | Owner/Privileged | Weekly settlement history |
 
 ---
 
@@ -88,14 +91,32 @@ Complete endpoint catalog. Interactive Swagger: `http://localhost:8000/docs`
 
 ---
 
+## Validated Performance (Fund Backtests & Optimization)
+
+Requires authentication. Fund endpoints available to authenticated users; optimization requires **admin** or **operator**.
+
+| Method | Path | Query / Body | Description |
+|--------|------|--------------|-------------|
+| GET | `/api/validated/fund/latest/{fund_id}` | `include_demo=true` (admin/operator) | Latest VALIDATED_HISTORICAL run + optional `demo_comparison` |
+| GET | `/api/validated/fund/runs` | `fund_id`, `limit` | List validated fund runs |
+| POST | `/api/validated/fund/run-all` | `{ initial_capital, persist }` | Baseline backtests for all funds |
+| POST | `/api/validated/optimization/run` | `{ phase, fund_id, bar_limit, regenerate }` | Alpha optimization program |
+| GET | `/api/validated/optimization/experiments` | `fund_id`, `limit` | Optimization grid results |
+| GET | `/api/validated/global-risk` | — | Global risk score 0–100 |
+| POST | `/api/validated/strategy/run` | — | Single-strategy validation run |
+
+**Validated reference portfolios:** `LNX-PRESERVE-VALIDATED`, `LNX-BALANCE-VALIDATED`, `LNX-ALPHA-VALIDATED` (admin account).
+
+---
+
 ## Validation (Institutional)
 
 All validation endpoints require **admin**, **operator**, or **risk_manager** unless noted.
 
 | Method | Path | Query Params | Description |
 |--------|------|--------------|-------------|
-| GET | `/api/validation/summary` | — | Legacy 3-day summary |
-| GET | `/api/validation/snapshots` | `period`, `snapshot_type`, `scope_id` | Live rolling snapshots |
+| GET | `/api/validation/summary` | — | Legacy 3-day summary (demo operational) |
+| GET | `/api/validation/snapshots` | `period`, `snapshot_type`, `scope_id`, **`data_source`** (`validated` default, `demo`) | Rolling snapshots |
 | GET | `/api/validation/snapshots/range` | `start_date`, `end_date`, `snapshot_key` | Custom date-range metrics |
 | POST | `/api/validation/snapshots/refresh` | — | Force snapshot recompute |
 | GET | `/api/validation/history` | `snapshot_key`, `start_date`, `end_date` | Daily archive rows |
@@ -195,7 +216,8 @@ Privileged roles (admin/operator/risk_manager) see system-wide trail; clients se
 
 | UI Route | Primary APIs |
 |----------|--------------|
-| `/validation` | `/api/validation/snapshots`, `/history/metrics` |
+| `/validation` | `/api/validation/snapshots?data_source=validated`, `/history/metrics` |
+| `/fund-performance` | `/api/validated/fund/latest/{id}`, `?include_demo=true` |
 | `/trade-explorer` | `/api/trades/` |
 | `/analytics/compare` | `/api/analytics/portfolios/compare`, `/strategies/compare` |
 | `/strategies` | `/api/strategies`, `/api/analytics/strategies` |

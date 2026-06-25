@@ -226,8 +226,20 @@ It is critical to back up your PostgreSQL database regularly.
 ## 7. Maintenance & Updates
 
 *   **Viewing Logs:** `docker-compose -f docker-compose.prod.yml logs -f <service_name>` (e.g., `nexa_backend_prod`)
-*   **Updating the Application:**
-    ```bash
-    git pull origin main
-    docker-compose -f docker-compose.prod.yml up --build -d
-    ```
+---
+
+## 8. Post-Deploy Demo Bootstrap
+
+After first deploy, seed institutional demo data:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
+docker compose -f docker-compose.prod.yml exec backend python scripts/seed_phase4.py
+docker compose -f docker-compose.prod.yml exec backend python scripts/reset_institutional_demo.py --confirm
+docker compose -f docker-compose.prod.yml exec backend python scripts/run_alpha_optimization.py --phase all
+docker compose -f docker-compose.prod.yml build frontend && docker compose -f docker-compose.prod.yml up -d frontend
+```
+
+**Demo login:** `admin@google.com` / `password123`
+
+See [docs/README.md](./README.md) for full account list and [DEMO_GUIDE.md](./DEMO_GUIDE.md) for presentation scripts.

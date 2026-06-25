@@ -15,6 +15,11 @@ Phase 6 transitions LionexAI from a demo platform to an **institutional validati
 
 All dashboards display provenance badges. Metrics never mix provenance without explicit labeling.
 
+**June 2026 additions:**
+- `/fund-performance` — VALIDATED_HISTORICAL primary; admin **Show demo comparison** for client demo ledgers only
+- `/validation` — **Validated Historical** default (`data_source=validated`); **Demo Ledger** toggle for ops
+- `LNX-*-VALIDATED` reference portfolios on `admin@google.com` — see [INSTITUTIONAL_PERFORMANCE_REPORT.md](./INSTITUTIONAL_PERFORMANCE_REPORT.md)
+
 ## Deliverables
 
 ### 1. Performance Engine (`backend/app/analytics/performance_engine.py`)

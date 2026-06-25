@@ -1,5 +1,7 @@
 # Phase 2 Completion Report: The Quantitative Architecture
 
+> **Archive — historical only.** See [../README.md](../README.md) for current status.
+
 **Date:** June 2024  
 **Status:** Phase 2 (Sprints 5-10) Successfully Completed
 

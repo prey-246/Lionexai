@@ -44,7 +44,7 @@
 
 | Metric | Location | Problem |
 |--------|----------|---------|
-| Sharpe ratio | `validation_service.py` | % change of cumulative dollar PnL, not return series |
+| Sharpe ratio | `validation_service.py` | ~~% change of cumulative dollar PnL~~ **Fixed June 2026** — equity-curve returns; validated mode uses fund backtests |
 | Treasury growth % | `validation_service.py` | NAV / first transaction amount |
 | `asset_performance_pct` | `validation_service.py` | Absolute dollars, labeled as % |
 | Client yield delivery | `validation_service.py` | Defaults to 100% when no settlements |
@@ -56,9 +56,8 @@
 
 | UI | Issue |
 |----|-------|
-| `/fund-performance` "Realized" | Sourced from seeded equity curves — **now labeled with `DEMO` provenance** |
-| `/allocation` "Live" | Targets live; actual was stale/wrong — **now recomputed at read** |
-| `/validation` "live paper" | Includes `AUTONOMOUS` simulated trades |
+| `/fund-performance` | **VALIDATED_HISTORICAL primary**; admin demo comparison toggle for seeded client ledgers |
+| `/validation` | **Validated Historical default**; Demo Ledger toggle for operational metrics |
 | Settlement history | Demo guaranteed delivery after reset |
 
 ## 5. Allocation 110% vs 7.8% Target — Root Cause

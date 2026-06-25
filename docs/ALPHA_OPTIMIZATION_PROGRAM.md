@@ -9,13 +9,13 @@
 | Phase | Name | Status | Deliverable |
 |-------|------|--------|-------------|
 | **1** | Root Cause Analysis | ✅ Complete | [PHASE1_ALPHA_DIAGNOSTIC.md](./PHASE1_ALPHA_DIAGNOSTIC.md) |
-| **2** | Strategy Expansion | 🔄 Next | Independent strategy backtests → `validated_strategy_runs` |
-| **3** | Strategy Ensemble | Planned | Weekly scoring + regime-aware capital allocation |
-| **4** | Asset Universe Optimization | Planned | Per-asset metrics + correlation + remove list |
-| **5** | Regime Engine v2 | Planned | 8-regime taxonomy + regime-specific allocations |
-| **6** | Rebalancing Optimization | Planned | Grid: 1/3/7/14/30/regime-triggered days |
-| **7** | Portfolio Construction | Planned | 6 methods compared per fund |
-| **9** | Platform Regeneration | Planned | Best config → validated institutional history |
+| **2** | Strategy Expansion | ✅ Complete | Independent strategy backtests → `validated_strategy_runs` |
+| **3** | Strategy Ensemble | ✅ Complete | Weekly scoring + regime-aware capital allocation |
+| **4** | Asset Universe Optimization | ✅ Complete | Per-asset metrics + correlation + remove list |
+| **5** | Regime Engine v2 | ✅ Complete | 8-regime taxonomy + regime-specific allocations |
+| **6** | Rebalancing Optimization | ✅ Complete | Grid: 1/3/7/14/30/regime-triggered days |
+| **7** | Portfolio Construction | ✅ Complete | 6 methods compared per fund |
+| **9** | Platform Regeneration | ✅ Complete | Best config → `LNX-*-VALIDATED` + [INSTITUTIONAL_PERFORMANCE_REPORT.md](./INSTITUTIONAL_PERFORMANCE_REPORT.md) |
 
 *Phase 8 not specified in requirements; walk-forward + Monte Carlo fold into Phase 9 selection.*
 

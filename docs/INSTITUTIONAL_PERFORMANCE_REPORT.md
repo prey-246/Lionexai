@@ -2,7 +2,8 @@
 
 **Generated:** June 2026  
 **Provenance:** VALIDATED_HISTORICAL (market_bars backtests)  
-**Program status:** See optimization run output in `optimization_run.log`
+**Reference portfolios:** `LNX-PRESERVE-VALIDATED`, `LNX-BALANCE-VALIDATED`, `LNX-ALPHA-VALIDATED` — owned by **`admin@google.com`**  
+**UI:** `/fund-performance` (primary), `/portfolios/LNX-*-VALIDATED`, `/validation?data_source=validated`
 
 ---
 

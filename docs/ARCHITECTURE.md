@@ -2,7 +2,7 @@
 
 This document provides a deep dive into the system architecture, database schema, API reference, and core execution flows within the NEXA platform.
 
-**Last updated:** June 2026 — Phase 4–6 complete.
+**Last updated:** June 2026 — Phase 4–6 complete + Alpha Optimization + validation hardening.
 
 ---
 
@@ -24,6 +24,7 @@ NEXA operates on a decoupled client-server architecture utilizing **FastAPI** (P
 | **Phase 4** | Autonomous multi-asset fund manager, treasury economics, LNX index, settlements |
 | **Phase 5** | Validated historical performance, Research Lab, global risk, allocation integrity, provenance |
 | **Phase 6** | Institutional metric engine, live validation, treasury verification, alpha evidence, reporting |
+| **Alpha Optimization** | Grid search, best configs in `validated_fund_runs`, `LNX-*-VALIDATED` portfolios |
 
 ---
 

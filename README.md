@@ -45,6 +45,15 @@ See **[docs/PHASE5_ROADMAP.md](docs/PHASE5_ROADMAP.md)** and **[docs/PHASE5_AUDI
 
 See **[docs/PHASE6_INSTITUTIONAL_READINESS.md](docs/PHASE6_INSTITUTIONAL_READINESS.md)**
 
+### Alpha Optimization & Validation Hardening (June 2026)
+- **Alpha Optimization Program** — grid search over allocation, regime, rebalancing, portfolio construction; best configs promoted to `SELECTED_BEST` runs ([docs/ALPHA_OPTIMIZATION_PROGRAM.md](docs/ALPHA_OPTIMIZATION_PROGRAM.md))
+- **Institutional performance report** — honest post-optimization CAGR / Sharpe / drawdown on ~5yr aligned `market_bars` ([docs/INSTITUTIONAL_PERFORMANCE_REPORT.md](docs/INSTITUTIONAL_PERFORMANCE_REPORT.md))
+- **Validated reference portfolios** — `LNX-PRESERVE-VALIDATED`, `LNX-BALANCE-VALIDATED`, `LNX-ALPHA-VALIDATED` owned by **`admin@google.com`**; regenerated from best backtest runs
+- **Fund Performance** (`/fund-performance`) — primary view is **VALIDATED_HISTORICAL**; admin **Show demo comparison** adds a red Demo Ledger column (client portfolios only, excludes `*-VALIDATED`)
+- **Long-Term Validation** (`/validation`) — defaults to **Validated Historical** backtests; **Demo Ledger** toggle for operational paper-trading snapshots
+- **Metrics integrity** — validation Sharpe/drawdown computed from **equity curves** (not compounded per-trade returns); overflow values sanitized on API read
+- **Demo accounts** — all seed scripts use **`@google.com`** emails (see Demo Accounts below)
+
 ### Stability Fixes (June 2026)
 | Fix | Detail |
 |-----|--------|
@@ -146,6 +155,10 @@ Full documentation lives in [`docs/`](docs/README.md):
 
 | Document | Description |
 |----------|-------------|
+| **[docs/INSTITUTIONAL_PERFORMANCE_REPORT.md](docs/INSTITUTIONAL_PERFORMANCE_REPORT.md)** | Post-optimization validated fund results (honest metrics) |
+| **[docs/ALPHA_OPTIMIZATION_PROGRAM.md](docs/ALPHA_OPTIMIZATION_PROGRAM.md)** | Alpha optimization phases 1–9 |
+| **[docs/PHASE1_ALPHA_DIAGNOSTIC.md](docs/PHASE1_ALPHA_DIAGNOSTIC.md)** | Root-cause diagnostic (engines + backtests) |
+| **[docs/BRAND_GUIDE.md](docs/BRAND_GUIDE.md)** | Logo-aligned colors & presentation theme |
 | **[docs/HISTORICAL_VALIDATION_AUDIT.md](docs/HISTORICAL_VALIDATION_AUDIT.md)** | **Historical validation audit** — demo vs validated, fund backtest results |
 | **[docs/PHASE6_INSTITUTIONAL_READINESS.md](docs/PHASE6_INSTITUTIONAL_READINESS.md)** | Phase 6 — institutional metric engine, alpha evidence |
 | **[docs/PHASE5_AUDIT_REPORT.md](docs/PHASE5_AUDIT_REPORT.md)** | Phase 5 audit — demo vs live, metric integrity |
@@ -212,7 +225,11 @@ docker compose -f docker-compose.prod.yml exec backend python scripts/seed_phase
 # Institutional demo (recommended for demos) — purges old demo data and re-seeds 9 LNX portfolios
 docker compose -f docker-compose.prod.yml exec backend python scripts/reset_institutional_demo.py --confirm
 
-# Refresh validation snapshots
+# Regenerate validated reference portfolios (admin)
+docker compose -f docker-compose.prod.yml exec backend python -c \
+  "from app.core.database import SessionLocal; from app.validation.validated_institutional_regenerator import ValidatedInstitutionalRegenerator; db=SessionLocal(); print(ValidatedInstitutionalRegenerator(db).regenerate_all()); db.close()"
+
+# Refresh operational demo validation snapshots (Demo Ledger mode)
 docker compose -f docker-compose.prod.yml exec backend python -c \
   "from app.services.validation_service import update_validation_snapshots_job; update_validation_snapshots_job()"
 
@@ -224,12 +241,12 @@ docker compose -f docker-compose.prod.yml exec backend python scripts/seed_phase
 
 | Email | Role | Seeded portfolios (after institutional reset) |
 |-------|------|-----------------------------------------------|
-| `client1@lionex.ai` | client | LNX-PRESERVE-001, LNX-BALANCED-001, LNX-ALPHA-001 |
-| `client2@lionex.ai` | client | LNX-PRESERVE-002, LNX-BALANCED-002, LNX-ALPHA-002 |
-| `client3@lionex.ai` | client | LNX-PRESERVE-003, LNX-BALANCED-003, LNX-ALPHA-003 |
-| `admin@lionex.ai` | admin | Full platform access |
-| `operator1@lionex.ai` | operator | System ops, validation, strategies |
-| `risk1@lionex.ai` | risk_manager | Treasury, validation, mandates |
+| `client1@google.com` | client | LNX-PRESERVE-001, LNX-BALANCED-001, LNX-ALPHA-001 |
+| `client2@google.com` | client | LNX-PRESERVE-002, LNX-BALANCED-002, LNX-ALPHA-002 |
+| `client3@google.com` | client | LNX-PRESERVE-003, LNX-BALANCED-003, LNX-ALPHA-003 |
+| `admin@google.com` | admin | Full platform access + `LNX-*-VALIDATED` reference portfolios |
+| `operator1@google.com` | operator | System ops, validation, strategies |
+| `risk1@google.com` | risk_manager | Treasury, validation, mandates |
 
 After UI changes, rebuild the frontend:
 
@@ -246,8 +263,8 @@ docker compose -f docker-compose.prod.yml up -d frontend
 |-------|---------|
 | `/dashboard` | Fund metrics, treasury contributions, LNX index |
 | `/funds` | Invest in Lionex Preserve / Balance / Alpha; **target weekly & monthly** |
-| `/fund-performance` | **Target vs actual** weekly/monthly/inception returns per fund |
-| `/portfolios/{id}` | Equity curve, **total & 7D return**, risk context, settlements, trades |
+| `/fund-performance` | **Validated historical** fund metrics; admin demo comparison toggle |
+| `/portfolios/{id}` | Equity curve, returns, risk, settlements; **VALIDATED** portfolios show backtest-derived stats |
 | `/allocation` | Live allocation engine view |
 | `/lnx` | LNX index, treasury NAV, AUM, reserve ratio, history chart |
 | `/intelligence` | AI pulse with coverage-aware sentiment scores |
@@ -261,7 +278,7 @@ docker compose -f docker-compose.prod.yml up -d frontend
 | `/research-lab` | Historical validation, global risk, alpha evidence evaluate |
 | `/alpha-evidence` | Alpha 20% monthly evidence dashboard (Phase 6) |
 | `/treasury` | Treasury pools + profit-routing ledger |
-| `/validation` | Institutional validation (90D/180D/365D) |
+| `/validation` | Long-term validation — **Validated Historical** (default) or Demo Ledger toggle |
 | `/trade-explorer` | Historical trade search & filters |
 | `/analytics/compare` | Portfolio & strategy comparison |
 | `/execution-monitor` | Live exchange status |
@@ -278,7 +295,7 @@ docker compose -f docker-compose.prod.yml up -d frontend
 ```bash
 docker compose -f docker-compose.prod.yml exec backend python scripts/reset_institutional_demo.py --confirm
 ```
-Log in as `client1@lionex.ai` / `password123` → check `/fund-performance`, `/portfolios/LNX-PRESERVE-001`, `/lnx`, `/treasury` (as admin).
+Log in as `client1@google.com` / `password123` → check `/fund-performance`, `/portfolios/LNX-PRESERVE-001`, `/lnx`, `/treasury` (as admin).
 
 ### 1. Fund Invest → Allocate → Execute
 1. Log in as **client**, open `/funds`, invest in **ALPHA** (e.g. $50,000).
@@ -361,8 +378,13 @@ Interactive Swagger: `http://localhost:8000/docs` · Phase 4 quick ref: [docs/PH
 - `GET /api/intelligence/news` · `/economic-events`
 
 **Validation**
-- `GET /api/validation/snapshots?period=90D` (also 180D, 365D)
+- `GET /api/validation/snapshots?period=90D&data_source=validated` (default) or `data_source=demo`
 - `GET /api/validation/report/pdf?period=30D`
+
+**Validated funds (Research Lab / Fund Performance)**
+- `GET /api/validated/fund/latest/{fund_id}?include_demo=true` — admin demo comparison block
+- `POST /api/validated/optimization/run` — full alpha optimization program
+- `POST /api/validated/fund/run-all` — baseline historical backtests
 
 **Analytics & Trades**
 - `GET /api/analytics/strategies` · `GET /api/trades/`
@@ -427,7 +449,7 @@ Lionexai/
 
 **Phase 4:** `assets`, `market_bars`, `funds`, `portfolio_allocations`, `client_settlements`, `lnx_index_snapshots`
 
-**Phase 5:** `validated_strategy_runs`, `paper_trading_validation_snapshots`, `allocation_integrity_alerts`
+**Phase 5:** `validated_strategy_runs`, `validated_fund_runs`, `paper_trading_validation_snapshots`, `allocation_integrity_alerts`
 
 **Phase 6:** `live_validation_snapshots`, `treasury_verification_runs`, `lnx_attribution_snapshots`, `execution_lifecycle_events`, `institutional_reports`, `macro_data_snapshots`
 
@@ -486,7 +508,12 @@ docker compose -f docker-compose.prod.yml build backend frontend
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-**Validation metrics show zeros?** Requires autonomous trades (`trade_source = AUTONOMOUS`), valid exchange keys, and active strategies — or Phase 4 auto-managed portfolios with `autonomous_v2_enabled`.
+**Validation metrics show zeros or absurd percentages?**
+- Use **`/validation`** with **Validated Historical** (default) for institutional backtests.
+- For **Demo Ledger** mode, refresh snapshots: `update_validation_snapshots_job()`.
+- Metrics are equity-based; legacy overflow from compounded trade returns was fixed June 2026.
+
+**Validation metrics show zeros (demo mode only)?** Requires autonomous trades (`trade_source = AUTONOMOUS`), valid exchange keys, and active strategies — or Phase 4 auto-managed portfolios with `autonomous_v2_enabled`.
 
 **Settlement not running?** Scheduled Mondays 01:00 UTC; force via `SettlementEngine.run_weekly_settlement(force=True)` for testing.
 

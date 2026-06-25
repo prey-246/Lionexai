@@ -1,5 +1,7 @@
 # Project Completion Report: Institutional Validation & Live Paper Trading
 
+> **Archive — historical only.** See [../README.md](../README.md) for current status.
+
 **Date:** June 2026
 **Status:** Phase 3 (Institutional Validation) Successfully Completed
 

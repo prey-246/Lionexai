@@ -1,6 +1,12 @@
 # NEXA Institutional Validation Roadmap — Completion Status
 
-Last updated: June 2026 (Final Review)
+Last updated: June 2026 (validation hardening + alpha optimization)
+
+## June 2026 Update
+
+- **Validation dashboard** now defaults to **Validated Historical** backtests; Demo Ledger is an explicit admin toggle.
+- **Fund Performance** shows validated metrics first; admin can enable demo comparison column.
+- Operational demo snapshots (`validation_snapshots`) use equity-based metrics; overflow bug fixed.
 
 ## Executive Summary
 

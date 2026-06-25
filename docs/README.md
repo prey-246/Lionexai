@@ -1,18 +1,23 @@
 # NEXA Platform Documentation
 
-Central index for all platform documentation. Last updated: **June 2026** (Phase 4–6 complete + production stability pass).
+Central index for all platform documentation. Last updated: **June 2026** (Phase 4–6 + Alpha Optimization + validation hardening).
 
 ## Quick Links
 
 | Document | Description |
 |----------|-------------|
-| **[PHASE6_INSTITUTIONAL_READINESS.md](./PHASE6_INSTITUTIONAL_READINESS.md)** | **Phase 6** — performance engine, live validation, treasury verification, LNX attribution, alpha evidence |
+| **[INSTITUTIONAL_PERFORMANCE_REPORT.md](./INSTITUTIONAL_PERFORMANCE_REPORT.md)** | Post-optimization validated fund results |
+| **[ALPHA_OPTIMIZATION_PROGRAM.md](./ALPHA_OPTIMIZATION_PROGRAM.md)** | Alpha optimization master plan (phases 1–9) |
+| **[PHASE1_ALPHA_DIAGNOSTIC.md](./PHASE1_ALPHA_DIAGNOSTIC.md)** | Root-cause diagnostic report |
+| **[BRAND_GUIDE.md](./BRAND_GUIDE.md)** | Logo-aligned colors for slides & marketing |
+| **[PHASE6_INSTITUTIONAL_READINESS.md](./PHASE6_INSTITUTIONAL_READINESS.md)** | Phase 6 — performance engine, live validation, alpha evidence |
 | **[PHASE5_AUDIT_REPORT.md](./PHASE5_AUDIT_REPORT.md)** | Phase 5 audit — demo vs validated, metric integrity |
 | [PHASE5_ROADMAP.md](./PHASE5_ROADMAP.md) | Institutional readiness + Alpha evidence protocol (complete) |
 | **[PHASE4_AUTONOMOUS_FUND_MANAGER.md](./PHASE4_AUTONOMOUS_FUND_MANAGER.md)** | Phase 4 complete reference — treasury, LNX, funds, productionization |
 | [PHASE4_API_QUICK_REFERENCE.md](./PHASE4_API_QUICK_REFERENCE.md) | Phase 4 REST endpoints with request/response samples |
+| [HISTORICAL_VALIDATION_AUDIT.md](./HISTORICAL_VALIDATION_AUDIT.md) | Demo vs validated surfaces, fund backtest audit |
 | [VALIDATION_ROADMAP_STATUS.md](./VALIDATION_ROADMAP_STATUS.md) | 5-stage institutional validation roadmap |
-| [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) | Validation framework, metrics, PDF reports |
+| [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) | Validation framework, metrics, PDF reports, data sources |
 | [API_REFERENCE.md](./API_REFERENCE.md) | Complete REST API endpoint catalog |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture, containers, core flows |
 | [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md) | High-level diagrams and subsystem map |
@@ -34,19 +39,16 @@ Historical phase reports live in [`archive/`](./archive/) and are not maintained
 | **Phase 4 — LNX Treasury Economics & Settlement** | ✅ Complete |
 | **Phase 5 — Validated performance layer** | ✅ Complete |
 | **Phase 5 — Research Lab + Global Risk Engine** | ✅ Complete |
-| **Phase 5 — Allocation integrity monitor** | ✅ Complete |
 | **Phase 6 — Institutional metric engine** | ✅ Complete |
-| **Phase 6 — Live validation + treasury verification** | ✅ Complete |
-| **Phase 6 — Alpha Evidence Dashboard** | ✅ Complete |
-| **Phase 6 — LNX attribution + execution lifecycle** | ✅ Complete |
-| Institutional validation (Stages 1–5) | ✅ Complete |
-| Autonomous paper trading (Binance + Bybit) | ✅ Wired |
+| **Alpha Optimization Program** | ✅ Complete (best configs in `validated_fund_runs`) |
+| **Validated reference portfolios** | ✅ `LNX-*-VALIDATED` on `admin@google.com` |
+| **Fund Performance — validated primary + admin demo toggle** | ✅ `/fund-performance` |
+| **Validation — validated default + demo toggle** | ✅ `/validation` |
+| **Validation metrics integrity (equity-based)** | ✅ Fixed June 2026 |
 | Institutional demo reset script | ✅ `reset_institutional_demo.py` |
-| Fund target vs actual returns + provenance badges | ✅ `/fund-performance` |
 | Intelligence Hub (coverage-aware sentiment) | ✅ `/intelligence` |
-| Performance Reports (staff portfolio access) | ✅ `/reports` |
 
-**Rollout note:** Phase 4 autonomous multi-asset execution is gated by `global_settings.autonomous_v2_enabled` (default `false`). Treasury settlement applies to `auto_managed` fund portfolios regardless. Seeded demo returns come from equity curves in Postgres — enable autonomous v2 for live execution.
+**Rollout note:** Phase 4 autonomous multi-asset execution is gated by `global_settings.autonomous_v2_enabled` (default `false`). Validated portfolios are excluded from the autonomous manager loop.
 
 ## Data Provenance
 
@@ -54,10 +56,19 @@ Every performance surface labels its source:
 
 | Label | Meaning |
 |-------|---------|
-| `DEMO` | Seeded institutional demo ledger |
-| `VALIDATED_HISTORICAL` | Backtests / walk-forward / Monte Carlo on `market_bars` |
+| `DEMO` | Seeded client demo ledger (`LNX-*-001` … `003`) |
+| `VALIDATED_HISTORICAL` | Fund backtests on aligned `market_bars` |
 | `PAPER_LIVE` | Long-running autonomous paper trading |
 | `LIVE_CAPITAL` | Reserved for future real-capital deployment |
+
+### Where each label appears
+
+| Surface | Default | Admin toggle |
+|---------|---------|--------------|
+| `/fund-performance` | VALIDATED_HISTORICAL | **Show demo comparison** → Demo Ledger column |
+| `/validation` | VALIDATED_HISTORICAL | **Demo Ledger** toggle |
+| `/portfolios/LNX-*-VALIDATED` | VALIDATED_HISTORICAL | — |
+| `/portfolios/LNX-*-00x` | DEMO operational ledger | — |
 
 ## Demo Accounts
 
@@ -65,12 +76,12 @@ All demo users use password **`password123`** (after institutional reset):
 
 | Email | Role | Portfolios |
 |-------|------|------------|
-| `client1@lionex.ai` | client | LNX-PRESERVE-001, LNX-BALANCED-001, LNX-ALPHA-001 |
-| `client2@lionex.ai` | client | …-002 variants |
-| `client3@lionex.ai` | client | …-003 variants |
-| `admin@lionex.ai` | admin | Full access |
-| `operator1@lionex.ai` | operator | Ops + validation + research lab |
-| `risk1@lionex.ai` | risk_manager | Treasury + risk + research lab |
+| `client1@google.com` | client | LNX-PRESERVE-001, LNX-BALANCED-001, LNX-ALPHA-001 |
+| `client2@google.com` | client | …-002 variants |
+| `client3@google.com` | client | …-003 variants |
+| `admin@google.com` | admin | Full access + **LNX-*-VALIDATED** reference portfolios |
+| `operator1@google.com` | operator | Ops + validation + research lab |
+| `risk1@google.com` | risk_manager | Treasury + risk + research lab |
 
 ## Key UI Routes
 
@@ -80,11 +91,11 @@ All demo users use password **`password123`** (after institutional reset):
 |-------|---------|
 | `/dashboard` | Fund performance, treasury contributions, LNX |
 | `/funds` | Invest; target weekly & monthly per fund |
-| `/fund-performance` | Target vs actual returns + provenance badges |
-| `/portfolios/{id}` | Returns, risk context, settlements, allocation, trades |
+| `/fund-performance` | Validated historical metrics (admin: demo comparison) |
+| `/portfolios/{id}` | Returns, risk, settlements, allocation, trades |
 | `/allocation` | Live allocation engine weights |
-| `/lnx` | LNX index, treasury NAV, reserve ratio (client-safe pool summary) |
-| `/intelligence` | AI pulse with coverage-aware sentiment scores |
+| `/lnx` | LNX index, treasury NAV, reserve ratio |
+| `/intelligence` | AI pulse with coverage-aware sentiment |
 | `/market-intelligence` | Multi-asset pulse + news |
 | `/simulator` | Growth projections from fund weekly targets |
 
@@ -93,29 +104,22 @@ All demo users use password **`password123`** (after institutional reset):
 | Route | Purpose |
 |-------|---------|
 | `/research-lab` | Historical validation, global risk, alpha evidence |
-| `/alpha-evidence` | Phase 6 Alpha 20% monthly evidence dashboard |
+| `/alpha-evidence` | Alpha 20% monthly evidence dashboard |
+| `/fund-performance` | Run optimization / backtests; demo comparison |
 | `/treasury` | Treasury pools + analytics + routing ledger |
-| `/validation` | Long-term validation (90D/180D/365D + Phase 4 metrics) |
+| `/validation` | Validated Historical (default) or Demo Ledger |
 | `/reports` | Weekly/monthly portfolio PDF reports |
-| `/strategies` | Strategy registry + optimizer scores |
-| `/execution-health` | Real-time execution monitoring |
-| `/execution-monitor` | Per-exchange CCXT monitor |
-| `/trade-explorer` | Historical trade search & filters |
-| `/analytics/compare` | Portfolio & strategy comparison |
-| `/stress-test` | Risk validation scenarios |
-| `/audit` | Compliance audit trail (filter by category) |
-| `/executive` | Admin executive summary |
+| `/portfolios/LNX-*-VALIDATED` | Institutional reference portfolio detail |
 
 ## API Namespaces
 
 | Prefix | Purpose | Roles |
 |--------|---------|-------|
-| `/api/funds/` | Fund invest, performance, institutional analytics | client + staff |
-| `/api/validated/` | Research Lab — backtests, global risk, paper validation | operator, risk, admin |
-| `/api/institutional/` | Phase 6 — live validation, treasury verify, alpha evidence, reports | mixed (see Swagger) |
-| `/api/treasury/pools/summary` | Read-only pool balances for clients (LNX, dashboard) | all authenticated |
-| `/api/treasury/pools` | Full pool management | admin, operator, risk_manager |
-| `/api/intelligence/sentiment` | Batch AI pulse scores with coverage metadata | all authenticated |
+| `/api/funds/` | Fund invest, performance | client + staff |
+| `/api/validated/` | Backtests, optimization, global risk | operator, risk, admin |
+| `/api/validation/` | Snapshots (`data_source=validated\|demo`) | operator, risk, admin |
+| `/api/institutional/` | Live validation, treasury verify, reports | mixed |
+| `/api/treasury/pools/summary` | Client-safe pool balances | all authenticated |
 
 Interactive docs: `http://localhost:8000/docs`
 
@@ -125,45 +129,26 @@ Interactive docs: `http://localhost:8000/docs`
 docker compose -f docker-compose.prod.yml up --build -d
 docker compose -f docker-compose.prod.yml exec backend alembic upgrade head
 docker compose -f docker-compose.prod.yml exec backend python scripts/seed_phase4.py
-
-# Recommended for institutional demos (purges old demo data, re-seeds 9 portfolios)
 docker compose -f docker-compose.prod.yml exec backend python scripts/reset_institutional_demo.py --confirm
 
+# Alpha optimization (admin) — or use UI button on /fund-performance
+docker compose -f docker-compose.prod.yml exec backend python scripts/run_alpha_optimization.py --phase all
+
+# Regenerate LNX-*-VALIDATED portfolios from best runs
 docker compose -f docker-compose.prod.yml exec backend python -c \
-  "from app.services.validation_service import update_validation_snapshots_job; update_validation_snapshots_job()"
+  "from app.core.database import SessionLocal; from app.validation.validated_institutional_regenerator import ValidatedInstitutionalRegenerator; db=SessionLocal(); ValidatedInstitutionalRegenerator(db).regenerate_all(); db.close()"
 
-# Refresh NLP sentiment (Intelligence Hub)
-docker compose -f docker-compose.prod.yml exec backend python -c \
-  "from app.services.nlp_service import run_nlp_analysis; run_nlp_analysis()"
-
-# Rebuild frontend after UI changes (no hot-reload in prod compose)
-docker compose -f docker-compose.prod.yml build frontend
-docker compose -f docker-compose.prod.yml up -d frontend
-```
-
-Optional — enable live autonomous multi-asset manager:
-
-```bash
-docker compose -f docker-compose.prod.yml exec backend python scripts/reset_institutional_demo.py --confirm --enable-autonomous
+docker compose -f docker-compose.prod.yml build frontend && docker compose -f docker-compose.prod.yml up -d frontend
 ```
 
 ## Known Integration Notes
 
-1. **Portfolio list URL** — Use `GET /api/portfolios/` (trailing slash). Requests to `/api/portfolios` without a slash may drop the JWT on redirect; backend also exposes a no-slash alias.
-2. **Treasury client access** — Clients must use `/api/treasury/pools/summary`, not `/api/treasury/pools`.
-3. **Performance reports** — Staff (`admin`, `operator`, `risk_manager`) can generate reports for any portfolio; clients are scoped to their own.
-4. **Intelligence sentiment** — Symbols without NLP news coverage show **NO DATA**, not synthetic 50% scores. WTI uses symbol `WTIUSD` in the pulse registry.
-5. **Frontend rebuild** — Backend hot-reloads via volume mount; frontend requires `build frontend` after React changes.
+1. **Portfolio list URL** — Use `GET /api/portfolios/` (trailing slash).
+2. **Treasury client access** — Clients use `/api/treasury/pools/summary`, not `/api/treasury/pools`.
+3. **Validation default** — `GET /api/validation/snapshots` defaults to `data_source=validated`.
+4. **Fund demo comparison** — `GET /api/validated/fund/latest/{id}?include_demo=true` (admin/operator only).
+5. **Frontend rebuild** — Required after React changes in prod compose.
 
-## Data Sources (Summary)
+## Brand & Presentations
 
-| Type | Sources |
-|------|---------|
-| **Crypto prices** | Binance API (`binance` provider) |
-| **Metals, energy, indices, FX** | yfinance (`yfinance` provider) |
-| **Fallback** | Mock provider |
-| **News** | CoinDesk RSS (hourly), Investing.com FX + Commodities RSS |
-| **Macro (Phase 6)** | FRED API when `FRED_API_KEY` is set |
-| **Portfolio returns** | Postgres `equity_curves` + `trades` (seeded in demo; live when autonomous runs) |
-
-Details: [PHASE4 §14](./PHASE4_AUTONOMOUS_FUND_MANAGER.md#14-data-sources).
+See **[BRAND_GUIDE.md](./BRAND_GUIDE.md)** for logo-aligned hex colors, gradients, and slide themes.
