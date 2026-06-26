@@ -100,7 +100,7 @@ Registered in `backend/app/main.py`:
 | `/api/execution` | Execution health stats |
 | `/api/audit` | Enhanced audit trail |
 
-Full catalog: [API_REFERENCE.md](./API_REFERENCE.md)
+Full catalog: [API Reference](../api/api_reference.md)
 
 ---
 
@@ -112,7 +112,7 @@ Full catalog: [API_REFERENCE.md](./API_REFERENCE.md)
 | `validation_snapshots` | Live rolling metrics cache |
 | `validation_snapshot_history` | Daily append-only archive (730 days) |
 
-See [DATABASE.md](./DATABASE.md) for full schema.
+See [Database](../architecture/database.md) for full schema.
 
 ---
 
@@ -137,4 +137,4 @@ Details: [VALIDATION_ROADMAP_STATUS.md](./VALIDATION_ROADMAP_STATUS.md)
 - **Migrations**: Alembic auto-run on startup
 - **Frontend rebuild required** after UI changes in prod compose
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) and [DEVELOPMENT.md](./DEVELOPMENT.md).
+See [Deployment](../deployment/deployment.md) and [Developer Setup](../guides/developer_setup.md).

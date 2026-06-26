@@ -242,4 +242,4 @@ docker compose -f docker-compose.prod.yml build frontend && docker compose -f do
 
 **Demo login:** `admin@google.com` / `password123`
 
-See [docs/README.md](./README.md) for full account list and [DEMO_GUIDE.md](./DEMO_GUIDE.md) for presentation scripts.
+See [docs/README.md](../README.md) for full account list and [Demo Guide](../guides/demo_guide.md) for presentation scripts.

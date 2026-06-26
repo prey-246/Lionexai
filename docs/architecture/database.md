@@ -665,7 +665,7 @@ For migration details, see `backend/alembic/versions/`.
 
 ## Phase 4 Schema (June 2026)
 
-Full narrative: [PHASE4_AUTONOMOUS_FUND_MANAGER.md](./PHASE4_AUTONOMOUS_FUND_MANAGER.md)
+Historical schema narrative: [Phase 4 archive](../archive/PHASE4_AUTONOMOUS_FUND_MANAGER.md) · Current platform: [Funds](../platform/funds.md), [Treasury](../platform/treasury.md)
 
 ### Phase 4 Migrations
 

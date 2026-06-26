@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 
 from app.models import domain
 from app.services.audit_service import create_audit_log
-from app.services.settlement_constants import PROFIT_ROUTING_SPLIT
 from app.services.validated_fund_service import get_latest_validated_fund_run
 from app.services import market_data_service
 from app.engines.lnx_index import LNXIndexEngine
@@ -39,7 +38,12 @@ class ValidatedInstitutionalRegenerator:
             except Exception as e:
                 logger.error("Regenerate failed %s: %s", fund_id, e, exc_info=True)
                 results[fund_id] = {"error": str(e)}
-        results["treasury"] = self._recompute_treasury_from_validated()
+        # Validated backtests must never mutate operational treasury balances.
+        # Historical excess_routed on stl_val_* settlements is audit-only metadata.
+        results["treasury"] = {
+            "skipped": True,
+            "reason": "VALIDATED_HISTORICAL settlements do not route to operational treasury pools",
+        }
         results["lnx"] = self._recompute_lnx_index()
         return results
 
@@ -314,20 +318,6 @@ class ValidatedInstitutionalRegenerator:
                 created_at=period_end,
             ))
             prev = nav
-
-    def _recompute_treasury_from_validated(self) -> dict[str, Any]:
-        settlements = self.db.query(domain.ClientSettlement).filter(
-            domain.ClientSettlement.id.like("stl_val_%")
-        ).all()
-        total_routed = sum(s.excess_routed or 0 for s in settlements)
-        pools = {p.id: p for p in self.db.query(domain.TreasuryPool).all()}
-        if total_routed > 0 and pools:
-            for pool_id, share in PROFIT_ROUTING_SPLIT.items():
-                pool = pools.get(pool_id)
-                if pool:
-                    pool.balance = (pool.balance or 0) + total_routed * share
-            self.db.commit()
-        return {"total_routed": round(total_routed, 2), "settlement_count": len(settlements)}
 
     def _recompute_lnx_index(self) -> dict[str, Any]:
         try:

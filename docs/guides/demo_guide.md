@@ -2,7 +2,7 @@
 
 This document provides four distinct, persona-driven demonstration scripts designed to showcase the platform's core value propositions to different stakeholders.
 
-See also: [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) · [DEMO Script D](#demo-script-d-institutional-validation--analytics) for the validation roadmap demo.
+See also: [Validation](../platform/validation.md) · [DEMO Script D](#demo-script-d-institutional-validation--analytics) for the validation demo.
 
 ---
 

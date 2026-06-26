@@ -6,6 +6,11 @@ import { fundsAPI, validatedAPI, institutionalAPI, type FundProduct } from '@/li
 import { Loader2, FlaskConical, AlertTriangle, Shield, TrendingUp } from 'lucide-react';
 import { formatFixed } from '@/lib/format';
 
+function fmtMetric(value: number | null | undefined, digits = 2): string {
+  if (value == null || Number.isNaN(Number(value))) return '—';
+  return formatFixed(value, digits);
+}
+
 const STRATEGIES = [
   'MOMENTUM', 'TREND_FOLLOWING', 'VOL_BREAKOUT', 'RISK_PARITY',
   'CROSS_ASSET_ROTATION', 'MEAN_REVERSION', 'SENTIMENT_OVERLAY',
@@ -140,10 +145,10 @@ export default function ResearchLabPage() {
                 <td className="font-mono">{r.strategy_key}</td>
                 <td>{r.symbol}</td>
                 <td><span className="tag grey">{r.validation_type}</span></td>
-                <td className="font-mono">{formatFixed(r.metrics?.avg_monthly_return_pct, 2)}%</td>
-                <td className="font-mono">{formatFixed(r.metrics?.cagr_pct, 2)}%</td>
-                <td className="font-mono">{formatFixed(r.metrics?.sharpe_ratio, 2)}</td>
-                <td className="font-mono">{formatFixed(r.metrics?.max_drawdown_pct, 2)}%</td>
+                <td className="font-mono">{fmtMetric(r.metrics?.avg_monthly_return_pct)}%</td>
+                <td className="font-mono">{fmtMetric(r.metrics?.cagr_pct)}%</td>
+                <td className="font-mono">{fmtMetric(r.metrics?.sharpe_ratio)}</td>
+                <td className="font-mono">{fmtMetric(r.metrics?.max_drawdown_pct)}%</td>
               </tr>
             ))}
             {runs.length === 0 && <tr><td colSpan={7} className="text-center py-8 text-text-muted">No validated runs yet. Run a backtest above.</td></tr>}

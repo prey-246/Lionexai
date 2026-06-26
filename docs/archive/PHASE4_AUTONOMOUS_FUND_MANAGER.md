@@ -3,7 +3,7 @@
 **Status:** Complete (June 2026)  
 **Scope:** Fund-based autonomous portfolios, treasury profit routing, LNX ecosystem index, expanded market intelligence, client fund-first UX, extended validation.
 
-This document is the authoritative reference for everything delivered in Phase 4 (Revised). It supersedes any informal plan notes and should be read alongside [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md), and [API_REFERENCE.md](./API_REFERENCE.md).
+This document is the authoritative reference for everything delivered in Phase 4 (Revised). It supersedes any informal plan notes and should be read alongside [System Architecture](../architecture/system_architecture.md), [Database](../architecture/database.md), and [API Reference](../api/api_reference.md).
 
 ---
 
@@ -719,11 +719,11 @@ Portfolio and fund returns are computed from **`equity_curves`** and **`trades`*
 - [ALPHA_OPTIMIZATION_PROGRAM.md](./ALPHA_OPTIMIZATION_PROGRAM.md) — Grid optimization & best config selection
 - [INSTITUTIONAL_PERFORMANCE_REPORT.md](./INSTITUTIONAL_PERFORMANCE_REPORT.md) — Post-optimization validated results
 - [HISTORICAL_VALIDATION_AUDIT.md](./HISTORICAL_VALIDATION_AUDIT.md) — Demo vs validated surfaces
-- [BRAND_GUIDE.md](./BRAND_GUIDE.md) — Logo colors for presentations
+- [BRAND_GUIDE.md](../guides/brand_guide.md) — Logo colors for presentations
 - [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) — Base validation framework
 - [EXECUTION_ARCHITECTURE.md](./EXECUTION_ARCHITECTURE.md) — Exchange adapters & audit events
 - [FEATURES_DEEP_DIVE.md](./FEATURES_DEEP_DIVE.md) — NLP & risk gatekeeper (pre–Phase 4)
-- [DEMO_GUIDE.md](./DEMO_GUIDE.md) — Persona demos (extend with fund invest flow)
+- [DEMO_GUIDE.md](../guides/demo_guide.md) — Persona demos (extend with fund invest flow)
 
 ---
 

@@ -17,6 +17,30 @@ from app.engines.global_risk_engine import GlobalRiskEngine
 router = APIRouter()
 
 
+def _normalize_strategy_run_metrics(validation_type: str, metrics: dict | None) -> dict:
+    """Ensure list API returns displayable fields for all validation types."""
+    m = dict(metrics or {})
+    vt = (validation_type or "BACKTEST").upper()
+
+    # Strip overflow artifacts from pre-fix runs
+    sharpe = m.get("sharpe_ratio")
+    if sharpe is not None and abs(float(sharpe)) > 1000:
+        m["sharpe_ratio"] = 0.0
+
+    if vt == "WALK_FORWARD":
+        fe = float(m.get("final_equity") or 100_000)
+        m.setdefault("total_return_pct", round((fe / 100_000 - 1) * 100, 2))
+        m.setdefault("cagr_pct", m.get("total_return_pct"))
+        oos = m.get("avg_oos_return_pct")
+        if oos is not None:
+            m.setdefault("avg_monthly_return_pct", round(float(oos) / 3.0, 2))
+    elif vt == "MONTE_CARLO":
+        m.setdefault("avg_monthly_return_pct", m.get("avg_monthly_return_pct"))
+        m.setdefault("cagr_pct", m.get("cagr_pct"))
+
+    return m
+
+
 class StrategyValidationRequest(BaseModel):
     symbol: str
     strategy_key: str
@@ -78,7 +102,7 @@ def list_validated_runs(
             "strategy_key": r.strategy_key,
             "symbol": r.symbol,
             "validation_type": r.validation_type,
-            "metrics": r.metrics,
+            "metrics": _normalize_strategy_run_metrics(r.validation_type, r.metrics),
             "provenance": r.provenance,
             "period_start": r.period_start,
             "period_end": r.period_end,

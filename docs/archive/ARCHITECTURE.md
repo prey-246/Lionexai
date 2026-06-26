@@ -202,7 +202,7 @@ Interactive Swagger: `http://localhost:8000/docs`
 - `/ws/portfolio` — Portfolio updates
 - `/ws/alerts` — System and risk alerts
 
-See [API_REFERENCE.md](./API_REFERENCE.md) and [PHASE4_API_QUICK_REFERENCE.md](./PHASE4_API_QUICK_REFERENCE.md) for the full catalog.
+See [API Reference](../api/api_reference.md) and [PHASE4_API_QUICK_REFERENCE.md](./PHASE4_API_QUICK_REFERENCE.md) for the full catalog.
 
 ---
 

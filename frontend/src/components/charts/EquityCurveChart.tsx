@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { createChart, ColorType, Time } from 'lightweight-charts';
+import { CHART_TEXT_COLOR } from '@/lib/chartTheme';
 
 interface EquityCurveChartProps {
   // Accept both API response formats: 
@@ -20,7 +21,7 @@ export function EquityCurveChart({ data }: EquityCurveChartProps) {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#8A94A6',
+        textColor: CHART_TEXT_COLOR,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 11,
       },

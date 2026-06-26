@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import { createChart, ColorType, Time } from 'lightweight-charts';
+import { CHART_TEXT_COLOR } from '@/lib/chartTheme';
 import { Calculator, TrendingUp, AlertTriangle, Target, Zap, Activity, BarChart3, Percent, Plus, Minus, Download, Loader2 } from 'lucide-react';
 import { validationAPI } from '@/lib/api/validation';
 import { fundsAPI } from '@/lib/api';
@@ -72,7 +73,7 @@ export default function SimulatorPage() {
       chartRef.current = createChart(chartContainerRef.current, {
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#8A94A6',
+          textColor: CHART_TEXT_COLOR,
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 11,
         },

@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { MetricDisplay } from '@/components/ui/MetricDisplay';
 import { lnxAPI, treasuryAPI, institutionalAPI, type LNXIndexData } from '@/lib/api';
 import { createChart, ColorType, Time } from 'lightweight-charts';
+import { CHART_TEXT_COLOR } from '@/lib/chartTheme';
 import { Coins, Loader2, Shield, TrendingUp, Activity, Lock, HelpCircle } from 'lucide-react';
 
 export default function LNXEcosystemPage() {
@@ -45,7 +46,7 @@ export default function LNXEcosystemPage() {
       chartInstance.current = null;
     }
     const chart = createChart(chartRef.current, {
-      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: '#8A94A6' },
+      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: CHART_TEXT_COLOR },
       height: 280,
       grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.05)' } },
     });

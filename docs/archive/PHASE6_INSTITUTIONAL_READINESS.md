@@ -148,5 +148,5 @@ Revisions: `a1b2c3d4e5f6_p5_validated`, `b2c3d4e5f6a7_p6_institutional`
 
 - [PHASE5_ROADMAP.md](./PHASE5_ROADMAP.md) — Research Lab bootstrap
 - [PHASE5_AUDIT_REPORT.md](./PHASE5_AUDIT_REPORT.md) — Pre-Phase-5 audit
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — System overview
+- [System Architecture](../architecture/system_architecture.md) — Current system overview
 - [README.md](../README.md) — Quick start and demo accounts

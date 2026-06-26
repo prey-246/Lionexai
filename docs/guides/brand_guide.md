@@ -22,7 +22,7 @@ Colors and typography aligned with the **LionexAI logo** and the platform design
 |------|-----|
 | Primary text | `#F6F8FB` |
 | Secondary text | `#C4CCD8` |
-| Muted text | `#8A94A6` |
+| Muted text | `#B4BFCE` |
 | Institutional blue | `#4A92FF` |
 | Success | `#1ED6A6` |
 | Warning | `#F5B23B` |

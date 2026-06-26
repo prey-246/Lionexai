@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { createChart, IChartApi, ISeriesApi, Time } from 'lightweight-charts';
 import { toFiniteNumber, toChartTimestamp } from '@/lib/format';
+import { CHART_TEXT_COLOR } from '@/lib/chartTheme';
 
 interface ChartProps {
   data: { time: number | string; value: number }[];
@@ -24,7 +25,7 @@ export function HistogramChart({ data, positiveColor = '#1ED6A6', negativeColor 
         height: 320,
         layout: {
           background: { color: 'transparent' },
-          textColor: '#8A94A6',
+          textColor: CHART_TEXT_COLOR,
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 11,
         },

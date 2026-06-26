@@ -6,7 +6,7 @@ Premium institutional UI for the NEXA / LionexAI platform — dark charcoal them
 
 ## Design system
 
-Tokens live in `src/app/globals.css`. Presentation colors: [docs/BRAND_GUIDE.md](../docs/BRAND_GUIDE.md).
+Tokens live in `src/app/globals.css`. Presentation colors: [Brand Guide](../docs/guides/brand_guide.md).
 
 | Token | Hex | Use |
 |-------|-----|-----|

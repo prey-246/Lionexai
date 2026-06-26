@@ -20,7 +20,7 @@ Last updated: June 2026 (validation hardening + alpha optimization)
 
 **Overall roadmap: ~99% complete.** The backend is feature-complete. Remaining work is on the frontend.
 
-**Documentation index:** [docs/README.md](./README.md) · [API_REFERENCE.md](./API_REFERENCE.md) · [VALIDATION_REPORT.md](./VALIDATION_REPORT.md)
+**Documentation index:** [docs/README.md](../README.md) · [API Reference](../api/api_reference.md) · [Validation](../platform/validation.md)
 
 ---
 

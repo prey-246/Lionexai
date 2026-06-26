@@ -26,6 +26,7 @@ def perform_yield_sweep(db=None, user_id: str | None = None):
         total_winning_pnl = db.query(func.sum(Trade.pnl)).filter(
             Trade.status == 'CLOSED',
             Trade.pnl > 0,
+            Trade.trade_source != 'VALIDATED_HISTORICAL',
         ).scalar() or 0.0
 
         target_yield = total_winning_pnl * 0.10

@@ -2,7 +2,7 @@
 
 Complete endpoint catalog. Interactive Swagger: `http://localhost:8000/docs`
 
-**See also:** [API.md](./API.md) for request/response examples · [VALIDATION_REPORT.md](./VALIDATION_REPORT.md) for validation framework details
+**See also:** [Validation](../platform/validation.md) · Interactive Swagger at `http://localhost:8000/docs`
 
 ---
 

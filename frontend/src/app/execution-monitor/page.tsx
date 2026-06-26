@@ -7,6 +7,7 @@ import { Loader2, Server, CheckCircle2, AlertTriangle, Clock, Zap, XCircle, Ban,
 import { format } from 'date-fns';
 import { exchangeAPI } from '@/lib/api';
 import { createChart, ColorType, Time } from 'lightweight-charts';
+import { CHART_TEXT_COLOR } from '@/lib/chartTheme';
 
 export default function ExecutionMonitorPage() {
   const [data, setData] = useState<any>(null);
@@ -63,7 +64,7 @@ export default function ExecutionMonitorPage() {
       chartRef.current = createChart(chartContainerRef.current, {
         layout: {
           background: { type: ColorType.Solid, color: 'transparent' },
-          textColor: '#8A94A6',
+          textColor: CHART_TEXT_COLOR,
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 11,
         },

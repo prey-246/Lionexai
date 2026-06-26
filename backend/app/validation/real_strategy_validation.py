@@ -132,6 +132,7 @@ class RealStrategyValidator:
             start += test_days
 
         avg_oos = np.mean(oos_returns) * 100 if oos_returns else 0.0
+        total_return = (equity / initial_capital - 1.0) * 100
         return ValidationRunResult(
             run_id=f"vsr_{uuid.uuid4().hex[:12]}",
             strategy_key=strategy_key.upper(),
@@ -146,6 +147,11 @@ class RealStrategyValidator:
                     sum(1 for r in oos_returns if r > 0) / max(len(oos_returns), 1) * 100, 2
                 ),
                 "final_equity": round(equity, 2),
+                "total_return_pct": round(total_return, 2),
+                "cagr_pct": round(total_return, 2),
+                "avg_monthly_return_pct": round(float(avg_oos) / 3.0, 2),
+                "sharpe_ratio": 0.0,
+                "max_drawdown_pct": 0.0,
             },
             regime_breakdown={"windows": windows},
         )
@@ -273,31 +279,51 @@ class RealStrategyValidator:
         df = df.copy()
         if "signal" not in df.columns:
             df["signal"] = 0
-        df["position"] = df["signal"].clip(0, 1)
-        df["position"] = df["position"].ffill().fillna(0)
+        target_position = df["signal"].clip(0, 1).ffill().fillna(0)
 
+        fee_rate = (commission_pct + slippage_pct) / 100.0
         cash = initial_capital
         shares = 0.0
         equities: list[float] = []
+        held_positions: list[float] = []
 
-        for i, row in df.iterrows():
+        for idx in range(len(df)):
+            row = df.iloc[idx]
             price = float(row["close"])
-            target_pos = float(row["position"])
-            target_value = cash + shares * price
-            desired_shares = (target_value * target_pos) / price if price > 0 else 0
+            if price <= 0:
+                equities.append(cash + shares * price)
+                held_positions.append(0.0)
+                continue
+
+            target_pos = float(target_position.iloc[idx])
+            equity = cash + shares * price
+            desired_shares = (equity * target_pos) / price
             delta = desired_shares - shares
+
             if abs(delta) * price > 1.0:
-                notional = abs(delta) * price
-                cost = notional * (commission_pct + slippage_pct) / 100.0
-                if delta > 0 and cash >= notional + cost:
-                    cash -= notional + cost
-                    shares += delta
-                elif delta < 0:
-                    cash += abs(delta) * price - cost
-                    shares += delta
-            equities.append(cash + shares * price)
+                if delta > 0:
+                    # Fee-aware sizing: never require cash > notional + fee for full deployment
+                    max_notional = cash / (1.0 + fee_rate) if fee_rate >= 0 else cash
+                    buy_notional = min(delta * price, max_notional)
+                    if buy_notional > 1.0:
+                        buy_shares = buy_notional / price
+                        fee = buy_notional * fee_rate
+                        cash -= buy_notional + fee
+                        shares += buy_shares
+                else:
+                    sell_shares = min(shares, abs(delta))
+                    if sell_shares * price > 1.0:
+                        notional = sell_shares * price
+                        fee = notional * fee_rate
+                        cash += notional - fee
+                        shares -= sell_shares
+
+            mark = cash + shares * price
+            equities.append(mark)
+            held_positions.append((shares * price / mark) if mark > 0 else 0.0)
 
         out = df.copy()
+        out["position"] = held_positions
         out["equity"] = equities
         return out
 
@@ -318,12 +344,19 @@ class RealStrategyValidator:
         max_dd = abs(float(dd.min()) * 100)
 
         ann_vol = float(rets.std() * np.sqrt(252) * 100) if len(rets) > 1 else 0.0
+        ret_std = float(rets.std())
         excess = rets - RISK_FREE_RATE / 252
-        sharpe = float(excess.mean() / excess.std() * np.sqrt(252)) if excess.std() > 0 else 0.0
+        excess_std = float(excess.std()) if len(excess) > 1 else 0.0
+        sharpe = (
+            float(excess.mean() / excess_std * np.sqrt(252))
+            if excess_std > 1e-12 and ret_std > 1e-12
+            else 0.0
+        )
         downside = rets[rets < 0]
+        downside_std = float(downside.std()) if len(downside) > 1 else 0.0
         sortino = (
-            float(excess.mean() / downside.std() * np.sqrt(252))
-            if len(downside) > 0 and downside.std() > 0
+            float(excess.mean() / downside_std * np.sqrt(252))
+            if downside_std > 1e-12 and ret_std > 1e-12
             else 0.0
         )
         calmar = float(cagr / max_dd) if max_dd > 0 else 0.0
@@ -332,16 +365,20 @@ class RealStrategyValidator:
         monthly = monthly.resample("ME").last().pct_change().dropna()
         avg_monthly = float(monthly.mean() * 100) if len(monthly) else 0.0
 
-        # Round-trip trades from position changes
-        pos_diff = portfolio["position"].diff().fillna(0)
+        # Round-trip trades from actual held position changes (post-simulation)
+        pos_diff = portfolio["position"].diff().fillna(portfolio["position"])
         trade_pnls: list[float] = []
-        entry_price = None
+        entry_price: float | None = None
+        entry_equity: float | None = None
         for i, d in pos_diff.items():
-            if d > 0:
+            if d > 0.01:
                 entry_price = float(portfolio.loc[i, "close"])
-            elif d < 0 and entry_price:
-                trade_pnls.append(float(portfolio.loc[i, "close"]) - entry_price)
+                entry_equity = float(portfolio.loc[i, "equity"])
+            elif d < -0.01 and entry_price and entry_equity:
+                exit_equity = float(portfolio.loc[i, "equity"])
+                trade_pnls.append(exit_equity - entry_equity)
                 entry_price = None
+                entry_equity = None
 
         wins = [p for p in trade_pnls if p > 0]
         losses = [abs(p) for p in trade_pnls if p < 0]
@@ -356,8 +393,8 @@ class RealStrategyValidator:
             "total_return_pct": round(total_return, 2),
             "avg_monthly_return_pct": round(avg_monthly, 2),
             "win_rate_pct": round(win_rate, 2),
-            "sharpe_ratio": round(sharpe, 2),
-            "sortino_ratio": round(sortino, 2),
+            "sharpe_ratio": round(max(-99.99, min(99.99, sharpe)), 2),
+            "sortino_ratio": round(max(-99.99, min(99.99, sortino)), 2),
             "calmar_ratio": round(calmar, 2),
             "max_drawdown_pct": round(max_dd, 2),
             "profit_factor": round(profit_factor, 2) if profit_factor else None,

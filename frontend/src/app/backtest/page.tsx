@@ -7,6 +7,7 @@ import { quantAPI, strategiesAPI } from '@/lib/api';
 import { FlaskConical, Play, TrendingUp, AlertTriangle, Activity, Settings2, BarChart3, Database, History, Save, Loader2 } from 'lucide-react';
 import type { BacktestResponse } from '@/lib/types';
 import { createChart, ColorType } from 'lightweight-charts';
+import { CHART_TEXT_COLOR } from '@/lib/chartTheme';
 
 export default function StrategyEnginePage() {
   const [loading, setLoading] = useState(false);
@@ -97,7 +98,7 @@ export default function StrategyEnginePage() {
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#8A94A6',
+        textColor: CHART_TEXT_COLOR,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 11,
       },
